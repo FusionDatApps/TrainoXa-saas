@@ -1,13 +1,135 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum UserRole {
+  TRAINER
+  CLIENT
+}
+
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  password       String
+  role           UserRole
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  trainerProfile TrainerProfile?
+  clientProfile  ClientProfile?
+}
+
+model TrainerProfile {
+  id           String             @id @default(cuid())
+  userId       String             @unique
+  fullName     String
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clients      ClientProfile[]
+  exercises    Exercise[]
+  workoutPlans WorkoutPlan[]
+  assignments  ClientAssignment[]
+}
+
+model ClientProfile {
+  id           String             @id @default(cuid())
+  userId       String             @unique
+  trainerId    String
+  fullName     String
+  age          Int?
+  weightKg     Float?
+  heightCm     Float?
+  goal         String?
+  notes        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainer      TrainerProfile     @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  assignments  ClientAssignment[]
+}
+
+model Exercise {
+  id           String               @id @default(cuid())
+  trainerId    String
+  name         String
+  description  String?
+  muscleGroup  String
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  trainer      TrainerProfile       @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  workoutItems WorkoutPlanExercise[]
+  progressLogs ProgressLog[]
+}
+
+model WorkoutPlan {
+  id           String                @id @default(cuid())
+  trainerId    String
+  name         String
+  description  String?
+  isActive     Boolean               @default(true)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  trainer      TrainerProfile        @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  exercises    WorkoutPlanExercise[]
+  assignments  ClientAssignment[]
+}
+
+model WorkoutPlanExercise {
+  id            String       @id @default(cuid())
+  workoutPlanId String
+  exerciseId    String
+  exerciseOrder Int
+  sets          Int
+  reps          String
+  restSeconds   Int?
+  notes         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  workoutPlan   WorkoutPlan  @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
+  exercise      Exercise     @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  @@unique([workoutPlanId, exerciseOrder])
+}
+
+model ClientAssignment {
+  id            String           @id @default(cuid())
+  trainerId     String
+  clientId      String
+  workoutPlanId String
+  startDate     DateTime         @default(now())
+  endDate       DateTime?
+  isActive      Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  trainer       TrainerProfile   @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  client        ClientProfile    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  workoutPlan   WorkoutPlan      @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
+  progressLogs  ProgressLog[]
+}
+
+model ProgressLog {
+  id            String           @id @default(cuid())
+  assignmentId  String
+  exerciseId    String
+  performedAt   DateTime         @default(now())
+  repsCompleted String?
+  weightUsedKg  Float?
+  completed     Boolean          @default(false)
+  notes         String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  assignment    ClientAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  exercise      Exercise         @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
 }
