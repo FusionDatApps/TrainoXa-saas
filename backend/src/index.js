@@ -8,6 +8,7 @@ const workoutsRoutes = require("./modules/workouts/workouts.routes");
 
 const app = express();
 const clientsRoutes = require("./modules/clients/clients.routes");
+const assignmentsRoutes = require("./modules/assignments/assignments.routes");
 
 app.use(cors());
 app.use(express.json());
@@ -20,6 +21,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/clients", clientsRoutes);
 app.use("/api/exercises", exercisesRoutes);
 app.use("/api/workouts", workoutsRoutes);
+app.use("/api/assignments", assignmentsRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
