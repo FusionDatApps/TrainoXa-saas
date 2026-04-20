@@ -14,7 +14,7 @@ async function create(req, res) {
 
     return res.status(201).json({
       ok: true,
-      message: "Cliente creado",
+      message: "Cliente creado correctamente",
       data: result,
     });
   } catch (error) {
@@ -22,7 +22,6 @@ async function create(req, res) {
       return res.status(400).json({
         ok: false,
         message: "Datos inválidos",
-        errors: error.issues,
       });
     }
 
@@ -39,6 +38,7 @@ async function list(req, res) {
 
     return res.json({
       ok: true,
+      message: "Clientes obtenidos",
       data,
     });
   } catch (error) {
@@ -55,6 +55,7 @@ async function getOne(req, res) {
 
     return res.json({
       ok: true,
+      message: "Cliente obtenido",
       data,
     });
   } catch (error) {

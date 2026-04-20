@@ -16,13 +16,13 @@ async function create(req, res) {
 
     return res.status(201).json({
       ok: true,
-      message: "Progreso registrado",
+      message: "Progreso registrado correctamente",
       data,
     });
   } catch (error) {
     return res.status(error.statusCode || 400).json({
       ok: false,
-      message: error.message,
+      message: error.message || "Error al registrar progreso",
     });
   }
 }
@@ -36,6 +36,7 @@ async function listByAssignment(req, res) {
 
     return res.json({
       ok: true,
+      message: "Progreso obtenido",
       data,
     });
   } catch (error) {

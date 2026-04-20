@@ -23,18 +23,26 @@ async function create(req, res) {
   } catch (error) {
     return res.status(error.statusCode || 400).json({
       ok: false,
-      message: error.message,
+      message: error.message || "Error al crear asignación",
     });
   }
 }
 
 async function list(req, res) {
-  const data = await getAssignments(req.user);
+  try {
+    const data = await getAssignments(req.user);
 
-  return res.json({
-    ok: true,
-    data,
-  });
+    return res.json({
+      ok: true,
+      message: "Asignaciones obtenidas",
+      data,
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 400).json({
+      ok: false,
+      message: error.message,
+    });
+  }
 }
 
 async function getById(req, res) {
@@ -46,6 +54,7 @@ async function getById(req, res) {
 
     return res.json({
       ok: true,
+      message: "Asignación obtenida",
       data,
     });
   } catch (error) {

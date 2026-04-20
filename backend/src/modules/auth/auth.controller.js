@@ -1,4 +1,3 @@
-
 const { ZodError } = require("zod");
 const { registerSchema, loginSchema } = require("./auth.schemas");
 const { registerTrainer, loginUser } = require("./auth.service");
@@ -18,16 +17,10 @@ async function register(req, res) {
       return res.status(400).json({
         ok: false,
         message: "Datos inválidos",
-        errors: error.issues.map((issue) => ({
-          field: issue.path.join("."),
-          message: issue.message,
-        })),
       });
     }
 
-    const statusCode = error.statusCode || 500;
-
-    return res.status(statusCode).json({
+    return res.status(error.statusCode || 500).json({
       ok: false,
       message: error.message || "Error interno del servidor",
     });
@@ -39,9 +32,9 @@ async function login(req, res) {
     const data = loginSchema.parse(req.body);
     const result = await loginUser(data);
 
-    return res.status(200).json({
+    return res.json({
       ok: true,
-      message: "Login correcto",
+      message: "Login exitoso",
       data: result,
     });
   } catch (error) {
@@ -49,16 +42,10 @@ async function login(req, res) {
       return res.status(400).json({
         ok: false,
         message: "Datos inválidos",
-        errors: error.issues.map((issue) => ({
-          field: issue.path.join("."),
-          message: issue.message,
-        })),
       });
     }
 
-    const statusCode = error.statusCode || 500;
-
-    return res.status(statusCode).json({
+    return res.status(error.statusCode || 500).json({
       ok: false,
       message: error.message || "Error interno del servidor",
     });

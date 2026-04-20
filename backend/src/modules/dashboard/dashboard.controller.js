@@ -9,6 +9,7 @@ async function summary(req, res) {
 
     return res.json({
       ok: true,
+      message: "Resumen obtenido",
       data,
     });
   } catch (error) {
@@ -25,6 +26,7 @@ async function recentActivity(req, res) {
 
     return res.json({
       ok: true,
+      message: "Actividad reciente obtenida",
       data,
     });
   } catch (error) {
