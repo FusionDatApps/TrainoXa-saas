@@ -10,6 +10,7 @@ const app = express();
 const clientsRoutes = require("./modules/clients/clients.routes");
 const assignmentsRoutes = require("./modules/assignments/assignments.routes");
 const progressRoutes = require("./modules/progress/progress.routes");
+const dashboardRoutes = require("./modules/dashboard/dashboard.routes");
 
 app.use(cors());
 app.use(express.json());
@@ -24,6 +25,7 @@ app.use("/api/exercises", exercisesRoutes);
 app.use("/api/workouts", workoutsRoutes);
 app.use("/api/assignments", assignmentsRoutes);
 app.use("/api/progress", progressRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
