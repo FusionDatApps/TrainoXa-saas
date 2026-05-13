@@ -20,32 +20,24 @@ export default function TrainerShell({ title, active, children }) {
         </header>
 
         <nav style={styles.nav}>
-          <Link
-            href="/dashboard"
-            style={active === "dashboard" ? styles.navLinkActive : styles.navLink}
-          >
+          <Link href="/dashboard" style={active === "dashboard" ? styles.navLinkActive : styles.navLink}>
             Dashboard
           </Link>
 
-          <Link
-            href="/clients"
-            style={active === "clients" ? styles.navLinkActive : styles.navLink}
-          >
+          <Link href="/clients" style={active === "clients" ? styles.navLinkActive : styles.navLink}>
             Clientes
           </Link>
 
-          <Link
-            href="/exercises"
-            style={active === "exercises" ? styles.navLinkActive : styles.navLink}
-          >
+          <Link href="/exercises" style={active === "exercises" ? styles.navLinkActive : styles.navLink}>
             Ejercicios
           </Link>
 
-          <Link
-            href="/workouts"
-            style={active === "workouts" ? styles.navLinkActive : styles.navLink}
-          >
+          <Link href="/workouts" style={active === "workouts" ? styles.navLinkActive : styles.navLink}>
             Rutinas
+          </Link>
+
+          <Link href="/assignments" style={active === "assignments" ? styles.navLinkActive : styles.navLink}>
+            Asignaciones
           </Link>
         </nav>
 
@@ -58,8 +50,7 @@ export default function TrainerShell({ title, active, children }) {
 const styles = {
   page: {
     minHeight: "100vh",
-    background:
-      "linear-gradient(135deg, #020617 0%, #0f172a 45%, #111827 100%)",
+    background: "linear-gradient(135deg, #020617 0%, #0f172a 45%, #111827 100%)",
     color: "#f8fafc",
     padding: "40px",
   },
