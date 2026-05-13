@@ -23,7 +23,6 @@ async function getTrainerProfile(authUser) {
 async function createAssignment({ authUser, data }) {
   const trainer = await getTrainerProfile(authUser);
 
-  // 🔴 Validar cliente
   const client = await prisma.clientProfile.findFirst({
     where: {
       id: data.clientId,
@@ -37,7 +36,6 @@ async function createAssignment({ authUser, data }) {
     throw error;
   }
 
-  // 🔴 Validar rutina
   const workout = await prisma.workoutPlan.findFirst({
     where: {
       id: data.workoutPlanId,
@@ -48,6 +46,21 @@ async function createAssignment({ authUser, data }) {
   if (!workout) {
     const error = new Error("Rutina no encontrada o no pertenece al trainer");
     error.statusCode = 404;
+    throw error;
+  }
+
+  const existingAssignment = await prisma.clientAssignment.findFirst({
+    where: {
+      trainerId: trainer.id,
+      clientId: data.clientId,
+      workoutPlanId: data.workoutPlanId,
+      isActive: true,
+    },
+  });
+
+  if (existingAssignment) {
+    const error = new Error("El cliente ya tiene esta rutina asignada");
+    error.statusCode = 409;
     throw error;
   }
 
