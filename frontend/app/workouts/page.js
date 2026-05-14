@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import TrainerShell from "../../components/TrainerShell";
 import { apiFetch } from "../../lib/api";
 
+export const dynamic = "force-dynamic";
+
 export default function WorkoutsPage() {
   const [workouts, setWorkouts] = useState([]);
   const [exercises, setExercises] = useState([]);
@@ -15,19 +17,33 @@ export default function WorkoutsPage() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
   const [selectedExercises, setSelectedExercises] = useState({});
   const [workoutExercises, setWorkoutExercises] = useState({});
+
+  async function loadWorkoutExercises(workoutId) {
+    try {
+      const res = await apiFetch(`/workouts/${workoutId}/exercises`);
+
+      setWorkoutExercises((prev) => ({
+        ...prev,
+        [workoutId]: res.data || [],
+      }));
+    } catch (err) {
+      console.error("Error cargando ejercicios de rutina:", err.message);
+    }
+  }
 
   async function loadWorkouts() {
     try {
       const res = await apiFetch("/workouts");
       const data = res.data || [];
 
-setWorkouts(data);
+      setWorkouts(data);
 
-for (const workout of data) {
-  await loadWorkoutExercises(workout.id);
-}
+      await Promise.all(
+        data.map((workout) => loadWorkoutExercises(workout.id))
+      );
     } catch (err) {
       console.error("Error cargando rutinas:", err.message);
       setError(err.message || "No se pudieron cargar las rutinas");
@@ -35,22 +51,24 @@ for (const workout of data) {
       setLoading(false);
     }
   }
+
   async function loadExercises() {
     try {
-        const res = await apiFetch("/exercises");
-        setExercises(res.data || []);
+      const res = await apiFetch("/exercises");
+      setExercises(res.data || []);
     } catch (err) {
-        console.error("Error cargando ejercicios:", err.message);
-        }
+      console.error("Error cargando ejercicios:", err.message);
     }
-  useEffect(() => {
-  async function initialize() {
-    await loadWorkouts();
-    await loadExercises();
   }
 
-  initialize();
-}, []);
+  useEffect(() => {
+    async function initialize() {
+      await loadWorkouts();
+      await loadExercises();
+    }
+
+    initialize();
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -79,62 +97,49 @@ for (const workout of data) {
       setCreating(false);
     }
   }
-async function loadWorkoutExercises(workoutId) {
-  try {
-    const res = await apiFetch(`/workouts/${workoutId}/exercises`);
 
-    setWorkoutExercises((prev) => ({
-      ...prev,
-      [workoutId]: res.data || [],
-    }));
-  } catch (err) {
-    console.error(
-      "Error cargando ejercicios de rutina:",
-      err.message
-    );
-  }
-}
+  async function handleAddExercise(workoutId) {
+    const form = selectedExercises[workoutId];
 
-async function handleAddExercise(workoutId) {
-  const form = selectedExercises[workoutId];
+    if (!form || !form.exerciseId) {
+      alert("Selecciona un ejercicio");
+      return;
+    }
 
-  if (!form || !form.exerciseId) {
-    return;
-  }
+    try {
+      const currentItems = workoutExercises[workoutId] || [];
+      const nextOrder = Number(form.exerciseOrder || currentItems.length + 1);
 
-  try {
-  const currentItems = workoutExercises[workoutId] || [];
-  const nextOrder = currentItems.length + 1;
+      await apiFetch(`/workouts/${workoutId}/exercises`, {
+        method: "POST",
+        body: JSON.stringify({
+          exerciseId: form.exerciseId,
+          exerciseOrder: nextOrder,
+          sets: Number(form.sets || 4),
+          reps: form.reps || "12",
+          restSeconds: Number(form.restSeconds || 60),
+          notes: form.notes || "",
+        }),
+      });
 
-  await apiFetch(`/workouts/${workoutId}/exercises`, {
-    method: "POST",
-    body: JSON.stringify({
-      exerciseId: form.exerciseId,
-      exerciseOrder: nextOrder,
-      sets: Number(form.sets || 4),
-      reps: form.reps || "12",
-      restSeconds: Number(form.restSeconds || 60),
-      notes: form.notes || "",
-    }),
-  });
-
-    setSelectedExercises((prev) => ({
-     ...prev,
-    [workoutId]: {
-        exerciseId: "",
-        exerciseOrder: nextOrder,
-        sets: 4,
-        reps: "12",
-        restSeconds: 60,
-        notes: "",
+      setSelectedExercises((prev) => ({
+        ...prev,
+        [workoutId]: {
+          exerciseId: "",
+          exerciseOrder: nextOrder + 1,
+          sets: 4,
+          reps: "12",
+          restSeconds: 60,
+          notes: "",
         },
-    }));
+      }));
 
-    await loadWorkoutExercises(workoutId);
-  } catch (err) {
-    alert(err.message || "No se pudo agregar el ejercicio");
+      await loadWorkoutExercises(workoutId);
+    } catch (err) {
+      alert(err.message || "No se pudo agregar el ejercicio");
+    }
   }
-}
+
   return (
     <TrainerShell title="Rutinas" active="workouts">
       <section style={styles.grid}>
@@ -182,9 +187,7 @@ async function handleAddExercise(workoutId) {
 
         <aside style={styles.summaryCard}>
           <p style={styles.summaryLabel}>Total de rutinas</p>
-
           <h3 style={styles.summaryValue}>{workouts.length}</h3>
-
           <p style={styles.summaryText}>
             Estas rutinas pertenecen al trainer autenticado.
           </p>
@@ -225,187 +228,184 @@ async function handleAddExercise(workoutId) {
                 </p>
 
                 <p style={styles.workoutInfo}>
-                  <strong>Descripción:</strong>{" "}
-                  {workout.description || "N/A"}
+                  <strong>Descripción:</strong> {workout.description || "N/A"}
                 </p>
 
                 <p style={styles.workoutInfo}>
                   <strong>Estado:</strong>{" "}
                   {workout.isActive ? "Activa" : "Inactiva"}
                 </p>
+
                 <hr style={styles.divider} />
 
-<h4 style={styles.subTitle}>
-  Agregar ejercicio
-</h4>
+                <h4 style={styles.subTitle}>Agregar ejercicio</h4>
 
-<div style={styles.exerciseForm}>
-  <select
-    style={styles.select}
-    value={
-      selectedExercises[workout.id]?.exerciseId || ""
-    }
-    onChange={(e) =>
-      setSelectedExercises((prev) => ({
-        ...prev,
-        [workout.id]: {
-          ...prev[workout.id],
-          exerciseId: e.target.value,
-        },
-      }))
-    }
-  >
-    <option value="">
-      Selecciona ejercicio
-    </option>
+                <div style={styles.exerciseForm}>
+                  <div style={styles.field}>
+                    <label style={styles.label}>Ejercicio</label>
 
-    {exercises.map((exercise) => (
-      <option
-        key={exercise.id}
-        value={exercise.id}
-      >
-        {exercise.name}
-      </option>
-    ))}
-  </select>
+                    <select
+                      style={styles.select}
+                      value={selectedExercises[workout.id]?.exerciseId || ""}
+                      onChange={(e) =>
+                        setSelectedExercises((prev) => ({
+                          ...prev,
+                          [workout.id]: {
+                            ...prev[workout.id],
+                            exerciseId: e.target.value,
+                          },
+                        }))
+                      }
+                    >
+                      <option value="">Selecciona ejercicio</option>
 
-  <input
-    style={styles.smallInput}
-    type="number"
-    placeholder="Orden"
-    value={
-      selectedExercises[workout.id]
-        ?.exerciseOrder || 1
-    }
-    onChange={(e) =>
-      setSelectedExercises((prev) => ({
-        ...prev,
-        [workout.id]: {
-          ...prev[workout.id],
-          exerciseOrder: e.target.value,
-        },
-      }))
-    }
-  />
+                      {exercises.map((exercise) => (
+                        <option key={exercise.id} value={exercise.id}>
+                          {exercise.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-  <input
-    style={styles.smallInput}
-    type="number"
-    placeholder="Sets"
-    value={
-      selectedExercises[workout.id]?.sets || 4
-    }
-    onChange={(e) =>
-      setSelectedExercises((prev) => ({
-        ...prev,
-        [workout.id]: {
-          ...prev[workout.id],
-          sets: e.target.value,
-        },
-      }))
-    }
-  />
+                  <div style={styles.field}>
+                    <label style={styles.label}>Orden del ejercicio</label>
 
-  <input
-    style={styles.smallInput}
-    type="text"
-    placeholder="Reps"
-    value={
-      selectedExercises[workout.id]?.reps || "12"
-    }
-    onChange={(e) =>
-      setSelectedExercises((prev) => ({
-        ...prev,
-        [workout.id]: {
-          ...prev[workout.id],
-          reps: e.target.value,
-        },
-      }))
-    }
-  />
+                    <input
+                      style={styles.smallInput}
+                      type="number"
+                      placeholder="Ej: 1"
+                      value={selectedExercises[workout.id]?.exerciseOrder || 1}
+                      onChange={(e) =>
+                        setSelectedExercises((prev) => ({
+                          ...prev,
+                          [workout.id]: {
+                            ...prev[workout.id],
+                            exerciseOrder: e.target.value,
+                          },
+                        }))
+                      }
+                    />
+                  </div>
 
-  <input
-    style={styles.smallInput}
-    type="number"
-    placeholder="Descanso"
-    value={
-      selectedExercises[workout.id]
-        ?.restSeconds || 60
-    }
-    onChange={(e) =>
-      setSelectedExercises((prev) => ({
-        ...prev,
-        [workout.id]: {
-          ...prev[workout.id],
-          restSeconds: e.target.value,
-        },
-      }))
-    }
-  />
+                  <div style={styles.field}>
+                    <label style={styles.label}>Número de sets</label>
 
-  <textarea
-    style={styles.notesInput}
-    placeholder="Notas"
-    value={
-      selectedExercises[workout.id]?.notes || ""
-    }
-    onChange={(e) =>
-      setSelectedExercises((prev) => ({
-        ...prev,
-        [workout.id]: {
-          ...prev[workout.id],
-          notes: e.target.value,
-        },
-      }))
-    }
-  />
+                    <input
+                      style={styles.smallInput}
+                      type="number"
+                      placeholder="Ej: 4"
+                      value={selectedExercises[workout.id]?.sets || 4}
+                      onChange={(e) =>
+                        setSelectedExercises((prev) => ({
+                          ...prev,
+                          [workout.id]: {
+                            ...prev[workout.id],
+                            sets: e.target.value,
+                          },
+                        }))
+                      }
+                    />
+                  </div>
 
-  <button
-    style={styles.addButton}
-    onClick={() =>
-      handleAddExercise(workout.id)
-    }
-  >
-    Agregar ejercicio
-  </button>
-</div>
+                  <div style={styles.field}>
+                    <label style={styles.label}>Repeticiones</label>
 
-<hr style={styles.divider} />
+                    <input
+                      style={styles.smallInput}
+                      type="text"
+                      placeholder="Ej: 10-12"
+                      value={selectedExercises[workout.id]?.reps || "12"}
+                      onChange={(e) =>
+                        setSelectedExercises((prev) => ({
+                          ...prev,
+                          [workout.id]: {
+                            ...prev[workout.id],
+                            reps: e.target.value,
+                          },
+                        }))
+                      }
+                    />
+                  </div>
 
-<h4 style={styles.subTitle}>
-  Ejercicios asignados
-</h4>
+                  <div style={styles.field}>
+                    <label style={styles.label}>Descanso en segundos</label>
 
-{!workoutExercises[workout.id] ||
-workoutExercises[workout.id].length === 0 ? (
-  <p style={styles.emptyExercises}>
-    Esta rutina todavía no tiene ejercicios.
-  </p>
-) : (
-  <div style={styles.exerciseList}>
-    {workoutExercises[workout.id].map(
-      (item) => (
-        <div
-          key={item.id}
-          style={styles.exerciseItem}
-        >
-          <p style={styles.exerciseItemName}>
-            {item.exercise?.name}
-          </p>
+                    <input
+                      style={styles.smallInput}
+                      type="number"
+                      placeholder="Ej: 60"
+                      value={selectedExercises[workout.id]?.restSeconds || 60}
+                      onChange={(e) =>
+                        setSelectedExercises((prev) => ({
+                          ...prev,
+                          [workout.id]: {
+                            ...prev[workout.id],
+                            restSeconds: e.target.value,
+                          },
+                        }))
+                      }
+                    />
+                  </div>
 
-          <p style={styles.exerciseMeta}>
-            {item.sets} sets · {item.reps} reps
-          </p>
+                  <div style={styles.field}>
+                    <label style={styles.label}>Notas del ejercicio</label>
 
-          <p style={styles.exerciseMeta}>
-            Descanso:{" "}
-            {item.restSeconds || 0}s
-          </p>
-        </div>
-      )
-    )}
-  </div>
-)}
+                    <textarea
+                      style={styles.notesInput}
+                      placeholder="Indicaciones opcionales"
+                      value={selectedExercises[workout.id]?.notes || ""}
+                      onChange={(e) =>
+                        setSelectedExercises((prev) => ({
+                          ...prev,
+                          [workout.id]: {
+                            ...prev[workout.id],
+                            notes: e.target.value,
+                          },
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <button
+                    style={styles.addButton}
+                    onClick={() => handleAddExercise(workout.id)}
+                  >
+                    Agregar ejercicio
+                  </button>
+                </div>
+
+                <hr style={styles.divider} />
+
+                <h4 style={styles.subTitle}>Ejercicios asignados</h4>
+
+                {!workoutExercises[workout.id] ||
+                workoutExercises[workout.id].length === 0 ? (
+                  <p style={styles.emptyExercises}>
+                    Esta rutina todavía no tiene ejercicios.
+                  </p>
+                ) : (
+                  <div style={styles.exerciseList}>
+                    {workoutExercises[workout.id].map((item) => (
+                      <div key={item.id} style={styles.exerciseItem}>
+                        <p style={styles.exerciseItemName}>
+                          #{item.exerciseOrder} - {item.exercise?.name}
+                        </p>
+
+                        <p style={styles.exerciseMeta}>
+                          {item.sets} sets · {item.reps} reps
+                        </p>
+
+                        <p style={styles.exerciseMeta}>
+                          Descanso: {item.restSeconds || 0}s
+                        </p>
+
+                        {item.notes ? (
+                          <p style={styles.exerciseMeta}>Notas: {item.notes}</p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </article>
             ))}
           </div>
@@ -550,7 +550,7 @@ const styles = {
 
   workoutGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
     gap: "16px",
   },
 
@@ -579,86 +579,87 @@ const styles = {
     color: "#e2e8f0",
     lineHeight: 1.5,
   },
+
   divider: {
-  border: "none",
-  borderTop: "1px solid rgba(148, 163, 184, 0.14)",
-  margin: "18px 0",
-},
+    border: "none",
+    borderTop: "1px solid rgba(148, 163, 184, 0.14)",
+    margin: "18px 0",
+  },
 
-subTitle: {
-  margin: "0 0 14px 0",
-  fontSize: "16px",
-  fontWeight: "800",
-},
+  subTitle: {
+    margin: "0 0 14px 0",
+    fontSize: "16px",
+    fontWeight: "800",
+  },
 
-exerciseForm: {
-  display: "flex",
-  flexDirection: "column",
-  gap: "10px",
-},
+  exerciseForm: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+  },
 
-select: {
-  padding: "12px",
-  borderRadius: "10px",
-  border: "1px solid #334155",
-  background: "#0f172a",
-  color: "#f8fafc",
-},
+  select: {
+    padding: "12px",
+    borderRadius: "10px",
+    border: "1px solid #334155",
+    background: "#0f172a",
+    color: "#f8fafc",
+  },
 
-smallInput: {
-  padding: "12px",
-  borderRadius: "10px",
-  border: "1px solid #334155",
-  background: "#0f172a",
-  color: "#f8fafc",
-},
+  smallInput: {
+    padding: "12px",
+    borderRadius: "10px",
+    border: "1px solid #334155",
+    background: "#0f172a",
+    color: "#f8fafc",
+  },
 
-notesInput: {
-  minHeight: "70px",
-  padding: "12px",
-  borderRadius: "10px",
-  border: "1px solid #334155",
-  background: "#0f172a",
-  color: "#f8fafc",
-  resize: "vertical",
-},
+  notesInput: {
+    minHeight: "70px",
+    padding: "12px",
+    borderRadius: "10px",
+    border: "1px solid #334155",
+    background: "#0f172a",
+    color: "#f8fafc",
+    resize: "vertical",
+  },
 
-addButton: {
-  padding: "12px",
-  borderRadius: "10px",
-  border: "none",
-  background: "#22c55e",
-  color: "#052e16",
-  fontWeight: "800",
-  cursor: "pointer",
-},
+  addButton: {
+    padding: "12px",
+    borderRadius: "10px",
+    border: "none",
+    background: "#22c55e",
+    color: "#052e16",
+    fontWeight: "800",
+    cursor: "pointer",
+  },
 
-exerciseList: {
-  display: "flex",
-  flexDirection: "column",
-  gap: "10px",
-},
+  exerciseList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+  },
 
-exerciseItem: {
-  padding: "12px",
-  borderRadius: "12px",
-  background: "rgba(2, 6, 23, 0.7)",
-  border: "1px solid rgba(148, 163, 184, 0.12)",
-},
+  exerciseItem: {
+    padding: "12px",
+    borderRadius: "12px",
+    background: "rgba(2, 6, 23, 0.7)",
+    border: "1px solid rgba(148, 163, 184, 0.12)",
+  },
 
-exerciseItemName: {
-  margin: "0 0 6px 0",
-  fontWeight: "800",
-},
+  exerciseItemName: {
+    margin: "0 0 6px 0",
+    fontWeight: "800",
+  },
 
-exerciseMeta: {
-  margin: 0,
-  color: "#94a3b8",
-  fontSize: "14px",
-},
+  exerciseMeta: {
+    margin: 0,
+    color: "#94a3b8",
+    fontSize: "14px",
+  },
 
-emptyExercises: {
-  color: "#94a3b8",
-  margin: 0,
-},
+  emptyExercises: {
+    color: "#94a3b8",
+    margin: 0,
+  },
 };

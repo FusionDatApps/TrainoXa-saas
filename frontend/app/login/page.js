@@ -4,6 +4,8 @@ import { useState } from "react";
 import { saveToken } from "../../lib/auth";
 import { apiFetch } from "../../lib/api";
 
+export const dynamic = "force-dynamic";
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

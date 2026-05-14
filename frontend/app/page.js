@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 
+export const dynamic = "force-dynamic";
+
 export default function Home() {
   useEffect(() => {
     const token = localStorage.getItem("token");

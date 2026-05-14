@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import TrainerShell from "../../components/TrainerShell";
 import { apiFetch } from "../../lib/api";
 
+export const dynamic = "force-dynamic";
+
 const MUSCLE_GROUPS = [
   "Pecho",
   "Espalda",

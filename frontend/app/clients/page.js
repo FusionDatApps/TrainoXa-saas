@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import TrainerShell from "../../components/TrainerShell";
 import { apiFetch } from "../../lib/api";
 
+export const dynamic = "force-dynamic";
+
 export default function ClientsPage() {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
