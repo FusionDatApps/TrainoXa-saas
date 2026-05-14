@@ -16,6 +16,8 @@ export default function AssignmentsPage() {
   const [endDate, setEndDate] = useState("");
 
   const [creating, setCreating] = useState(false);
+  const [deactivatingId, setDeactivatingId] = useState(null);
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -64,6 +66,7 @@ export default function AssignmentsPage() {
       setWorkoutPlanId("");
       setStartDate("");
       setEndDate("");
+
       setSuccess("Rutina asignada correctamente");
 
       await loadData();
@@ -71,6 +74,26 @@ export default function AssignmentsPage() {
       setError(err.message || "No se pudo crear la asignación");
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function handleDeactivate(assignmentId) {
+    try {
+      setDeactivatingId(assignmentId);
+      setError("");
+      setSuccess("");
+
+      await apiFetch(`/assignments/${assignmentId}/deactivate`, {
+        method: "PATCH",
+      });
+
+      setSuccess("Asignación desactivada correctamente");
+
+      await loadData();
+    } catch (err) {
+      setError(err.message || "No se pudo desactivar la asignación");
+    } finally {
+      setDeactivatingId(null);
     }
   }
 
@@ -156,7 +179,9 @@ export default function AssignmentsPage() {
 
         <aside style={styles.summaryCard}>
           <p style={styles.summaryLabel}>Total asignaciones</p>
+
           <h3 style={styles.summaryValue}>{assignments.length}</h3>
+
           <p style={styles.summaryText}>
             Cada asignación conecta un cliente con una rutina creada por el trainer.
           </p>
@@ -213,6 +238,22 @@ export default function AssignmentsPage() {
                     ? new Date(assignment.endDate).toLocaleDateString()
                     : "N/A"}
                 </p>
+
+                {assignment.isActive ? (
+                  <button
+                    style={styles.deactivateButton}
+                    onClick={() => handleDeactivate(assignment.id)}
+                    disabled={deactivatingId === assignment.id}
+                  >
+                    {deactivatingId === assignment.id
+                      ? "Desactivando..."
+                      : "Desactivar"}
+                  </button>
+                ) : (
+                  <div style={styles.inactiveBadge}>
+                    Asignación finalizada
+                  </div>
+                )}
               </article>
             ))}
           </div>
@@ -229,6 +270,7 @@ const styles = {
     gap: "16px",
     marginBottom: "32px",
   },
+
   formCard: {
     background: "rgba(15, 23, 42, 0.92)",
     border: "1px solid rgba(148, 163, 184, 0.14)",
@@ -236,36 +278,43 @@ const styles = {
     padding: "24px",
     boxShadow: "0 14px 30px rgba(0, 0, 0, 0.22)",
   },
+
   summaryCard: {
     background: "rgba(15, 23, 42, 0.92)",
     border: "1px solid rgba(148, 163, 184, 0.14)",
     borderRadius: "18px",
     padding: "24px",
   },
+
   sectionTitle: {
     margin: "0 0 10px 0",
     fontSize: "24px",
     fontWeight: "800",
   },
+
   sectionText: {
     margin: "0 0 18px 0",
     color: "#94a3b8",
     lineHeight: 1.5,
   },
+
   form: {
     display: "flex",
     flexDirection: "column",
     gap: "16px",
   },
+
   field: {
     display: "flex",
     flexDirection: "column",
     gap: "8px",
   },
+
   label: {
     fontSize: "14px",
     fontWeight: "700",
   },
+
   input: {
     padding: "14px 16px",
     borderRadius: "12px",
@@ -275,6 +324,7 @@ const styles = {
     fontSize: "15px",
     outline: "none",
   },
+
   button: {
     marginTop: "4px",
     padding: "14px 16px",
@@ -286,62 +336,98 @@ const styles = {
     cursor: "pointer",
     fontSize: "15px",
   },
+
+  deactivateButton: {
+    marginTop: "12px",
+    width: "100%",
+    padding: "12px 14px",
+    borderRadius: "12px",
+    border: "none",
+    background: "#ef4444",
+    color: "#ffffff",
+    fontWeight: "800",
+    cursor: "pointer",
+    fontSize: "14px",
+  },
+
+  inactiveBadge: {
+    marginTop: "12px",
+    padding: "12px 14px",
+    borderRadius: "12px",
+    background: "rgba(148, 163, 184, 0.14)",
+    color: "#94a3b8",
+    textAlign: "center",
+    fontWeight: "700",
+    fontSize: "14px",
+  },
+
   error: {
     margin: 0,
     color: "#f87171",
     fontSize: "14px",
   },
+
   success: {
     margin: 0,
     color: "#4ade80",
     fontSize: "14px",
   },
+
   summaryLabel: {
     margin: 0,
     color: "#94a3b8",
     fontSize: "14px",
   },
+
   summaryValue: {
     margin: "12px 0",
     fontSize: "56px",
     fontWeight: "800",
   },
+
   summaryText: {
     margin: 0,
     color: "#cbd5e1",
     lineHeight: 1.5,
   },
+
   listSection: {
     marginTop: "16px",
   },
+
   emptyCard: {
     background: "rgba(15, 23, 42, 0.92)",
     border: "1px solid rgba(148, 163, 184, 0.14)",
     borderRadius: "18px",
     padding: "24px",
   },
+
   assignmentGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
     gap: "16px",
   },
+
   assignmentCard: {
     background: "rgba(15, 23, 42, 0.92)",
     border: "1px solid rgba(148, 163, 184, 0.14)",
     borderRadius: "18px",
     padding: "22px",
   },
+
   assignmentTag: {
     margin: "0 0 10px 0",
     color: "#94a3b8",
     fontSize: "13px",
     textTransform: "uppercase",
   },
+
   assignmentName: {
     margin: "0 0 16px 0",
     fontSize: "30px",
     fontWeight: "800",
   },
+
   assignmentInfo: {
     margin: "0 0 10px 0",
     color: "#e2e8f0",

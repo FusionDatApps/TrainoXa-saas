@@ -2,6 +2,7 @@ const {
   createAssignment,
   getAssignments,
   getAssignmentById,
+  deactivateAssignment,
 } = require("./assignments.service");
 
 const { createAssignmentSchema } = require("./assignments.schemas");
@@ -65,8 +66,29 @@ async function getById(req, res) {
   }
 }
 
+async function deactivate(req, res) {
+  try {
+    const data = await deactivateAssignment({
+      authUser: req.user,
+      assignmentId: req.params.id,
+    });
+
+    return res.json({
+      ok: true,
+      message: "Asignación desactivada",
+      data,
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 400).json({
+      ok: false,
+      message: error.message || "Error al desactivar asignación",
+    });
+  }
+}
+
 module.exports = {
   create,
   list,
   getById,
+  deactivate,
 };

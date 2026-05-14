@@ -115,8 +115,46 @@ async function getAssignmentById({ authUser, assignmentId }) {
   return assignment;
 }
 
+async function deactivateAssignment({ authUser, assignmentId }) {
+  const trainer = await getTrainerProfile(authUser);
+
+  const assignment = await prisma.clientAssignment.findFirst({
+    where: {
+      id: assignmentId,
+      trainerId: trainer.id,
+    },
+  });
+
+  if (!assignment) {
+    const error = new Error("Asignación no encontrada");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (!assignment.isActive) {
+    const error = new Error("La asignación ya está inactiva");
+    error.statusCode = 409;
+    throw error;
+  }
+
+  return prisma.clientAssignment.update({
+    where: {
+      id: assignment.id,
+    },
+    data: {
+      isActive: false,
+      endDate: new Date(),
+    },
+    include: {
+      client: true,
+      workoutPlan: true,
+    },
+  });
+}
+
 module.exports = {
   createAssignment,
   getAssignments,
   getAssignmentById,
+  deactivateAssignment,
 };
