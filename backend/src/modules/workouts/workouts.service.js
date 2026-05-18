@@ -93,6 +93,35 @@ async function addExerciseToWorkout({ authUser, workoutId, data }) {
     throw error;
   }
 
+  const existingExercise = await prisma.workoutPlanExercise.findFirst({
+    where: {
+      workoutPlanId: workoutId,
+      exerciseId: data.exerciseId,
+    },
+  });
+
+  console.log("VALIDANDO DUPLICADO EJERCICIO");
+  console.log(existingExercise);
+
+  if (existingExercise) {
+    const error = new Error("Este ejercicio ya fue agregado a la rutina");
+    error.statusCode = 409;
+    throw error;
+  }
+
+  const duplicatedOrder = await prisma.workoutPlanExercise.findFirst({
+    where: {
+      workoutPlanId: workoutId,
+      exerciseOrder: data.exerciseOrder,
+    },
+  });
+
+  if (duplicatedOrder) {
+    const error = new Error("Ya existe un ejercicio con ese orden dentro de la rutina");
+    error.statusCode = 409;
+    throw error;
+  }
+
   return prisma.workoutPlanExercise.create({
     data: {
       workoutPlanId: workoutId,
@@ -102,6 +131,9 @@ async function addExerciseToWorkout({ authUser, workoutId, data }) {
       reps: data.reps,
       restSeconds: data.restSeconds,
       notes: data.notes,
+    },
+    include: {
+      exercise: true,
     },
   });
 }

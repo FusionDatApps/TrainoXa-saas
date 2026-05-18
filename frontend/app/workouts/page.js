@@ -21,6 +21,9 @@ export default function WorkoutsPage() {
   const [selectedExercises, setSelectedExercises] = useState({});
   const [workoutExercises, setWorkoutExercises] = useState({});
 
+  const [addingExercise, setAddingExercise] = useState({});
+  const [exerciseFeedback, setExerciseFeedback] = useState({});
+
   async function loadWorkoutExercises(workoutId) {
     try {
       const res = await apiFetch(`/workouts/${workoutId}/exercises`);
@@ -99,46 +102,93 @@ export default function WorkoutsPage() {
   }
 
   async function handleAddExercise(workoutId) {
-    const form = selectedExercises[workoutId];
+  const form = selectedExercises[workoutId];
 
-    if (!form || !form.exerciseId) {
-      alert("Selecciona un ejercicio");
-      return;
-    }
+  if (!form || !form.exerciseId) {
+    setExerciseFeedback((prev) => ({
+      ...prev,
+      [workoutId]: {
+        type: "error",
+        message: "Debes seleccionar un ejercicio",
+      },
+    }));
 
-    try {
-      const currentItems = workoutExercises[workoutId] || [];
-      const nextOrder = Number(form.exerciseOrder || currentItems.length + 1);
-
-      await apiFetch(`/workouts/${workoutId}/exercises`, {
-        method: "POST",
-        body: JSON.stringify({
-          exerciseId: form.exerciseId,
-          exerciseOrder: nextOrder,
-          sets: Number(form.sets || 4),
-          reps: form.reps || "12",
-          restSeconds: Number(form.restSeconds || 60),
-          notes: form.notes || "",
-        }),
-      });
-
-      setSelectedExercises((prev) => ({
-        ...prev,
-        [workoutId]: {
-          exerciseId: "",
-          exerciseOrder: nextOrder + 1,
-          sets: 4,
-          reps: "12",
-          restSeconds: 60,
-          notes: "",
-        },
-      }));
-
-      await loadWorkoutExercises(workoutId);
-    } catch (err) {
-      alert(err.message || "No se pudo agregar el ejercicio");
-    }
+    return;
   }
+
+  setAddingExercise((prev) => ({
+    ...prev,
+    [workoutId]: true,
+  }));
+
+  setExerciseFeedback((prev) => ({
+    ...prev,
+    [workoutId]: null,
+  }));
+
+  try {
+    const currentItems = workoutExercises[workoutId] || [];
+
+    const nextOrder = Number(
+      form.exerciseOrder || currentItems.length + 1
+    );
+
+    await apiFetch(`/workouts/${workoutId}/exercises`, {
+      method: "POST",
+      body: JSON.stringify({
+        exerciseId: form.exerciseId,
+        exerciseOrder: nextOrder,
+        sets: Number(form.sets || 4),
+        reps: form.reps || "12",
+        restSeconds: Number(form.restSeconds || 60),
+        notes: form.notes || "",
+      }),
+    });
+
+    setSelectedExercises((prev) => ({
+      ...prev,
+      [workoutId]: {
+        exerciseId: "",
+        exerciseOrder: currentItems.length + 2,
+        sets: 4,
+        reps: "12",
+        restSeconds: 60,
+        notes: "",
+      },
+    }));
+
+    setExerciseFeedback((prev) => ({
+      ...prev,
+      [workoutId]: {
+        type: "success",
+        message: "Ejercicio agregado correctamente",
+      },
+    }));
+
+    await loadWorkoutExercises(workoutId);
+  } catch (err) {
+    const message =
+      err.message === "Este ejercicio ya fue agregado a la rutina"
+        ? "Ese ejercicio ya existe dentro de la rutina"
+        : err.message ===
+          "Ya existe un ejercicio con ese orden dentro de la rutina"
+        ? "Ese número de orden ya está ocupado"
+        : err.message || "No se pudo agregar el ejercicio";
+
+    setExerciseFeedback((prev) => ({
+      ...prev,
+      [workoutId]: {
+        type: "error",
+        message,
+      },
+    }));
+  } finally {
+    setAddingExercise((prev) => ({
+      ...prev,
+      [workoutId]: false,
+    }));
+  }
+}
 
   return (
     <TrainerShell title="Rutinas" active="workouts">
@@ -366,12 +416,31 @@ export default function WorkoutsPage() {
                     />
                   </div>
 
-                  <button
-                    style={styles.addButton}
-                    onClick={() => handleAddExercise(workout.id)}
-                  >
-                    Agregar ejercicio
-                  </button>
+                       <button
+                      style={{
+                        ...styles.addButton,
+                        opacity: addingExercise[workout.id] ? 0.7 : 1,
+                        cursor: addingExercise[workout.id] ? "not-allowed" : "pointer",
+                      }}
+                      disabled={addingExercise[workout.id]}
+                      onClick={() => handleAddExercise(workout.id)}
+                      >
+                      {addingExercise[workout.id]
+                        ? "Agregando ejercicio..."
+                        : "Agregar ejercicio"}
+                      </button>
+
+                    {exerciseFeedback[workout.id] ? (
+                      <p
+                        style={
+                          exerciseFeedback[workout.id].type === "error"
+                            ? styles.error
+                            : styles.success
+                        }
+                      >
+                        {exerciseFeedback[workout.id].message}
+                      </p>
+                    ) : null}
                 </div>
 
                 <hr style={styles.divider} />
