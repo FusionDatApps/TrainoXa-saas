@@ -23,6 +23,19 @@ async function getTrainerProfile(authUser) {
 async function createAssignment({ authUser, data }) {
   const trainer = await getTrainerProfile(authUser);
 
+  if (data.startDate && data.endDate) {
+    const start = new Date(data.startDate);
+    const end = new Date(data.endDate);
+
+    if (end < start) {
+      const error = new Error(
+        "La fecha final no puede ser menor a la fecha inicial"
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
   const client = await prisma.clientProfile.findFirst({
     where: {
       id: data.clientId,
@@ -143,7 +156,7 @@ async function deactivateAssignment({ authUser, assignmentId }) {
     },
     data: {
       isActive: false,
-      endDate: new Date(),
+      endDate: assignment.endDate || new Date(),
     },
     include: {
       client: true,

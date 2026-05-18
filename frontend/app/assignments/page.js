@@ -23,8 +23,18 @@ export default function AssignmentsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const activeAssignments = assignments.filter(
+  (assignment) => assignment.isActive
+  );
+
+  const inactiveAssignments = assignments.filter(
+    (assignment) => !assignment.isActive
+  );
+
   async function loadData() {
-    try {
+  setLoading(true);
+
+  try {
       const [clientsRes, workoutsRes, assignmentsRes] = await Promise.all([
         apiFetch("/clients"),
         apiFetch("/workouts"),
@@ -108,7 +118,17 @@ export default function AssignmentsPage() {
           <p style={styles.sectionText}>
             Selecciona un cliente y una rutina para crear una asignación real.
           </p>
+            {clients.length === 0 ? (
+              <p style={styles.error}>
+                Debes crear al menos un cliente antes de asignar rutinas.
+              </p>
+            ) : null}
 
+            {workouts.length === 0 ? (
+              <p style={styles.error}>
+                Debes crear al menos una rutina antes de crear asignaciones.
+              </p>
+            ) : null}
           <form onSubmit={handleSubmit} style={styles.form}>
             <div style={styles.field}>
               <label style={styles.label}>Cliente</label>
@@ -170,7 +190,15 @@ export default function AssignmentsPage() {
               />
             </div>
 
-            <button type="submit" style={styles.button} disabled={creating}>
+            <button
+                type="submit"
+                style={styles.button}
+                disabled={
+                  creating ||
+                  clients.length === 0 ||
+                  workouts.length === 0
+                }
+            >
               {creating ? "Asignando..." : "Asignar rutina"}
             </button>
 
@@ -179,10 +207,32 @@ export default function AssignmentsPage() {
           </form>
         </article>
 
-        <aside style={styles.summaryCard}>
+         <aside style={styles.summaryCard}>
           <p style={styles.summaryLabel}>Total asignaciones</p>
 
           <h3 style={styles.summaryValue}>{assignments.length}</h3>
+
+          <div style={styles.summaryStats}>
+            <div style={styles.statCard}>
+              <span style={styles.statNumber}>
+                {activeAssignments.length}
+              </span>
+
+              <span style={styles.statLabel}>
+                Activas
+              </span>
+            </div>
+
+            <div style={styles.statCard}>
+              <span style={styles.statNumber}>
+                {inactiveAssignments.length}
+              </span>
+
+              <span style={styles.statLabel}>
+                Inactivas
+              </span>
+            </div>
+          </div>
 
           <p style={styles.summaryText}>
             Cada asignación conecta un cliente con una rutina creada por el trainer.
@@ -386,6 +436,35 @@ const styles = {
     fontSize: "56px",
     fontWeight: "800",
   },
+
+      summaryStats: {
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: "12px",
+      marginBottom: "18px",
+    },
+
+    statCard: {
+      background: "rgba(15, 23, 42, 0.9)",
+      border: "1px solid rgba(148, 163, 184, 0.14)",
+      borderRadius: "14px",
+      padding: "14px",
+      display: "flex",
+      flexDirection: "column",
+      gap: "6px",
+    },
+
+    statNumber: {
+      fontSize: "28px",
+      fontWeight: "800",
+      color: "#f8fafc",
+    },
+
+    statLabel: {
+      fontSize: "13px",
+      color: "#94a3b8",
+      textTransform: "uppercase",
+    },
 
   summaryText: {
     margin: 0,
