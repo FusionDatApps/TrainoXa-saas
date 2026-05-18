@@ -23,6 +23,8 @@ export default function WorkoutsPage() {
 
   const [addingExercise, setAddingExercise] = useState({});
   const [exerciseFeedback, setExerciseFeedback] = useState({});
+  const [removingExercise, setRemovingExercise] = useState({});
+
 
   async function loadWorkoutExercises(workoutId) {
     try {
@@ -190,6 +192,51 @@ export default function WorkoutsPage() {
   }
 }
 
+async function handleRemoveExercise(workoutId, itemId) {
+  const confirmDelete = window.confirm(
+    "¿Eliminar este ejercicio de la rutina?"
+  );
+
+  if (!confirmDelete) {
+    return;
+  }
+
+  setRemovingExercise((prev) => ({
+    ...prev,
+    [itemId]: true,
+  }));
+
+  try {
+    await apiFetch(`/workouts/${workoutId}/exercises/${itemId}`, {
+      method: "DELETE",
+    });
+
+    setExerciseFeedback((prev) => ({
+      ...prev,
+      [workoutId]: {
+        type: "success",
+        message: "Ejercicio eliminado correctamente",
+      },
+    }));
+
+    await loadWorkoutExercises(workoutId);
+  } catch (err) {
+    setExerciseFeedback((prev) => ({
+      ...prev,
+      [workoutId]: {
+        type: "error",
+        message:
+          err.message ||
+          "No se pudo eliminar el ejercicio de la rutina",
+      },
+    }));
+  } finally {
+    setRemovingExercise((prev) => ({
+      ...prev,
+      [itemId]: false,
+    }));
+  }
+}
   return (
     <TrainerShell title="Rutinas" active="workouts">
       <section style={styles.grid}>
@@ -459,7 +506,23 @@ export default function WorkoutsPage() {
                         <p style={styles.exerciseItemName}>
                           #{item.exerciseOrder} - {item.exercise?.name}
                         </p>
-
+                          <button
+                              style={{
+                                ...styles.removeButton,
+                                opacity: removingExercise[item.id] ? 0.7 : 1,
+                                cursor: removingExercise[item.id]
+                                  ? "not-allowed"
+                                  : "pointer",
+                              }}
+                              disabled={removingExercise[item.id]}
+                              onClick={() =>
+                                handleRemoveExercise(workout.id, item.id)
+                              }
+                            >
+                              {removingExercise[item.id]
+                                ? "Eliminando..."
+                                : "Eliminar"}
+                            </button>
                         <p style={styles.exerciseMeta}>
                           {item.sets} sets · {item.reps} reps
                         </p>
@@ -701,6 +764,17 @@ const styles = {
     color: "#052e16",
     fontWeight: "800",
     cursor: "pointer",
+  },
+
+  removeButton: {
+  marginBottom: "10px",
+  padding: "8px 12px",
+  borderRadius: "8px",
+  border: "1px solid #7f1d1d",
+  background: "#450a0a",
+  color: "#fecaca",
+  fontWeight: "700",
+  fontSize: "13px",
   },
 
   exerciseList: {

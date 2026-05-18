@@ -4,6 +4,7 @@ const {
   getWorkoutById,
   addExerciseToWorkout,
   getWorkoutExercises,
+  removeWorkoutExercise,
 } = require("./workouts.service");
 
 const {
@@ -117,10 +118,32 @@ async function listExercises(req, res) {
   }
 }
 
+async function removeExercise(req, res) {
+  try {
+    const result = await removeWorkoutExercise({
+      authUser: req.user,
+      workoutId: req.params.id,
+      workoutExerciseId: req.params.itemId,
+    });
+
+    return res.json({
+      ok: true,
+      message: "Ejercicio eliminado de la rutina",
+      data: result,
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 400).json({
+      ok: false,
+      message: error.message || "Error al eliminar ejercicio de la rutina",
+    });
+  }
+}
+
 module.exports = {
   create,
   list,
   getById,
   addExercise,
   listExercises,
+  removeExercise,
 };

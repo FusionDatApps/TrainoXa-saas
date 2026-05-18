@@ -13,5 +13,6 @@ router.get("/:id", controller.getById);
 
 router.post("/:id/exercises", controller.addExercise);
 router.get("/:id/exercises", controller.listExercises);
+router.delete("/:id/exercises/:itemId", controller.removeExercise);
 
 module.exports = router;

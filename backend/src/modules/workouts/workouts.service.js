@@ -100,9 +100,6 @@ async function addExerciseToWorkout({ authUser, workoutId, data }) {
     },
   });
 
-  console.log("VALIDANDO DUPLICADO EJERCICIO");
-  console.log(existingExercise);
-
   if (existingExercise) {
     const error = new Error("Este ejercicio ya fue agregado a la rutina");
     error.statusCode = 409;
@@ -167,10 +164,55 @@ async function getWorkoutExercises({ authUser, workoutId }) {
   });
 }
 
+async function removeWorkoutExercise({
+  authUser,
+  workoutId,
+  workoutExerciseId,
+}) {
+  const trainerProfile = await getAuthenticatedTrainerProfile(authUser);
+
+  const workout = await prisma.workoutPlan.findFirst({
+    where: {
+      id: workoutId,
+      trainerId: trainerProfile.id,
+    },
+  });
+
+  if (!workout) {
+    const error = new Error("Rutina no encontrada");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const workoutExercise = await prisma.workoutPlanExercise.findFirst({
+    where: {
+      id: workoutExerciseId,
+      workoutPlanId: workoutId,
+    },
+  });
+
+  if (!workoutExercise) {
+    const error = new Error("Ejercicio de rutina no encontrado");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  await prisma.workoutPlanExercise.delete({
+    where: {
+      id: workoutExerciseId,
+    },
+  });
+
+  return {
+    success: true,
+  };
+}
+
 module.exports = {
   createWorkout,
   getWorkouts,
   getWorkoutById,
   addExerciseToWorkout,
   getWorkoutExercises,
+  removeWorkoutExercise,
 };
