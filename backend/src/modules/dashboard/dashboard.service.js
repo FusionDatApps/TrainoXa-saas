@@ -2,7 +2,7 @@ const { prisma } = require("../../config/prisma");
 
 async function getTrainerProfile(authUser) {
   if (!authUser || !authUser.id) {
-    throw new Error("Usuario invÃ¡lido");
+    throw new Error("Usuario inválido");
   }
 
   if (authUser.role !== "TRAINER") {
@@ -29,22 +29,31 @@ async function getSummary(authUser) {
     totalRutinas,
     totalAsignacionesActivas,
     totalProgreso,
+    totalCompletados,
+    volumenAgregado,
+    clientesConActividad,
+    ultimoProgreso,
+    ejerciciosMasUsados,
   ] = await Promise.all([
     prisma.clientProfile.count({
       where: { trainerId: trainer.id },
     }),
+
     prisma.exercise.count({
       where: { trainerId: trainer.id },
     }),
+
     prisma.workoutPlan.count({
       where: { trainerId: trainer.id },
     }),
+
     prisma.clientAssignment.count({
       where: {
         trainerId: trainer.id,
         isActive: true,
       },
     }),
+
     prisma.progressLog.count({
       where: {
         assignment: {
@@ -52,7 +61,96 @@ async function getSummary(authUser) {
         },
       },
     }),
+
+    prisma.progressLog.count({
+      where: {
+        completed: true,
+        assignment: {
+          trainerId: trainer.id,
+        },
+      },
+    }),
+
+    prisma.progressLog.aggregate({
+      where: {
+        assignment: {
+          trainerId: trainer.id,
+        },
+      },
+      _sum: {
+        weightUsedKg: true,
+      },
+    }),
+
+    prisma.clientAssignment.findMany({
+      where: {
+        trainerId: trainer.id,
+        progressLogs: {
+          some: {},
+        },
+      },
+      distinct: ["clientId"],
+      select: {
+        clientId: true,
+      },
+    }),
+
+    prisma.progressLog.findFirst({
+      where: {
+        assignment: {
+          trainerId: trainer.id,
+        },
+      },
+      orderBy: {
+        performedAt: "desc",
+      },
+      select: {
+        performedAt: true,
+      },
+    }),
+
+    prisma.progressLog.groupBy({
+      by: ["exerciseId"],
+      where: {
+        assignment: {
+          trainerId: trainer.id,
+        },
+      },
+      _count: {
+        exerciseId: true,
+      },
+      orderBy: {
+        _count: {
+          exerciseId: "desc",
+        },
+      },
+      take: 5,
+    }),
   ]);
+
+  const ejerciciosIds = ejerciciosMasUsados.map((item) => item.exerciseId);
+
+  const ejercicios = ejerciciosIds.length
+    ? await prisma.exercise.findMany({
+        where: {
+          id: {
+            in: ejerciciosIds,
+          },
+        },
+      })
+    : [];
+
+  const ejerciciosMasUsadosConNombre = ejerciciosMasUsados.map((item) => {
+    const exercise = ejercicios.find(
+      (current) => current.id === item.exerciseId
+    );
+
+    return {
+      exerciseId: item.exerciseId,
+      name: exercise?.name || "Ejercicio sin nombre",
+      total: item._count.exerciseId,
+    };
+  });
 
   return {
     totalClientes,
@@ -60,6 +158,11 @@ async function getSummary(authUser) {
     totalRutinas,
     totalAsignacionesActivas,
     totalProgreso,
+    totalCompletados,
+    volumenTotalKg: volumenAgregado._sum.weightUsedKg || 0,
+    clientesConActividad: clientesConActividad.length,
+    ultimoProgresoAt: ultimoProgreso?.performedAt || null,
+    ejerciciosMasUsados: ejerciciosMasUsadosConNombre,
   };
 }
 

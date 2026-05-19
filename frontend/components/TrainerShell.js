@@ -20,30 +20,120 @@ export default function TrainerShell({ title, active, children }) {
         </header>
 
         <nav style={styles.nav}>
-          <Link href="/dashboard" style={active === "dashboard" ? styles.navLinkActive : styles.navLink}>
-            Dashboard
-          </Link>
+  <Link
+    href="/dashboard"
+    style={active === "dashboard" ? styles.navLinkActive : styles.navLink}
+    onMouseEnter={(e) => {
+      if (active !== "dashboard") {
+        e.currentTarget.style.borderColor = "rgba(34, 197, 94, 0.35)";
+        e.currentTarget.style.transform = "translateY(-2px)";
+      }
+    }}
+    onMouseLeave={(e) => {
+      if (active !== "dashboard") {
+        e.currentTarget.style.borderColor = "rgba(148, 163, 184, 0.14)";
+        e.currentTarget.style.transform = "translateY(0)";
+      }
+    }}
+  >
+    Dashboard
+  </Link>
 
-          <Link href="/clients" style={active === "clients" ? styles.navLinkActive : styles.navLink}>
-            Clientes
-          </Link>
+  <Link
+    href="/clients"
+    style={active === "clients" ? styles.navLinkActive : styles.navLink}
+    onMouseEnter={(e) => {
+      if (active !== "clients") {
+        e.currentTarget.style.borderColor = "rgba(34, 197, 94, 0.35)";
+        e.currentTarget.style.transform = "translateY(-2px)";
+      }
+    }}
+    onMouseLeave={(e) => {
+      if (active !== "clients") {
+        e.currentTarget.style.borderColor = "rgba(148, 163, 184, 0.14)";
+        e.currentTarget.style.transform = "translateY(0)";
+      }
+    }}
+  >
+    Clientes
+  </Link>
 
-          <Link href="/exercises" style={active === "exercises" ? styles.navLinkActive : styles.navLink}>
-            Ejercicios
-          </Link>
+  <Link
+    href="/exercises"
+    style={active === "exercises" ? styles.navLinkActive : styles.navLink}
+    onMouseEnter={(e) => {
+      if (active !== "exercises") {
+        e.currentTarget.style.borderColor = "rgba(34, 197, 94, 0.35)";
+        e.currentTarget.style.transform = "translateY(-2px)";
+      }
+    }}
+    onMouseLeave={(e) => {
+      if (active !== "exercises") {
+        e.currentTarget.style.borderColor = "rgba(148, 163, 184, 0.14)";
+        e.currentTarget.style.transform = "translateY(0)";
+      }
+    }}
+  >
+    Ejercicios
+  </Link>
 
-          <Link href="/workouts" style={active === "workouts" ? styles.navLinkActive : styles.navLink}>
-            Rutinas
-          </Link>
+  <Link
+    href="/workouts"
+    style={active === "workouts" ? styles.navLinkActive : styles.navLink}
+    onMouseEnter={(e) => {
+      if (active !== "workouts") {
+        e.currentTarget.style.borderColor = "rgba(34, 197, 94, 0.35)";
+        e.currentTarget.style.transform = "translateY(-2px)";
+      }
+    }}
+    onMouseLeave={(e) => {
+      if (active !== "workouts") {
+        e.currentTarget.style.borderColor = "rgba(148, 163, 184, 0.14)";
+        e.currentTarget.style.transform = "translateY(0)";
+      }
+    }}
+  >
+    Rutinas
+  </Link>
 
-          <Link href="/assignments" style={active === "assignments" ? styles.navLinkActive : styles.navLink}>
-            Asignaciones
-          </Link>
-          <Link href="/progress" style={active === "progress" ? styles.navLinkActive : styles.navLink}>
-            Progreso
-          </Link>
-        </nav>
+  <Link
+    href="/assignments"
+    style={active === "assignments" ? styles.navLinkActive : styles.navLink}
+    onMouseEnter={(e) => {
+      if (active !== "assignments") {
+        e.currentTarget.style.borderColor = "rgba(34, 197, 94, 0.35)";
+        e.currentTarget.style.transform = "translateY(-2px)";
+      }
+    }}
+    onMouseLeave={(e) => {
+      if (active !== "assignments") {
+        e.currentTarget.style.borderColor = "rgba(148, 163, 184, 0.14)";
+        e.currentTarget.style.transform = "translateY(0)";
+      }
+    }}
+  >
+    Asignaciones
+  </Link>
 
+  <Link
+    href="/progress"
+    style={active === "progress" ? styles.navLinkActive : styles.navLink}
+    onMouseEnter={(e) => {
+      if (active !== "progress") {
+        e.currentTarget.style.borderColor = "rgba(34, 197, 94, 0.35)";
+        e.currentTarget.style.transform = "translateY(-2px)";
+      }
+    }}
+    onMouseLeave={(e) => {
+      if (active !== "progress") {
+        e.currentTarget.style.borderColor = "rgba(148, 163, 184, 0.14)";
+        e.currentTarget.style.transform = "translateY(0)";
+      }
+    }}
+  >
+    Progreso
+  </Link>
+</nav>
         {children}
       </main>
     </ProtectedRoute>
@@ -99,6 +189,7 @@ const styles = {
     borderRadius: "10px",
     background: "rgba(15, 23, 42, 0.75)",
     border: "1px solid rgba(148, 163, 184, 0.14)",
+    transition: "all 0.2s ease",
   },
   navLinkActive: {
     textDecoration: "none",
