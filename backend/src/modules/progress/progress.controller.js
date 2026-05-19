@@ -1,9 +1,19 @@
+const { ZodError } = require("zod");
+
 const {
   createProgress,
   getProgressByAssignment,
 } = require("./progress.service");
 
 const { createProgressSchema } = require("./progress.schemas");
+
+function getValidationMessage(error) {
+  if (error instanceof ZodError) {
+    return error.issues?.[0]?.message || "Datos inválidos";
+  }
+
+  return null;
+}
 
 async function create(req, res) {
   try {
@@ -20,9 +30,14 @@ async function create(req, res) {
       data,
     });
   } catch (error) {
+    const validationMessage = getValidationMessage(error);
+
     return res.status(error.statusCode || 400).json({
       ok: false,
-      message: error.message || "Error al registrar progreso",
+      message:
+        validationMessage ||
+        error.message ||
+        "Error al registrar progreso",
     });
   }
 }
@@ -42,7 +57,7 @@ async function listByAssignment(req, res) {
   } catch (error) {
     return res.status(error.statusCode || 400).json({
       ok: false,
-      message: error.message,
+      message: error.message || "Error al obtener progreso",
     });
   }
 }

@@ -2,7 +2,7 @@ const { prisma } = require("../../config/prisma");
 
 async function getTrainerProfile(authUser) {
   if (!authUser || !authUser.id) {
-    throw new Error("Usuario inválido");
+    throw new Error("Usuario inv�lido");
   }
 
   if (authUser.role !== "TRAINER") {
@@ -23,7 +23,6 @@ async function getTrainerProfile(authUser) {
 async function createProgress({ authUser, data }) {
   const trainer = await getTrainerProfile(authUser);
 
-  // 🔴 Validar asignación
   const assignment = await prisma.clientAssignment.findFirst({
     where: {
       id: data.assignmentId,
@@ -39,12 +38,19 @@ async function createProgress({ authUser, data }) {
   });
 
   if (!assignment) {
-    const error = new Error("Asignación no encontrada o no pertenece al trainer");
+    const error = new Error("Asignaci�n no encontrada o no pertenece al trainer");
     error.statusCode = 404;
     throw error;
   }
 
-  // 🔴 Validar ejercicio del trainer
+  if (!assignment.isActive) {
+    const error = new Error(
+      "No puedes registrar progreso sobre una asignaci�n inactiva"
+    );
+    error.statusCode = 409;
+    throw error;
+  }
+
   const exercise = await prisma.exercise.findFirst({
     where: {
       id: data.exerciseId,
@@ -58,7 +64,6 @@ async function createProgress({ authUser, data }) {
     throw error;
   }
 
-  // 🔴 Validar que el ejercicio esté dentro de la rutina asignada
   const existsInWorkout = assignment.workoutPlan.exercises.find(
     (item) => item.exerciseId === data.exerciseId
   );
@@ -73,6 +78,7 @@ async function createProgress({ authUser, data }) {
     data: {
       assignmentId: data.assignmentId,
       exerciseId: data.exerciseId,
+      performedAt: data.performedAt ? new Date(data.performedAt) : undefined,
       repsCompleted: data.repsCompleted,
       weightUsedKg: data.weightUsedKg,
       completed: data.completed ?? false,
@@ -92,7 +98,7 @@ async function getProgressByAssignment({ authUser, assignmentId }) {
   });
 
   if (!assignment) {
-    const error = new Error("Asignación no encontrada");
+    const error = new Error("Asignaci�n no encontrada");
     error.statusCode = 404;
     throw error;
   }

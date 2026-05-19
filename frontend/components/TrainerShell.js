@@ -39,6 +39,9 @@ export default function TrainerShell({ title, active, children }) {
           <Link href="/assignments" style={active === "assignments" ? styles.navLinkActive : styles.navLink}>
             Asignaciones
           </Link>
+          <Link href="/progress" style={active === "progress" ? styles.navLinkActive : styles.navLink}>
+            Progreso
+          </Link>
         </nav>
 
         {children}
