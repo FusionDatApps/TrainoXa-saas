@@ -12,6 +12,13 @@ import EmptyState from "../../components/ui/EmptyState";
 import ActionButton from "../../components/ui/ActionButton";
 import Badge from "../../components/ui/Badge";
 import DataTable from "../../components/ui/DataTable";
+import PageHeader from "../../components/ui/PageHeader";
+import FormField from "../../components/ui/FormField";
+import FeedbackMessage from "../../components/ui/FeedbackMessage";
+import StateRenderer from "../../components/ui/StateRenderer";
+
+import { extractApiError } from "../../lib/form-helpers";
+import { uiStyles } from "../../lib/ui-styles";
 
 export const dynamic = "force-dynamic";
 
@@ -250,64 +257,75 @@ async function handleRemoveExercise(workoutId, itemId) {
   <TrainerShell title="Rutinas" active="workouts">
     <PageContainer>
       <section style={styles.topGrid}>
-        <SectionCard style={styles.createCard}>
-          <h2 style={styles.sectionTitle}>Crear rutina</h2>
+  <SectionCard style={styles.createCard}>
+    <PageHeader
+      eyebrow="Workout builder"
+      title="Crear rutina"
+      description="Crea una rutina base y luego agrega ejercicios con orden, sets, reps y descanso."
+    />
 
-          <p style={styles.sectionText}>
-            Crea una rutina base para luego agregar ejercicios.
-          </p>
+    <form
+      onSubmit={handleSubmit}
+      style={uiStyles.stack}
+    >
+      <FormField
+        label="Nombre de la rutina"
+        placeholder="Ej: Push Pull Legs"
+        value={name}
+        onChange={(e) =>
+          setName(e.target.value)
+        }
+      />
 
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <div style={styles.field}>
-              <label style={styles.label}>Nombre de la rutina</label>
+      <FormField
+        label="Descripción"
+        placeholder="Opcional"
+        value={description}
+        onChange={(e) =>
+          setDescription(e.target.value)
+        }
+        textarea
+      />
 
-              <input
-                style={styles.input}
-                type="text"
-                placeholder="Ej: Push Pull Legs"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                minLength={3}
-              />
-            </div>
+      <ActionButton disabled={creating}>
+        {creating
+          ? "Creando..."
+          : "Crear rutina"}
+      </ActionButton>
 
-            <div style={styles.field}>
-              <label style={styles.label}>Descripción</label>
+      {error ? (
+        <FeedbackMessage variant="error">
+          {error}
+        </FeedbackMessage>
+      ) : null}
 
-              <textarea
-                style={styles.textarea}
-                placeholder="Opcional"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
+      {success ? (
+        <FeedbackMessage variant="success">
+          {success}
+        </FeedbackMessage>
+      ) : null}
+    </form>
+  </SectionCard>
 
-            <ActionButton disabled={creating}>
-              {creating ? "Creando..." : "Crear rutina"}
-            </ActionButton>
-
-            {error ? <p style={styles.error}>{error}</p> : null}
-
-            {success ? <p style={styles.success}>{success}</p> : null}
-          </form>
-        </SectionCard>
-
-        <StatCard
-          label="Rutinas totales"
-          value={workouts.length}
-          description="Rutinas registradas por el trainer"
-        />
-      </section>
+  <StatCard
+    label="Rutinas totales"
+    value={workouts.length}
+    description="Rutinas registradas por el trainer."
+  />
+</section>
 
       <section style={styles.listSection}>
         <h2 style={styles.sectionTitle}>Lista de rutinas</h2>
 
-        {loading ? (
-          <LoadingCard>Cargando rutinas...</LoadingCard>
-        ) : null}
-
-        {!loading && workouts.length === 0 ? (
+        <StateRenderer
+  loading={loading}
+  error={error}
+  isEmpty={
+    !loading && workouts.length === 0
+  }
+  loadingMessage="Cargando rutinas..."
+  emptyMessage="Todavía no tienes rutinas registradas."
+>
           <SectionCard>
             <h3 style={styles.emptyTitle}>
               Todavía no tienes rutinas
@@ -318,9 +336,9 @@ async function handleRemoveExercise(workoutId, itemId) {
               aparecerán aquí.
             </EmptyState>
           </SectionCard>
-        ) : null}
+        </StateRenderer>
 
-        {!loading && workouts.length > 0 ? (
+{!loading && workouts.length > 0 ? (
           <div style={styles.workoutGrid}>
             {workouts.map((workout) => (
               <SectionCard key={workout.id}>
