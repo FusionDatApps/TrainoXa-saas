@@ -1,7 +1,13 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import TrainerShell from "../../components/TrainerShell";
+
+import StatCard from "../../components/ui/StatCard";
+import SectionCard from "../../components/ui/SectionCard";
+import EmptyState from "../../components/ui/EmptyState";
+import LoadingCard from "../../components/ui/LoadingCard";
+
 import { apiFetch } from "../../lib/api";
 
 export const dynamic = "force-dynamic";
@@ -83,21 +89,18 @@ export default function DashboardPage() {
       value: summary?.clientesConActividad ?? 0,
       description: "Clientes con progreso registrado",
     },
-    
   ];
 
   return (
     <TrainerShell title="Dashboard" active="dashboard">
       {loading ? (
-        <section style={styles.infoCard}>
-          <p style={styles.infoText}>Cargando resumen del dashboard...</p>
-        </section>
+        <LoadingCard>Cargando resumen del dashboard...</LoadingCard>
       ) : null}
 
       {!loading && error ? (
-        <section style={styles.infoCard}>
-          <p style={styles.errorText}>{error}</p>
-        </section>
+        <LoadingCard>
+          <span style={styles.errorText}>{error}</span>
+        </LoadingCard>
       ) : null}
 
       {!loading && !error ? (
@@ -124,29 +127,17 @@ export default function DashboardPage() {
 
           <section style={styles.metricsGrid}>
             {metrics.map((item) => (
-              <article
+              <StatCard
                 key={item.label}
-                style={styles.metricCard}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-4px)";
-                  e.currentTarget.style.borderColor =
-                    "rgba(34, 197, 94, 0.35)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.borderColor =
-                    "rgba(148, 163, 184, 0.14)";
-                }}
-              >
-                <p style={styles.metricLabel}>{item.label}</p>
-                <h2 style={styles.metricValue}>{item.value}</h2>
-                <p style={styles.metricDescription}>{item.description}</p>
-              </article>
+                label={item.label}
+                value={item.value}
+                description={item.description}
+              />
             ))}
           </section>
 
           <section style={styles.analyticsGrid}>
-            <article style={styles.panelCard}>
+            <SectionCard>
               <div style={styles.panelHeader}>
                 <div>
                   <p style={styles.panelEyebrow}>Ranking</p>
@@ -171,13 +162,13 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <p style={styles.emptyText}>
+                <EmptyState>
                   Todavía no hay ejercicios con progreso registrado.
-                </p>
+                </EmptyState>
               )}
-            </article>
+            </SectionCard>
 
-            <article style={styles.panelCard}>
+            <SectionCard>
               <div style={styles.panelHeader}>
                 <div>
                   <p style={styles.panelEyebrow}>Actividad</p>
@@ -216,11 +207,11 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <p style={styles.emptyText}>
+                <EmptyState>
                   Todavía no hay actividad reciente registrada.
-                </p>
+                </EmptyState>
               )}
-            </article>
+            </SectionCard>
           </section>
         </>
       ) : null}
@@ -234,7 +225,8 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     gap: "24px",
-    background: "linear-gradient(135deg, rgba(34, 197, 94, 0.18), rgba(15, 23, 42, 0.92))",
+    background:
+      "linear-gradient(135deg, rgba(34, 197, 94, 0.18), rgba(15, 23, 42, 0.92))",
     border: "1px solid rgba(34, 197, 94, 0.24)",
     borderRadius: "22px",
     padding: "28px",
@@ -298,53 +290,10 @@ const styles = {
     marginBottom: "24px",
   },
 
-  metricCard: {
-  background: "rgba(15, 23, 42, 0.92)",
-  border: "1px solid rgba(148, 163, 184, 0.14)",
-  borderRadius: "18px",
-  padding: "24px",
-  boxShadow: "0 14px 30px rgba(0, 0, 0, 0.22)",
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "space-between",
-  minHeight: "150px",
-  transition: "all 0.2s ease",
-  },
-
-  metricLabel: {
-    margin: 0,
-    color: "#94a3b8",
-    fontSize: "14px",
-  },
-
-  metricValue: {
-    margin: "12px 0 8px 0",
-    fontSize: "36px",
-    fontWeight: "800",
-    color: "#f8fafc",
-  },
-
-  metricDescription: {
-    margin: 0,
-    color: "#cbd5e1",
-    fontSize: "14px",
-    lineHeight: 1.5,
-  },
-
   analyticsGrid: {
     display: "grid",
     gridTemplateColumns: "1fr 1.4fr",
     gap: "16px",
-  },
-
-  panelCard: {
-  background: "rgba(15, 23, 42, 0.92)",
-  border: "1px solid rgba(148, 163, 184, 0.14)",
-  borderRadius: "18px",
-  padding: "24px",
-  paddingBottom: "32px",
-  boxShadow: "0 14px 30px rgba(0, 0, 0, 0.22)",
-  minHeight: "320px",
   },
 
   panelHeader: {
@@ -459,26 +408,7 @@ const styles = {
     whiteSpace: "nowrap",
   },
 
-  emptyText: {
-    margin: 0,
-    color: "#94a3b8",
-    lineHeight: 1.5,
-  },
-
-  infoCard: {
-    background: "rgba(15, 23, 42, 0.92)",
-    border: "1px solid rgba(148, 163, 184, 0.14)",
-    borderRadius: "18px",
-    padding: "24px",
-  },
-
-  infoText: {
-    margin: 0,
-    color: "#cbd5e1",
-  },
-
   errorText: {
-    margin: 0,
     color: "#f87171",
   },
 };
