@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+
 import TrainerShell from "../../components/TrainerShell";
 
 import { apiFetch } from "../../lib/api";
+import { extractApiError } from "../../lib/form-helpers";
+import { uiStyles } from "../../lib/ui-styles";
 
+import PageContainer from "../../components/ui/PageContainer";
 import SectionCard from "../../components/ui/SectionCard";
 import LoadingCard from "../../components/ui/LoadingCard";
 import EmptyState from "../../components/ui/EmptyState";
@@ -12,38 +16,73 @@ import StatCard from "../../components/ui/StatCard";
 import Badge from "../../components/ui/Badge";
 import ActionButton from "../../components/ui/ActionButton";
 import DataTable from "../../components/ui/DataTable";
+import PageHeader from "../../components/ui/PageHeader";
+import FormField from "../../components/ui/FormField";
+import FeedbackMessage from "../../components/ui/FeedbackMessage";
+import StateRenderer from "../../components/ui/StateRenderer";
 
 export const dynamic = "force-dynamic";
 
 export default function ProgressPage() {
-  const [assignments, setAssignments] = useState([]);
-  const [workoutExercises, setWorkoutExercises] = useState([]);
-  const [progressLogs, setProgressLogs] = useState([]);
+  const [assignments, setAssignments] =
+    useState([]);
 
-  const [assignmentId, setAssignmentId] = useState("");
-  const [exerciseId, setExerciseId] = useState("");
-  const [performedAt, setPerformedAt] = useState("");
-  const [repsCompleted, setRepsCompleted] = useState("");
-  const [weightUsedKg, setWeightUsedKg] = useState("");
-  const [completed, setCompleted] = useState(true);
+  const [workoutExercises, setWorkoutExercises] =
+    useState([]);
+
+  const [progressLogs, setProgressLogs] =
+    useState([]);
+
+  const [assignmentId, setAssignmentId] =
+    useState("");
+
+  const [exerciseId, setExerciseId] =
+    useState("");
+
+  const [performedAt, setPerformedAt] =
+    useState("");
+
+  const [repsCompleted, setRepsCompleted] =
+    useState("");
+
+  const [weightUsedKg, setWeightUsedKg] =
+    useState("");
+
+  const [completed, setCompleted] =
+    useState(true);
+
   const [notes, setNotes] = useState("");
 
-  const [loading, setLoading] = useState(true);
-  const [loadingExercises, setLoadingExercises] = useState(false);
-  const [loadingProgress, setLoadingProgress] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const [loading, setLoading] =
+    useState(true);
+
+  const [loadingExercises, setLoadingExercises] =
+    useState(false);
+
+  const [loadingProgress, setLoadingProgress] =
+    useState(false);
+
+  const [creating, setCreating] =
+    useState(false);
 
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [success, setSuccess] =
+    useState("");
 
   const activeAssignments = useMemo(
-    () => assignments.filter((assignment) => assignment.isActive),
+    () =>
+      assignments.filter(
+        (assignment) => assignment.isActive
+      ),
     [assignments]
   );
 
   const selectedAssignment = useMemo(
     () =>
-      assignments.find((assignment) => assignment.id === assignmentId) || null,
+      assignments.find(
+        (assignment) =>
+          assignment.id === assignmentId
+      ) || null,
     [assignments, assignmentId]
   );
 
@@ -52,25 +91,31 @@ export default function ProgressPage() {
     setError("");
 
     try {
-      const response = await apiFetch("/assignments");
+      const response = await apiFetch(
+        "/assignments"
+      );
 
       const data = response.data || [];
 
       setAssignments(data);
 
-      const firstActive = data.find((assignment) => assignment.isActive);
+      const firstActive = data.find(
+        (assignment) => assignment.isActive
+      );
 
       if (firstActive) {
         setAssignmentId(firstActive.id);
       }
     } catch (err) {
-      setError(err.message || "No se pudieron cargar las asignaciones");
+      setError(extractApiError(err));
     } finally {
       setLoading(false);
     }
   }
 
-  async function loadWorkoutExercises(workoutPlanId) {
+  async function loadWorkoutExercises(
+    workoutPlanId
+  ) {
     if (!workoutPlanId) {
       setWorkoutExercises([]);
       return;
@@ -80,7 +125,9 @@ export default function ProgressPage() {
     setError("");
 
     try {
-      const response = await apiFetch(`/workouts/${workoutPlanId}/exercises`);
+      const response = await apiFetch(
+        `/workouts/${workoutPlanId}/exercises`
+      );
 
       const data = response.data || [];
 
@@ -94,13 +141,16 @@ export default function ProgressPage() {
     } catch (err) {
       setWorkoutExercises([]);
       setExerciseId("");
-      setError(err.message || "No se pudieron cargar los ejercicios");
+
+      setError(extractApiError(err));
     } finally {
       setLoadingExercises(false);
     }
   }
 
-  async function loadProgress(selectedAssignmentId) {
+  async function loadProgress(
+    selectedAssignmentId
+  ) {
     if (!selectedAssignmentId) {
       setProgressLogs([]);
       return;
@@ -117,7 +167,8 @@ export default function ProgressPage() {
       setProgressLogs(response.data || []);
     } catch (err) {
       setProgressLogs([]);
-      setError(err.message || "No se pudo cargar el progreso");
+
+      setError(extractApiError(err));
     } finally {
       setLoadingProgress(false);
     }
@@ -135,7 +186,9 @@ export default function ProgressPage() {
       return;
     }
 
-    loadWorkoutExercises(selectedAssignment.workoutPlanId);
+    loadWorkoutExercises(
+      selectedAssignment.workoutPlanId
+    );
 
     loadProgress(selectedAssignment.id);
   }, [selectedAssignment]);
@@ -144,21 +197,33 @@ export default function ProgressPage() {
     e.preventDefault();
 
     setCreating(true);
+
     setError("");
     setSuccess("");
 
     try {
       await apiFetch("/progress", {
         method: "POST",
+
         body: JSON.stringify({
           assignmentId,
           exerciseId,
+
           performedAt: performedAt
-            ? new Date(performedAt).toISOString()
+            ? new Date(
+                performedAt
+              ).toISOString()
             : undefined,
-          repsCompleted: repsCompleted || undefined,
-          weightUsedKg: weightUsedKg ? Number(weightUsedKg) : undefined,
+
+          repsCompleted:
+            repsCompleted || undefined,
+
+          weightUsedKg: weightUsedKg
+            ? Number(weightUsedKg)
+            : undefined,
+
           completed,
+
           notes: notes || undefined,
         }),
       });
@@ -169,11 +234,13 @@ export default function ProgressPage() {
       setCompleted(true);
       setNotes("");
 
-      setSuccess("Progreso registrado correctamente");
+      setSuccess(
+        "Progreso registrado correctamente"
+      );
 
       await loadProgress(assignmentId);
     } catch (err) {
-      setError(err.message || "No se pudo registrar el progreso");
+      setError(extractApiError(err));
     } finally {
       setCreating(false);
     }
@@ -182,308 +249,414 @@ export default function ProgressPage() {
   const columns = [
     {
       key: "exercise",
+
       label: "Ejercicio",
-      render: (row) => row.exercise?.name || "Sin nombre",
+
+      render: (row) => (
+        <span style={styles.exerciseName}>
+          {row.exercise?.name ||
+            "Sin nombre"}
+        </span>
+      ),
     },
 
     {
       key: "repsCompleted",
+
       label: "Reps",
-      render: (row) => row.repsCompleted || "N/A",
+
+      render: (row) =>
+        row.repsCompleted || "N/A",
     },
 
     {
       key: "weightUsedKg",
+
       label: "Peso",
+
       render: (row) =>
-        row.weightUsedKg ? `${row.weightUsedKg} kg` : "N/A",
+        row.weightUsedKg
+          ? `${row.weightUsedKg} kg`
+          : "N/A",
     },
 
     {
       key: "completed",
+
       label: "Estado",
+
       render: (row) =>
         row.completed ? (
-          <Badge variant="success">Completado</Badge>
+          <Badge variant="success">
+            Completado
+          </Badge>
         ) : (
-          <Badge variant="warning">Pendiente</Badge>
+          <Badge variant="warning">
+            Pendiente
+          </Badge>
         ),
     },
 
     {
       key: "performedAt",
+
       label: "Fecha",
+
       render: (row) =>
         row.performedAt
-          ? new Date(row.performedAt).toLocaleString()
+          ? new Date(
+              row.performedAt
+            ).toLocaleString()
           : "N/A",
     },
   ];
 
   return (
-    <TrainerShell title="Progreso" active="progress">
-      <section style={styles.grid}>
-        <SectionCard style={styles.formWrapper}>
-          <h2 style={styles.sectionTitle}>Registrar progreso</h2>
-
-          <p style={styles.sectionText}>
-            Registra la ejecución real del entrenamiento del cliente.
-          </p>
-
-          {activeAssignments.length === 0 ? (
-            <EmptyState>
-              No tienes asignaciones activas para registrar progreso.
-            </EmptyState>
-          ) : null}
-
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <div style={styles.field}>
-              <label style={styles.label}>Asignación activa</label>
-
-              <select
-                style={styles.input}
-                value={assignmentId}
-                onChange={(e) => setAssignmentId(e.target.value)}
-                required
-              >
-                <option value="">Selecciona asignación</option>
-
-                {activeAssignments.map((assignment) => (
-                  <option key={assignment.id} value={assignment.id}>
-                    {(assignment.client?.fullName || "Cliente sin nombre") +
-                      " - " +
-                      (assignment.workoutPlan?.name || "Rutina sin nombre")}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={styles.field}>
-              <label style={styles.label}>Ejercicio</label>
-
-              <select
-                style={styles.input}
-                value={exerciseId}
-                onChange={(e) => setExerciseId(e.target.value)}
-                required
-                disabled={loadingExercises || workoutExercises.length === 0}
-              >
-                <option value="">
-                  {loadingExercises
-                    ? "Cargando ejercicios..."
-                    : "Selecciona ejercicio"}
-                </option>
-
-                {workoutExercises.map((item) => (
-                  <option key={item.id} value={item.exerciseId}>
-                    {item.exercise?.name || "Ejercicio sin nombre"}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={styles.field}>
-              <label style={styles.label}>Fecha y hora</label>
-
-              <input
-                style={styles.input}
-                type="datetime-local"
-                value={performedAt}
-                onChange={(e) => setPerformedAt(e.target.value)}
+    <TrainerShell
+      title="Progreso"
+      active="progress"
+    >
+      <PageContainer>
+        <div style={uiStyles.page}>
+          <section style={styles.topGrid}>
+            <SectionCard style={styles.formCard}>
+              <PageHeader
+                eyebrow="Tracking fitness"
+                title="Registrar progreso"
+                description="Registra la ejecución real de los ejercicios realizados por el cliente."
               />
-            </div>
 
-            <div style={styles.twoColumns}>
-              <div style={styles.field}>
-                <label style={styles.label}>Repeticiones</label>
+              {activeAssignments.length ===
+              0 ? (
+                <EmptyState>
+                  No tienes asignaciones
+                  activas para registrar
+                  progreso.
+                </EmptyState>
+              ) : null}
 
-                <input
-                  style={styles.input}
-                  value={repsCompleted}
-                  onChange={(e) => setRepsCompleted(e.target.value)}
-                  placeholder="Ej: 10, 8-10"
+              <form
+                onSubmit={handleSubmit}
+                style={uiStyles.stack}
+              >
+                <div style={uiStyles.stack}>
+                  <label style={styles.label}>
+                    Asignación activa
+                  </label>
+
+                  <select
+                    style={styles.select}
+                    value={assignmentId}
+                    onChange={(e) =>
+                      setAssignmentId(
+                        e.target.value
+                      )
+                    }
+                    required
+                  >
+                    <option value="">
+                      Selecciona asignación
+                    </option>
+
+                    {activeAssignments.map(
+                      (assignment) => (
+                        <option
+                          key={assignment.id}
+                          value={assignment.id}
+                        >
+                          {(assignment.client
+                            ?.fullName ||
+                            "Cliente sin nombre") +
+                            " - " +
+                            (assignment
+                              .workoutPlan
+                              ?.name ||
+                              "Rutina sin nombre")}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
+
+                <div style={uiStyles.stack}>
+                  <label style={styles.label}>
+                    Ejercicio
+                  </label>
+
+                  <select
+                    style={styles.select}
+                    value={exerciseId}
+                    onChange={(e) =>
+                      setExerciseId(
+                        e.target.value
+                      )
+                    }
+                    required
+                    disabled={
+                      loadingExercises ||
+                      workoutExercises.length ===
+                        0
+                    }
+                  >
+                    <option value="">
+                      {loadingExercises
+                        ? "Cargando ejercicios..."
+                        : "Selecciona ejercicio"}
+                    </option>
+
+                    {workoutExercises.map(
+                      (item) => (
+                        <option
+                          key={item.id}
+                          value={
+                            item.exerciseId
+                          }
+                        >
+                          {item.exercise
+                            ?.name ||
+                            "Ejercicio sin nombre"}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
+
+                <FormField
+                  label="Fecha y hora"
+                  type="datetime-local"
+                  value={performedAt}
+                  onChange={(e) =>
+                    setPerformedAt(
+                      e.target.value
+                    )
+                  }
                 />
+
+                <div style={styles.twoColumns}>
+                  <FormField
+                    label="Repeticiones"
+                    placeholder="Ej: 10, 8-10"
+                    value={repsCompleted}
+                    onChange={(e) =>
+                      setRepsCompleted(
+                        e.target.value
+                      )
+                    }
+                  />
+
+                  <FormField
+                    label="Peso usado kg"
+                    type="number"
+                    placeholder="Ej: 80"
+                    value={weightUsedKg}
+                    onChange={(e) =>
+                      setWeightUsedKg(
+                        e.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <label
+                  style={styles.checkboxRow}
+                >
+                  <input
+                    type="checkbox"
+                    checked={completed}
+                    onChange={(e) =>
+                      setCompleted(
+                        e.target.checked
+                      )
+                    }
+                  />
+
+                  Ejercicio completado
+                </label>
+
+                <FormField
+                  label="Notas"
+                  placeholder="Observaciones del entrenamiento"
+                  value={notes}
+                  onChange={(e) =>
+                    setNotes(e.target.value)
+                  }
+                  textarea
+                />
+
+                <div style={styles.actions}>
+                  <ActionButton
+                    disabled={
+                      creating ||
+                      activeAssignments.length ===
+                        0 ||
+                      workoutExercises.length ===
+                        0
+                    }
+                  >
+                    {creating
+                      ? "Registrando..."
+                      : "Registrar progreso"}
+                  </ActionButton>
+                </div>
+
+                {error ? (
+                  <FeedbackMessage variant="error">
+                    {error}
+                  </FeedbackMessage>
+                ) : null}
+
+                {success ? (
+                  <FeedbackMessage variant="success">
+                    {success}
+                  </FeedbackMessage>
+                ) : null}
+              </form>
+            </SectionCard>
+
+            <StatCard
+              label="Asignaciones activas"
+              value={activeAssignments.length}
+              description="El progreso solo puede registrarse sobre asignaciones activas."
+            />
+          </section>
+
+          <SectionCard
+            style={styles.tableSection}
+          >
+            <div style={uiStyles.sectionHeader}>
+              <div>
+                <p style={styles.eyebrow}>
+                  Historial fitness
+                </p>
+
+                <h2
+                  style={
+                    uiStyles.sectionTitle
+                  }
+                >
+                  Historial de progreso
+                </h2>
               </div>
 
-              <div style={styles.field}>
-                <label style={styles.label}>Peso usado kg</label>
-
-                <input
-                  style={styles.input}
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  value={weightUsedKg}
-                  onChange={(e) => setWeightUsedKg(e.target.value)}
-                  placeholder="Ej: 80"
-                />
-              </div>
+              <Badge variant="default">
+                {progressLogs.length} registros
+              </Badge>
             </div>
 
-            <label style={styles.checkboxRow}>
-              <input
-                type="checkbox"
-                checked={completed}
-                onChange={(e) => setCompleted(e.target.checked)}
-              />
-
-              Ejercicio completado
-            </label>
-
-            <div style={styles.field}>
-              <label style={styles.label}>Notas</label>
-
-              <textarea
-                style={styles.textarea}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Observaciones del entrenamiento"
-              />
-            </div>
-
-            <ActionButton
-              disabled={
-                creating ||
-                activeAssignments.length === 0 ||
-                workoutExercises.length === 0
+            <StateRenderer
+              loading={
+                loading || loadingProgress
               }
+              error={error}
+              isEmpty={
+                !loading &&
+                !loadingProgress &&
+                progressLogs.length === 0
+              }
+              loadingMessage="Cargando progreso..."
+              emptyMessage="Todavía no hay progreso registrado para esta asignación."
             >
-              {creating ? "Registrando..." : "Registrar progreso"}
-            </ActionButton>
-
-            {error ? <p style={styles.error}>{error}</p> : null}
-            {success ? <p style={styles.success}>{success}</p> : null}
-          </form>
-        </SectionCard>
-
-        <StatCard
-          label="Asignaciones activas"
-          value={activeAssignments.length}
-          description="El progreso solo puede registrarse sobre asignaciones activas."
-        />
-      </section>
-
-      <section style={styles.tableSection}>
-        <h2 style={styles.sectionTitle}>Historial de progreso</h2>
-
-        {loading || loadingProgress ? (
-          <LoadingCard>Cargando progreso...</LoadingCard>
-        ) : null}
-
-        {!loading &&
-        !loadingProgress &&
-        progressLogs.length === 0 ? (
-          <SectionCard>
-            <EmptyState>
-              Todavía no hay progreso registrado para esta asignación.
-            </EmptyState>
+              <DataTable
+                columns={columns}
+                data={progressLogs}
+                emptyMessage="No hay registros de progreso"
+              />
+            </StateRenderer>
           </SectionCard>
-        ) : null}
-
-        {!loading &&
-        !loadingProgress &&
-        progressLogs.length > 0 ? (
-          <DataTable
-            columns={columns}
-            data={progressLogs}
-            emptyMessage="No hay registros de progreso"
-          />
-        ) : null}
-      </section>
+        </div>
+      </PageContainer>
     </TrainerShell>
   );
 }
 
 const styles = {
-  grid: {
+  topGrid: {
     display: "grid",
-    gridTemplateColumns: "2fr 1fr",
-    gap: "16px",
-    marginBottom: "32px",
+
+    gridTemplateColumns:
+      "2fr minmax(260px, 320px)",
+
+    gap: "18px",
   },
 
-  formWrapper: {
+  formCard: {
     minHeight: "unset",
   },
 
-  sectionTitle: {
+  tableSection: {
+    minHeight: "auto",
+  },
+
+  eyebrow: {
     margin: "0 0 10px 0",
-    fontSize: "24px",
-    fontWeight: "800",
-  },
 
-  sectionText: {
-    margin: "0 0 18px 0",
-    color: "#94a3b8",
-    lineHeight: 1.5,
-  },
+    color: "#4ade80",
 
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "16px",
-  },
+    fontSize: "12px",
 
-  field: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
+    fontWeight: "900",
+
+    textTransform: "uppercase",
+
+    letterSpacing: "0.08em",
   },
 
   label: {
+    color: "#e2e8f0",
+
     fontSize: "14px",
+
     fontWeight: "700",
   },
 
-  input: {
+  select: {
     padding: "14px 16px",
-    borderRadius: "12px",
-    border: "1px solid #334155",
-    background: "#0f172a",
-    color: "#f8fafc",
-    fontSize: "15px",
-    outline: "none",
-  },
 
-  textarea: {
-    minHeight: "92px",
-    padding: "14px 16px",
     borderRadius: "12px",
+
     border: "1px solid #334155",
+
     background: "#0f172a",
+
     color: "#f8fafc",
+
     fontSize: "15px",
+
     outline: "none",
-    resize: "vertical",
   },
 
   twoColumns: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+
+    gridTemplateColumns:
+      "1fr 1fr",
+
     gap: "14px",
   },
 
   checkboxRow: {
     display: "flex",
+
     alignItems: "center",
+
     gap: "10px",
+
     color: "#cbd5e1",
+
     fontWeight: "700",
   },
 
-  tableSection: {
-    marginTop: "16px",
+  actions: {
+    display: "flex",
+
+    justifyContent: "flex-start",
+
+    marginTop: "8px",
   },
 
-  error: {
-    margin: 0,
-    color: "#f87171",
-    fontSize: "14px",
-  },
+  exerciseName: {
+    fontWeight: "800",
 
-  success: {
-    margin: 0,
-    color: "#4ade80",
-    fontSize: "14px",
+    color: "#f8fafc",
   },
 };
