@@ -4,6 +4,15 @@ import { useEffect, useState } from "react";
 import TrainerShell from "../../components/TrainerShell";
 import { apiFetch } from "../../lib/api";
 
+import PageContainer from "../../components/ui/PageContainer";
+import SectionCard from "../../components/ui/SectionCard";
+import StatCard from "../../components/ui/StatCard";
+import LoadingCard from "../../components/ui/LoadingCard";
+import EmptyState from "../../components/ui/EmptyState";
+import ActionButton from "../../components/ui/ActionButton";
+import Badge from "../../components/ui/Badge";
+import DataTable from "../../components/ui/DataTable";
+
 export const dynamic = "force-dynamic";
 
 export default function WorkoutsPage() {
@@ -238,9 +247,10 @@ async function handleRemoveExercise(workoutId, itemId) {
   }
 }
   return (
-    <TrainerShell title="Rutinas" active="workouts">
-      <section style={styles.grid}>
-        <article style={styles.formCard}>
+  <TrainerShell title="Rutinas" active="workouts">
+    <PageContainer>
+      <section style={styles.topGrid}>
+        <SectionCard style={styles.createCard}>
           <h2 style={styles.sectionTitle}>Crear rutina</h2>
 
           <p style={styles.sectionText}>
@@ -273,77 +283,105 @@ async function handleRemoveExercise(workoutId, itemId) {
               />
             </div>
 
-            <button type="submit" style={styles.button} disabled={creating}>
+            <ActionButton disabled={creating}>
               {creating ? "Creando..." : "Crear rutina"}
-            </button>
+            </ActionButton>
 
             {error ? <p style={styles.error}>{error}</p> : null}
+
             {success ? <p style={styles.success}>{success}</p> : null}
           </form>
-        </article>
+        </SectionCard>
 
-        <aside style={styles.summaryCard}>
-          <p style={styles.summaryLabel}>Total de rutinas</p>
-          <h3 style={styles.summaryValue}>{workouts.length}</h3>
-          <p style={styles.summaryText}>
-            Estas rutinas pertenecen al trainer autenticado.
-          </p>
-        </aside>
+        <StatCard
+          label="Rutinas totales"
+          value={workouts.length}
+          description="Rutinas registradas por el trainer"
+        />
       </section>
 
       <section style={styles.listSection}>
         <h2 style={styles.sectionTitle}>Lista de rutinas</h2>
 
         {loading ? (
-          <div style={styles.emptyCard}>
-            <p style={styles.sectionText}>Cargando rutinas...</p>
-          </div>
+          <LoadingCard>Cargando rutinas...</LoadingCard>
         ) : null}
 
         {!loading && workouts.length === 0 ? (
-          <div style={styles.emptyCard}>
-            <h3 style={styles.emptyTitle}>Todavía no tienes rutinas</h3>
+          <SectionCard>
+            <h3 style={styles.emptyTitle}>
+              Todavía no tienes rutinas
+            </h3>
 
-            <p style={styles.sectionText}>
-              Cuando crees rutinas en el sistema, aparecerán aquí.
-            </p>
-          </div>
+            <EmptyState>
+              Cuando crees rutinas en el sistema,
+              aparecerán aquí.
+            </EmptyState>
+          </SectionCard>
         ) : null}
 
         {!loading && workouts.length > 0 ? (
           <div style={styles.workoutGrid}>
             {workouts.map((workout) => (
-              <article key={workout.id} style={styles.workoutCard}>
-                <p style={styles.workoutTag}>Rutina</p>
+              <SectionCard key={workout.id}>
+                <div style={styles.headerRow}>
+                  <div>
+                    <p style={styles.workoutTag}>Rutina</p>
 
-                <h3 style={styles.workoutName}>
-                  {workout.name || "Sin nombre"}
-                </h3>
+                    <h3 style={styles.workoutName}>
+                      {workout.name || "Sin nombre"}
+                    </h3>
+                  </div>
 
-                <p style={styles.workoutInfo}>
-                  <strong>ID:</strong> {workout.id}
-                </p>
+                  <Badge
+                    variant={
+                      workout.isActive
+                        ? "success"
+                        : "warning"
+                    }
+                  >
+                    {workout.isActive
+                      ? "Activa"
+                      : "Inactiva"}
+                  </Badge>
+                </div>
 
-                <p style={styles.workoutInfo}>
-                  <strong>Descripción:</strong> {workout.description || "N/A"}
-                </p>
+                <div style={styles.infoGrid}>
+                  <div>
+                    <p style={styles.infoLabel}>Descripción</p>
 
-                <p style={styles.workoutInfo}>
-                  <strong>Estado:</strong>{" "}
-                  {workout.isActive ? "Activa" : "Inactiva"}
-                </p>
+                    <p style={styles.infoValue}>
+                      {workout.description || "N/A"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p style={styles.infoLabel}>ID</p>
+
+                    <p style={styles.infoValue}>
+                      {workout.id}
+                    </p>
+                  </div>
+                </div>
 
                 <hr style={styles.divider} />
 
-                <h4 style={styles.subTitle}>Agregar ejercicio</h4>
+                <h4 style={styles.subTitle}>
+                  Agregar ejercicio
+                </h4>
 
                 <div style={styles.exerciseForm}>
                   <div style={styles.field}>
-                    <label style={styles.label}>Ejercicio</label>
+                    <label style={styles.label}>
+                      Ejercicio
+                    </label>
 
                     <select
                       style={styles.select}
-                      value={selectedExercises[workout.id]?.exerciseId || ""}
+                      value={
+                        selectedExercises[workout.id]
+                          ?.exerciseId || ""
+                      }
                       onChange={(e) =>
                         setSelectedExercises((prev) => ({
                           ...prev,
@@ -354,103 +392,132 @@ async function handleRemoveExercise(workoutId, itemId) {
                         }))
                       }
                     >
-                      <option value="">Selecciona ejercicio</option>
+                      <option value="">
+                        Selecciona ejercicio
+                      </option>
 
                       {exercises.map((exercise) => (
-                        <option key={exercise.id} value={exercise.id}>
+                        <option
+                          key={exercise.id}
+                          value={exercise.id}
+                        >
                           {exercise.name}
                         </option>
                       ))}
                     </select>
                   </div>
 
-                  <div style={styles.field}>
-                    <label style={styles.label}>Orden del ejercicio</label>
+                  <div style={styles.inlineGrid}>
+                    <div style={styles.field}>
+                      <label style={styles.label}>
+                        Orden
+                      </label>
 
-                    <input
-                      style={styles.smallInput}
-                      type="number"
-                      placeholder="Ej: 1"
-                      value={selectedExercises[workout.id]?.exerciseOrder || 1}
-                      onChange={(e) =>
-                        setSelectedExercises((prev) => ({
-                          ...prev,
-                          [workout.id]: {
-                            ...prev[workout.id],
-                            exerciseOrder: e.target.value,
-                          },
-                        }))
-                      }
-                    />
+                      <input
+                        style={styles.smallInput}
+                        type="number"
+                        value={
+                          selectedExercises[workout.id]
+                            ?.exerciseOrder || 1
+                        }
+                        onChange={(e) =>
+                          setSelectedExercises((prev) => ({
+                            ...prev,
+                            [workout.id]: {
+                              ...prev[workout.id],
+                              exerciseOrder: e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div style={styles.field}>
+                      <label style={styles.label}>
+                        Sets
+                      </label>
+
+                      <input
+                        style={styles.smallInput}
+                        type="number"
+                        value={
+                          selectedExercises[workout.id]
+                            ?.sets || 4
+                        }
+                        onChange={(e) =>
+                          setSelectedExercises((prev) => ({
+                            ...prev,
+                            [workout.id]: {
+                              ...prev[workout.id],
+                              sets: e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div style={styles.field}>
+                      <label style={styles.label}>
+                        Reps
+                      </label>
+
+                      <input
+                        style={styles.smallInput}
+                        type="text"
+                        value={
+                          selectedExercises[workout.id]
+                            ?.reps || "12"
+                        }
+                        onChange={(e) =>
+                          setSelectedExercises((prev) => ({
+                            ...prev,
+                            [workout.id]: {
+                              ...prev[workout.id],
+                              reps: e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div style={styles.field}>
+                      <label style={styles.label}>
+                        Descanso
+                      </label>
+
+                      <input
+                        style={styles.smallInput}
+                        type="number"
+                        value={
+                          selectedExercises[workout.id]
+                            ?.restSeconds || 60
+                        }
+                        onChange={(e) =>
+                          setSelectedExercises((prev) => ({
+                            ...prev,
+                            [workout.id]: {
+                              ...prev[workout.id],
+                              restSeconds:
+                                e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                    </div>
                   </div>
 
                   <div style={styles.field}>
-                    <label style={styles.label}>Número de sets</label>
-
-                    <input
-                      style={styles.smallInput}
-                      type="number"
-                      placeholder="Ej: 4"
-                      value={selectedExercises[workout.id]?.sets || 4}
-                      onChange={(e) =>
-                        setSelectedExercises((prev) => ({
-                          ...prev,
-                          [workout.id]: {
-                            ...prev[workout.id],
-                            sets: e.target.value,
-                          },
-                        }))
-                      }
-                    />
-                  </div>
-
-                  <div style={styles.field}>
-                    <label style={styles.label}>Repeticiones</label>
-
-                    <input
-                      style={styles.smallInput}
-                      type="text"
-                      placeholder="Ej: 10-12"
-                      value={selectedExercises[workout.id]?.reps || "12"}
-                      onChange={(e) =>
-                        setSelectedExercises((prev) => ({
-                          ...prev,
-                          [workout.id]: {
-                            ...prev[workout.id],
-                            reps: e.target.value,
-                          },
-                        }))
-                      }
-                    />
-                  </div>
-
-                  <div style={styles.field}>
-                    <label style={styles.label}>Descanso en segundos</label>
-
-                    <input
-                      style={styles.smallInput}
-                      type="number"
-                      placeholder="Ej: 60"
-                      value={selectedExercises[workout.id]?.restSeconds || 60}
-                      onChange={(e) =>
-                        setSelectedExercises((prev) => ({
-                          ...prev,
-                          [workout.id]: {
-                            ...prev[workout.id],
-                            restSeconds: e.target.value,
-                          },
-                        }))
-                      }
-                    />
-                  </div>
-
-                  <div style={styles.field}>
-                    <label style={styles.label}>Notas del ejercicio</label>
+                    <label style={styles.label}>
+                      Notas
+                    </label>
 
                     <textarea
                       style={styles.notesInput}
                       placeholder="Indicaciones opcionales"
-                      value={selectedExercises[workout.id]?.notes || ""}
+                      value={
+                        selectedExercises[workout.id]
+                          ?.notes || ""
+                      }
                       onChange={(e) =>
                         setSelectedExercises((prev) => ({
                           ...prev,
@@ -463,88 +530,116 @@ async function handleRemoveExercise(workoutId, itemId) {
                     />
                   </div>
 
-                       <button
-                      style={{
-                        ...styles.addButton,
-                        opacity: addingExercise[workout.id] ? 0.7 : 1,
-                        cursor: addingExercise[workout.id] ? "not-allowed" : "pointer",
-                      }}
-                      disabled={addingExercise[workout.id]}
-                      onClick={() => handleAddExercise(workout.id)}
-                      >
-                      {addingExercise[workout.id]
-                        ? "Agregando ejercicio..."
-                        : "Agregar ejercicio"}
-                      </button>
+                  <ActionButton
+                    disabled={addingExercise[workout.id]}
+                    onClick={() =>
+                      handleAddExercise(workout.id)
+                    }
+                  >
+                    {addingExercise[workout.id]
+                      ? "Agregando ejercicio..."
+                      : "Agregar ejercicio"}
+                  </ActionButton>
 
-                    {exerciseFeedback[workout.id] ? (
-                      <p
-                        style={
-                          exerciseFeedback[workout.id].type === "error"
-                            ? styles.error
-                            : styles.success
-                        }
-                      >
-                        {exerciseFeedback[workout.id].message}
-                      </p>
-                    ) : null}
+                  {exerciseFeedback[workout.id] ? (
+                    <p
+                      style={
+                        exerciseFeedback[workout.id]
+                          .type === "error"
+                          ? styles.error
+                          : styles.success
+                      }
+                    >
+                      {
+                        exerciseFeedback[workout.id]
+                          .message
+                      }
+                    </p>
+                  ) : null}
                 </div>
 
                 <hr style={styles.divider} />
 
-                <h4 style={styles.subTitle}>Ejercicios asignados</h4>
+                <h4 style={styles.subTitle}>
+                  Ejercicios asignados
+                </h4>
 
                 {!workoutExercises[workout.id] ||
-                workoutExercises[workout.id].length === 0 ? (
-                  <p style={styles.emptyExercises}>
-                    Esta rutina todavía no tiene ejercicios.
-                  </p>
+                workoutExercises[workout.id].length ===
+                  0 ? (
+                  <EmptyState>
+                    Esta rutina todavía no tiene
+                    ejercicios.
+                  </EmptyState>
                 ) : (
-                  <div style={styles.exerciseList}>
-                    {workoutExercises[workout.id].map((item) => (
-                      <div key={item.id} style={styles.exerciseItem}>
-                        <p style={styles.exerciseItemName}>
-                          #{item.exerciseOrder} - {item.exercise?.name}
-                        </p>
-                          <button
-                              style={{
-                                ...styles.removeButton,
-                                opacity: removingExercise[item.id] ? 0.7 : 1,
-                                cursor: removingExercise[item.id]
-                                  ? "not-allowed"
-                                  : "pointer",
-                              }}
-                              disabled={removingExercise[item.id]}
-                              onClick={() =>
-                                handleRemoveExercise(workout.id, item.id)
-                              }
-                            >
-                              {removingExercise[item.id]
-                                ? "Eliminando..."
-                                : "Eliminar"}
-                            </button>
-                        <p style={styles.exerciseMeta}>
-                          {item.sets} sets · {item.reps} reps
-                        </p>
+                  <DataTable
+                    columns={[
+                      {
+                        key: "order",
+                        label: "#",
+                        render: (row) =>
+                          row.exerciseOrder,
+                      },
 
-                        <p style={styles.exerciseMeta}>
-                          Descanso: {item.restSeconds || 0}s
-                        </p>
+                      {
+                        key: "exercise",
+                        label: "Ejercicio",
+                        render: (row) =>
+                          row.exercise?.name,
+                      },
 
-                        {item.notes ? (
-                          <p style={styles.exerciseMeta}>Notas: {item.notes}</p>
-                        ) : null}
-                      </div>
-                    ))}
-                  </div>
+                      {
+                        key: "sets",
+                        label: "Sets/Reps",
+                        render: (row) =>
+                          `${row.sets} x ${row.reps}`,
+                      },
+
+                      {
+                        key: "rest",
+                        label: "Descanso",
+                        render: (row) =>
+                          `${row.restSeconds || 0}s`,
+                      },
+
+                      {
+                        key: "actions",
+                        label: "Acciones",
+                        render: (row) => (
+                          <ActionButton
+                            variant="danger"
+                            disabled={
+                              removingExercise[
+                                row.id
+                              ]
+                            }
+                            onClick={() =>
+                              handleRemoveExercise(
+                                workout.id,
+                                row.id
+                              )
+                            }
+                          >
+                            {removingExercise[row.id]
+                              ? "Eliminando..."
+                              : "Eliminar"}
+                          </ActionButton>
+                        ),
+                      },
+                    ]}
+                    data={
+                      workoutExercises[workout.id]
+                    }
+                  />
                 )}
-              </article>
+              </SectionCard>
             ))}
           </div>
         ) : null}
       </section>
-    </TrainerShell>
-  );
+    </PageContainer>
+  </TrainerShell>
+);
 }
 
 const styles = {
@@ -805,4 +900,49 @@ const styles = {
     color: "#94a3b8",
     margin: 0,
   },
+
+  topGrid: {
+  display: "grid",
+  gridTemplateColumns: "2fr 1fr",
+  gap: "16px",
+  marginBottom: "32px",
+},
+
+createCard: {
+  minHeight: "unset",
+},
+
+headerRow: {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: "16px",
+  marginBottom: "18px",
+},
+
+infoGrid: {
+  display: "grid",
+  gridTemplateColumns: "1fr",
+  gap: "12px",
+},
+
+infoLabel: {
+  margin: "0 0 4px 0",
+  color: "#94a3b8",
+  fontSize: "13px",
+  fontWeight: "700",
+},
+
+infoValue: {
+  margin: 0,
+  color: "#f8fafc",
+  wordBreak: "break-word",
+},
+
+inlineGrid: {
+  display: "grid",
+  gridTemplateColumns:
+    "repeat(auto-fit, minmax(120px, 1fr))",
+  gap: "12px",
+},
 };

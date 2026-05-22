@@ -1,8 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import TrainerShell from "../../components/TrainerShell";
+
 import { apiFetch } from "../../lib/api";
+
+import PageContainer from "../../components/ui/PageContainer";
+import SectionCard from "../../components/ui/SectionCard";
+import StatCard from "../../components/ui/StatCard";
+import LoadingCard from "../../components/ui/LoadingCard";
+import EmptyState from "../../components/ui/EmptyState";
+import ActionButton from "../../components/ui/ActionButton";
+import Badge from "../../components/ui/Badge";
+import DataTable from "../../components/ui/DataTable";
 
 export const dynamic = "force-dynamic";
 
@@ -15,15 +26,20 @@ export default function ClientsPage() {
   const [password, setPassword] = useState("");
 
   const [creating, setCreating] = useState(false);
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   async function loadClients() {
     try {
       const res = await apiFetch("/clients");
+
       setClients(res.data || []);
     } catch (err) {
-      console.error("Error cargando clientes:", err.message);
+      console.error(
+        "Error cargando clientes:",
+        err.message
+      );
     } finally {
       setLoading(false);
     }
@@ -37,12 +53,14 @@ export default function ClientsPage() {
     e.preventDefault();
 
     setCreating(true);
+
     setError("");
     setSuccess("");
 
     try {
       await apiFetch("/clients", {
         method: "POST",
+
         body: JSON.stringify({
           fullName,
           email,
@@ -58,315 +76,387 @@ export default function ClientsPage() {
 
       await loadClients();
     } catch (err) {
-      setError(err.message || "No se pudo crear el cliente");
+      setError(
+        err.message ||
+          "No se pudo crear el cliente"
+      );
     } finally {
       setCreating(false);
     }
   }
 
+  const columns = [
+    {
+      key: "name",
+
+      label: "Cliente",
+
+      render: (client) => (
+        <div>
+          <p style={styles.clientName}>
+            {client.fullName || "Sin nombre"}
+          </p>
+
+          <p style={styles.clientEmail}>
+            {client.email || "Sin email"}
+          </p>
+        </div>
+      ),
+    },
+
+    {
+      key: "age",
+
+      label: "Edad",
+
+      render: (client) => (
+        <span>
+          {client.age || "N/A"}
+        </span>
+      ),
+    },
+
+    {
+      key: "weight",
+
+      label: "Peso",
+
+      render: (client) => (
+        <span>
+          {client.weightKg || "N/A"} kg
+        </span>
+      ),
+    },
+
+    {
+      key: "height",
+
+      label: "Altura",
+
+      render: (client) => (
+        <span>
+          {client.heightCm || "N/A"} cm
+        </span>
+      ),
+    },
+
+    {
+      key: "status",
+
+      label: "Estado",
+
+      render: () => (
+        <Badge variant="success">
+          Activo
+        </Badge>
+      ),
+    },
+  ];
+
   return (
-    <TrainerShell title="Clientes" active="clients">
-      <section style={styles.grid}>
-        <article style={styles.formCard}>
-          <h2 style={styles.sectionTitle}>Crear cliente</h2>
+    <TrainerShell
+      title="Clientes"
+      active="clients"
+    >
+      <PageContainer>
+        <section style={styles.topGrid}>
+          <SectionCard>
+            <div style={styles.header}>
+              <div>
+                <p style={styles.eyebrow}>
+                  Gestión de clientes
+                </p>
 
-          <p style={styles.sectionText}>
-            Registra un nuevo cliente para este entrenador.
-          </p>
+                <h2 style={styles.title}>
+                  Registrar nuevo cliente
+                </h2>
 
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <div style={styles.field}>
-              <label style={styles.label}>Nombre completo</label>
-
-              <input
-                style={styles.input}
-                type="text"
-                placeholder="Ej: Juan Pérez"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-              />
+                <p style={styles.description}>
+                  Crea nuevos clientes para
+                  administrar entrenamientos,
+                  rutinas y progreso físico.
+                </p>
+              </div>
             </div>
 
-            <div style={styles.field}>
-              <label style={styles.label}>Correo del cliente</label>
-
-              <input
-                style={styles.input}
-                type="email"
-                placeholder="cliente@correo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-
-            <div style={styles.field}>
-              <label style={styles.label}>Password inicial</label>
-
-              <input
-                style={styles.input}
-                type="password"
-                placeholder="Mínimo 6 caracteres"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              style={styles.button}
-              disabled={creating}
+            <form
+              onSubmit={handleSubmit}
+              style={styles.form}
             >
-              {creating ? "Creando..." : "Crear cliente"}
-            </button>
+              <div style={styles.field}>
+                <label style={styles.label}>
+                  Nombre completo
+                </label>
 
-            {error ? (
-              <p style={styles.error}>{error}</p>
-            ) : null}
+                <input
+                  style={styles.input}
+                  type="text"
+                  placeholder="Ej: Juan Pérez"
+                  value={fullName}
+                  onChange={(e) =>
+                    setFullName(e.target.value)
+                  }
+                  required
+                />
+              </div>
 
-            {success ? (
-              <p style={styles.success}>{success}</p>
-            ) : null}
-          </form>
-        </article>
+              <div style={styles.field}>
+                <label style={styles.label}>
+                  Correo electrónico
+                </label>
 
-        <aside style={styles.summaryCard}>
-          <p style={styles.summaryLabel}>Total de clientes</p>
+                <input
+                  style={styles.input}
+                  type="email"
+                  placeholder="cliente@correo.com"
+                  value={email}
+                  onChange={(e) =>
+                    setEmail(e.target.value)
+                  }
+                  required
+                />
+              </div>
 
-          <h3 style={styles.summaryValue}>
-            {clients.length}
-          </h3>
+              <div style={styles.field}>
+                <label style={styles.label}>
+                  Password inicial
+                </label>
 
-          <p style={styles.summaryText}>
-            Aquí ves y gestionas los clientes asociados
-            al trainer autenticado.
-          </p>
-        </aside>
-      </section>
+                <input
+                  style={styles.input}
+                  type="password"
+                  placeholder="Mínimo 6 caracteres"
+                  value={password}
+                  onChange={(e) =>
+                    setPassword(e.target.value)
+                  }
+                  required
+                />
+              </div>
 
-      <section style={styles.listSection}>
-        <h2 style={styles.sectionTitle}>
-          Lista de clientes
-        </h2>
+              <div style={styles.actions}>
+                <ActionButton
+                  disabled={creating}
+                >
+                  {creating
+                    ? "Creando..."
+                    : "Crear cliente"}
+                </ActionButton>
+              </div>
 
-        {loading ? (
-          <div style={styles.emptyCard}>
-            <p style={styles.sectionText}>
+              {error ? (
+                <p style={styles.error}>
+                  {error}
+                </p>
+              ) : null}
+
+              {success ? (
+                <p style={styles.success}>
+                  {success}
+                </p>
+              ) : null}
+            </form>
+          </SectionCard>
+
+          <StatCard
+            label="Clientes"
+            value={clients.length}
+            description="Clientes registrados para este trainer."
+          />
+        </section>
+
+        <SectionCard style={styles.tableSection}>
+          <div style={styles.sectionHeader}>
+            <div>
+              <p style={styles.eyebrow}>
+                Base de clientes
+              </p>
+
+              <h2 style={styles.title}>
+                Lista de clientes
+              </h2>
+            </div>
+
+            <Badge variant="default">
+              {clients.length} registros
+            </Badge>
+          </div>
+
+          {loading ? (
+            <LoadingCard>
               Cargando clientes...
-            </p>
-          </div>
-        ) : null}
+            </LoadingCard>
+          ) : null}
 
-        {!loading && clients.length === 0 ? (
-          <div style={styles.emptyCard}>
-            <h3 style={styles.emptyTitle}>
-              Todavía no tienes clientes
-            </h3>
+          {!loading &&
+          clients.length === 0 ? (
+            <EmptyState>
+              Todavía no existen clientes
+              registrados.
+            </EmptyState>
+          ) : null}
 
-            <p style={styles.sectionText}>
-              Cuando registres clientes en el sistema,
-              aparecerán aquí.
-            </p>
-          </div>
-        ) : null}
-
-        {!loading && clients.length > 0 ? (
-          <div style={styles.clientGrid}>
-            {clients.map((client) => (
-              <article
-                key={client.id}
-                style={styles.clientCard}
-              >
-                <p style={styles.clientTag}>Cliente</p>
-
-                <h3 style={styles.clientName}>
-                  {client.fullName || "Sin nombre"}
-                </h3>
-
-                <p style={styles.clientInfo}>
-                  <strong>ID:</strong> {client.id}
-                </p>
-
-                <p style={styles.clientInfo}>
-                  <strong>Email:</strong>{" "}
-                  {client.email || "Sin email"}
-                </p>
-
-                <p style={styles.clientInfo}>
-                  <strong>Edad:</strong>{" "}
-                  {client.age || "N/A"}
-                </p>
-
-                <p style={styles.clientInfo}>
-                  <strong>Peso:</strong>{" "}
-                  {client.weightKg || "N/A"}
-                </p>
-
-                <p style={styles.clientInfo}>
-                  <strong>Altura:</strong>{" "}
-                  {client.heightCm || "N/A"}
-                </p>
-              </article>
-            ))}
-          </div>
-        ) : null}
-      </section>
+          {!loading &&
+          clients.length > 0 ? (
+            <DataTable
+              columns={columns}
+              data={clients}
+              emptyMessage="No hay clientes disponibles"
+            />
+          ) : null}
+        </SectionCard>
+      </PageContainer>
     </TrainerShell>
   );
 }
 
 const styles = {
-  grid: {
+  topGrid: {
     display: "grid",
-    gridTemplateColumns: "2fr 1fr",
-    gap: "16px",
-    marginBottom: "32px",
+
+    gridTemplateColumns:
+      "2fr minmax(260px, 320px)",
+
+    gap: "18px",
+
+    marginBottom: "24px",
   },
 
-  formCard: {
-    background: "rgba(15, 23, 42, 0.92)",
-    border: "1px solid rgba(148, 163, 184, 0.14)",
-    borderRadius: "18px",
-    padding: "24px",
-    boxShadow: "0 14px 30px rgba(0, 0, 0, 0.22)",
+  tableSection: {
+    minHeight: "auto",
   },
 
-  summaryCard: {
-    background: "rgba(15, 23, 42, 0.92)",
-    border: "1px solid rgba(148, 163, 184, 0.14)",
-    borderRadius: "18px",
-    padding: "24px",
+  header: {
+    display: "flex",
+
+    justifyContent: "space-between",
+
+    alignItems: "flex-start",
+
+    marginBottom: "24px",
   },
 
-  sectionTitle: {
+  sectionHeader: {
+    display: "flex",
+
+    justifyContent: "space-between",
+
+    alignItems: "center",
+
+    marginBottom: "24px",
+  },
+
+  eyebrow: {
     margin: "0 0 10px 0",
-    fontSize: "24px",
-    fontWeight: "800",
+
+    color: "#4ade80",
+
+    fontSize: "12px",
+
+    fontWeight: "900",
+
+    textTransform: "uppercase",
+
+    letterSpacing: "0.08em",
   },
 
-  sectionText: {
-    margin: "0 0 18px 0",
+  title: {
+    margin: "0 0 10px 0",
+
+    fontSize: "30px",
+
+    fontWeight: "900",
+
+    color: "#f8fafc",
+  },
+
+  description: {
+    margin: 0,
+
     color: "#94a3b8",
-    lineHeight: 1.5,
+
+    lineHeight: 1.6,
+
+    maxWidth: "680px",
   },
 
   form: {
     display: "flex",
+
     flexDirection: "column",
-    gap: "16px",
+
+    gap: "18px",
   },
 
   field: {
     display: "flex",
+
     flexDirection: "column",
+
     gap: "8px",
   },
 
   label: {
+    color: "#e2e8f0",
+
     fontSize: "14px",
+
     fontWeight: "700",
   },
 
   input: {
     padding: "14px 16px",
+
     borderRadius: "12px",
+
     border: "1px solid #334155",
+
     background: "#0f172a",
+
     color: "#f8fafc",
+
     fontSize: "15px",
+
     outline: "none",
   },
 
-  button: {
-    marginTop: "4px",
-    padding: "14px 16px",
-    borderRadius: "12px",
-    border: "none",
-    background: "#22c55e",
-    color: "#052e16",
-    fontWeight: "800",
-    cursor: "pointer",
-    fontSize: "15px",
+  actions: {
+    display: "flex",
+
+    justifyContent: "flex-start",
+
+    marginTop: "8px",
   },
 
   error: {
     margin: 0,
+
     color: "#f87171",
+
     fontSize: "14px",
   },
 
   success: {
     margin: 0,
+
     color: "#4ade80",
+
     fontSize: "14px",
-  },
-
-  summaryLabel: {
-    margin: 0,
-    color: "#94a3b8",
-    fontSize: "14px",
-  },
-
-  summaryValue: {
-    margin: "12px 0",
-    fontSize: "56px",
-    fontWeight: "800",
-  },
-
-  summaryText: {
-    margin: 0,
-    color: "#cbd5e1",
-    lineHeight: 1.5,
-  },
-
-  listSection: {
-    marginTop: "16px",
-  },
-
-  emptyCard: {
-    background: "rgba(15, 23, 42, 0.92)",
-    border: "1px solid rgba(148, 163, 184, 0.14)",
-    borderRadius: "18px",
-    padding: "24px",
-  },
-
-  emptyTitle: {
-    margin: "0 0 10px 0",
-    fontSize: "20px",
-    fontWeight: "800",
-  },
-
-  clientGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    gap: "16px",
-  },
-
-  clientCard: {
-    background: "rgba(15, 23, 42, 0.92)",
-    border: "1px solid rgba(148, 163, 184, 0.14)",
-    borderRadius: "18px",
-    padding: "22px",
-  },
-
-  clientTag: {
-    margin: "0 0 10px 0",
-    color: "#94a3b8",
-    fontSize: "13px",
-    textTransform: "uppercase",
   },
 
   clientName: {
-    margin: "0 0 16px 0",
-    fontSize: "30px",
+    margin: "0 0 4px 0",
+
     fontWeight: "800",
+
+    color: "#f8fafc",
   },
 
-  clientInfo: {
-    margin: "0 0 10px 0",
-    color: "#e2e8f0",
-    lineHeight: 1.5,
+  clientEmail: {
+    margin: 0,
+
+    color: "#94a3b8",
+
+    fontSize: "13px",
   },
 };
