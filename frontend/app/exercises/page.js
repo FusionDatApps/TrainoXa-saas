@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import TrainerShell from "../../components/TrainerShell";
 
 import { apiFetch } from "../../lib/api";
+import { extractApiError } from "../../lib/form-helpers";
+import { uiStyles } from "../../lib/ui-styles";
 
 import PageContainer from "../../components/ui/PageContainer";
 import SectionCard from "../../components/ui/SectionCard";
@@ -14,6 +16,9 @@ import EmptyState from "../../components/ui/EmptyState";
 import ActionButton from "../../components/ui/ActionButton";
 import Badge from "../../components/ui/Badge";
 import DataTable from "../../components/ui/DataTable";
+import PageHeader from "../../components/ui/PageHeader";
+import FormField from "../../components/ui/FormField";
+import FeedbackMessage from "../../components/ui/FeedbackMessage";
 
 export const dynamic = "force-dynamic";
 
@@ -94,10 +99,7 @@ export default function ExercisesPage() {
 
       await loadExercises();
     } catch (err) {
-      setError(
-        err.message ||
-          "No se pudo crear el ejercicio"
-      );
+      setError(extractApiError(err));
     } finally {
       setCreating(false);
     }
@@ -154,82 +156,57 @@ export default function ExercisesPage() {
       active="exercises"
     >
       <PageContainer>
-        <section style={styles.topGrid}>
-          <SectionCard>
-            <div style={styles.header}>
-              <div>
-                <p style={styles.eyebrow}>
-                  Biblioteca de ejercicios
-                </p>
+        <div style={uiStyles.page}>
+          <section style={styles.topGrid}>
+            <SectionCard>
+              <PageHeader
+                eyebrow="Biblioteca fitness"
+                title="Crear nuevo ejercicio"
+                description="Registra ejercicios con grupos musculares controlados para mantener consistencia en el sistema."
+              />
 
-                <h2 style={styles.title}>
-                  Crear nuevo ejercicio
-                </h2>
-
-                <p style={styles.description}>
-                  Registra ejercicios con
-                  grupos musculares
-                  controlados para mantener
-                  consistencia en el sistema.
-                </p>
-              </div>
-            </div>
-
-            <form
-              onSubmit={handleSubmit}
-              style={styles.form}
-            >
-              <div style={styles.field}>
-                <label style={styles.label}>
-                  Nombre del ejercicio
-                </label>
-
-                <input
-                  style={styles.input}
-                  type="text"
+              <form
+                onSubmit={handleSubmit}
+                style={uiStyles.stack}
+              >
+                <FormField
+                  label="Nombre del ejercicio"
                   placeholder="Ej: Press banca plano"
                   value={name}
                   onChange={(e) =>
                     setName(e.target.value)
                   }
-                  required
                 />
-              </div>
 
-              <div style={styles.field}>
-                <label style={styles.label}>
-                  Grupo muscular
-                </label>
+                <div style={uiStyles.stack}>
+                  <label style={styles.label}>
+                    Grupo muscular
+                  </label>
 
-                <select
-                  style={styles.select}
-                  value={muscleGroup}
-                  onChange={(e) =>
-                    setMuscleGroup(
-                      e.target.value
-                    )
-                  }
-                >
-                  {MUSCLE_GROUPS.map(
-                    (group) => (
-                      <option
-                        key={group}
-                        value={group}
-                      >
-                        {group}
-                      </option>
-                    )
-                  )}
-                </select>
-              </div>
+                  <select
+                    style={styles.select}
+                    value={muscleGroup}
+                    onChange={(e) =>
+                      setMuscleGroup(
+                        e.target.value
+                      )
+                    }
+                  >
+                    {MUSCLE_GROUPS.map(
+                      (group) => (
+                        <option
+                          key={group}
+                          value={group}
+                        >
+                          {group}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
 
-              <div style={styles.field}>
-                <label style={styles.label}>
-                  Descripción
-                </label>
-
-                <textarea
-                  style={styles.textarea}
+                <FormField
+                  label="Descripción"
                   placeholder="Opcional"
                   value={description}
                   onChange={(e) =>
@@ -237,80 +214,81 @@ export default function ExercisesPage() {
                       e.target.value
                     )
                   }
+                  textarea
                 />
+
+                <div style={styles.actions}>
+                  <ActionButton
+                    disabled={creating}
+                  >
+                    {creating
+                      ? "Creando..."
+                      : "Crear ejercicio"}
+                  </ActionButton>
+                </div>
+
+                {error ? (
+                  <FeedbackMessage variant="error">
+                    {error}
+                  </FeedbackMessage>
+                ) : null}
+
+                {success ? (
+                  <FeedbackMessage variant="success">
+                    {success}
+                  </FeedbackMessage>
+                ) : null}
+              </form>
+            </SectionCard>
+
+            <StatCard
+              label="Ejercicios"
+              value={exercises.length}
+              description="Ejercicios disponibles en la biblioteca del trainer."
+            />
+          </section>
+
+          <SectionCard style={styles.tableSection}>
+            <div style={uiStyles.sectionHeader}>
+              <div>
+                <p style={styles.eyebrow}>
+                  Biblioteca fitness
+                </p>
+
+                <h2 style={uiStyles.sectionTitle}>
+                  Lista de ejercicios
+                </h2>
               </div>
 
-              <div style={styles.actions}>
-                <ActionButton
-                  disabled={creating}
-                >
-                  {creating
-                    ? "Creando..."
-                    : "Crear ejercicio"}
-                </ActionButton>
-              </div>
-
-              {error ? (
-                <p style={styles.error}>
-                  {error}
-                </p>
-              ) : null}
-
-              {success ? (
-                <p style={styles.success}>
-                  {success}
-                </p>
-              ) : null}
-            </form>
-          </SectionCard>
-
-          <StatCard
-            label="Ejercicios"
-            value={exercises.length}
-            description="Ejercicios disponibles en la biblioteca del trainer."
-          />
-        </section>
-
-        <SectionCard style={styles.tableSection}>
-          <div style={styles.sectionHeader}>
-            <div>
-              <p style={styles.eyebrow}>
-                Biblioteca fitness
-              </p>
-
-              <h2 style={styles.title}>
-                Lista de ejercicios
-              </h2>
+              <Badge variant="default">
+                {exercises.length} registros
+              </Badge>
             </div>
 
-            <Badge variant="default">
-              {exercises.length} registros
-            </Badge>
-          </div>
+            {loading ? (
+              <LoadingCard>
+                Cargando ejercicios...
+              </LoadingCard>
+            ) : null}
 
-          {loading ? (
-            <LoadingCard>
-              Cargando ejercicios...
-            </LoadingCard>
-          ) : null}
+            {!loading &&
+            exercises.length === 0 ? (
+              <EmptyState>
+                Todavía no existen ejercicios
+                registrados.
+              </EmptyState>
+            ) : null}
 
-          {!loading &&
-          exercises.length === 0 ? (
-            <EmptyState>
-              Todavía no existen ejercicios
-              registrados.
-            </EmptyState>
-          ) : null}
-
-          {!loading &&
-          exercises.length > 0 ? (
-            <DataTable
-              columns={columns}
-              data={exercises}
-              emptyMessage="No hay ejercicios disponibles"
-            />
-          ) : null}
-        </SectionCard>
+            {!loading &&
+            exercises.length > 0 ? (
+              <DataTable
+                columns={columns}
+                data={exercises}
+                emptyMessage="No hay ejercicios disponibles"
+              />
+            ) : null}
+          </SectionCard>
+        </div>
       </PageContainer>
     </TrainerShell>
   );
@@ -324,32 +302,10 @@ const styles = {
       "2fr minmax(260px, 320px)",
 
     gap: "18px",
-
-    marginBottom: "24px",
   },
 
   tableSection: {
     minHeight: "auto",
-  },
-
-  header: {
-    display: "flex",
-
-    justifyContent: "space-between",
-
-    alignItems: "flex-start",
-
-    marginBottom: "24px",
-  },
-
-  sectionHeader: {
-    display: "flex",
-
-    justifyContent: "space-between",
-
-    alignItems: "center",
-
-    marginBottom: "24px",
   },
 
   eyebrow: {
@@ -366,64 +322,12 @@ const styles = {
     letterSpacing: "0.08em",
   },
 
-  title: {
-    margin: "0 0 10px 0",
-
-    fontSize: "30px",
-
-    fontWeight: "900",
-
-    color: "#f8fafc",
-  },
-
-  description: {
-    margin: 0,
-
-    color: "#94a3b8",
-
-    lineHeight: 1.6,
-
-    maxWidth: "680px",
-  },
-
-  form: {
-    display: "flex",
-
-    flexDirection: "column",
-
-    gap: "18px",
-  },
-
-  field: {
-    display: "flex",
-
-    flexDirection: "column",
-
-    gap: "8px",
-  },
-
   label: {
     color: "#e2e8f0",
 
     fontSize: "14px",
 
     fontWeight: "700",
-  },
-
-  input: {
-    padding: "14px 16px",
-
-    borderRadius: "12px",
-
-    border: "1px solid #334155",
-
-    background: "#0f172a",
-
-    color: "#f8fafc",
-
-    fontSize: "15px",
-
-    outline: "none",
   },
 
   select: {
@@ -442,48 +346,12 @@ const styles = {
     outline: "none",
   },
 
-  textarea: {
-    minHeight: "90px",
-
-    padding: "14px 16px",
-
-    borderRadius: "12px",
-
-    border: "1px solid #334155",
-
-    background: "#0f172a",
-
-    color: "#f8fafc",
-
-    fontSize: "15px",
-
-    resize: "vertical",
-
-    outline: "none",
-  },
-
   actions: {
     display: "flex",
 
     justifyContent: "flex-start",
 
     marginTop: "8px",
-  },
-
-  error: {
-    margin: 0,
-
-    color: "#f87171",
-
-    fontSize: "14px",
-  },
-
-  success: {
-    margin: 0,
-
-    color: "#4ade80",
-
-    fontSize: "14px",
   },
 
   exerciseName: {
