@@ -2,6 +2,14 @@
 
 import { useEffect, useState } from "react";
 import TrainerShell from "../../components/TrainerShell";
+
+import SectionCard from "../../components/ui/SectionCard";
+import LoadingCard from "../../components/ui/LoadingCard";
+import EmptyState from "../../components/ui/EmptyState";
+import ActionButton from "../../components/ui/ActionButton";
+import Badge from "../../components/ui/Badge";
+import DataTable from "../../components/ui/DataTable";
+
 import { apiFetch } from "../../lib/api";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +32,7 @@ export default function AssignmentsPage() {
   const [success, setSuccess] = useState("");
 
   const activeAssignments = assignments.filter(
-  (assignment) => assignment.isActive
+    (assignment) => assignment.isActive
   );
 
   const inactiveAssignments = assignments.filter(
@@ -32,9 +40,9 @@ export default function AssignmentsPage() {
   );
 
   async function loadData() {
-  setLoading(true);
+    setLoading(true);
 
-  try {
+    try {
       const [clientsRes, workoutsRes, assignmentsRes] = await Promise.all([
         apiFetch("/clients"),
         apiFetch("/workouts"),
@@ -109,26 +117,84 @@ export default function AssignmentsPage() {
     }
   }
 
+  const assignmentColumns = [
+    {
+      key: "client",
+      label: "Cliente",
+      render: (assignment) =>
+        assignment.client?.fullName || "Cliente sin nombre",
+    },
+    {
+      key: "workout",
+      label: "Rutina",
+      render: (assignment) =>
+        assignment.workoutPlan?.name || "Rutina sin nombre",
+    },
+    {
+      key: "status",
+      label: "Estado",
+      render: (assignment) => (
+        <Badge variant={assignment.isActive ? "success" : "default"}>
+          {assignment.isActive ? "Activa" : "Inactiva"}
+        </Badge>
+      ),
+    },
+    {
+      key: "startDate",
+      label: "Inicio",
+      render: (assignment) =>
+        assignment.startDate
+          ? new Date(assignment.startDate).toLocaleDateString()
+          : "N/A",
+    },
+    {
+      key: "endDate",
+      label: "Fin",
+      render: (assignment) =>
+        assignment.endDate
+          ? new Date(assignment.endDate).toLocaleDateString()
+          : "N/A",
+    },
+    {
+      key: "actions",
+      label: "Acción",
+      render: (assignment) =>
+        assignment.isActive ? (
+          <ActionButton
+            variant="danger"
+            onClick={() => handleDeactivate(assignment.id)}
+            disabled={deactivatingId === assignment.id}
+          >
+            {deactivatingId === assignment.id ? "Desactivando..." : "Desactivar"}
+          </ActionButton>
+        ) : (
+          <Badge>Asignación finalizada</Badge>
+        ),
+    },
+  ];
+
   return (
     <TrainerShell title="Asignaciones" active="assignments">
       <section style={styles.grid}>
-        <article style={styles.formCard}>
+        <SectionCard style={styles.formCardOverride}>
           <h2 style={styles.sectionTitle}>Asignar rutina</h2>
 
           <p style={styles.sectionText}>
             Selecciona un cliente y una rutina para crear una asignación real.
           </p>
-            {clients.length === 0 ? (
-              <p style={styles.error}>
-                Debes crear al menos un cliente antes de asignar rutinas.
-              </p>
-            ) : null}
 
-            {workouts.length === 0 ? (
-              <p style={styles.error}>
-                Debes crear al menos una rutina antes de crear asignaciones.
-              </p>
-            ) : null}
+          {clients.length === 0 ? (
+            <p style={styles.error}>
+              Debes crear al menos un cliente antes de asignar rutinas.
+            </p>
+          ) : null}
+
+          {workouts.length === 0 ? (
+            <p style={styles.error}>
+              Debes crear al menos una rutina antes de crear asignaciones.
+            </p>
+          ) : null}
+
           <form onSubmit={handleSubmit} style={styles.form}>
             <div style={styles.field}>
               <label style={styles.label}>Cliente</label>
@@ -190,125 +256,61 @@ export default function AssignmentsPage() {
               />
             </div>
 
-            <button
-                type="submit"
-                style={styles.button}
-                disabled={
-                  creating ||
-                  clients.length === 0 ||
-                  workouts.length === 0
-                }
+            <ActionButton
+              variant="primary"
+              disabled={creating || clients.length === 0 || workouts.length === 0}
             >
               {creating ? "Asignando..." : "Asignar rutina"}
-            </button>
+            </ActionButton>
 
             {error ? <p style={styles.error}>{error}</p> : null}
             {success ? <p style={styles.success}>{success}</p> : null}
           </form>
-        </article>
+        </SectionCard>
 
-         <aside style={styles.summaryCard}>
+        <SectionCard style={styles.summaryCardOverride}>
           <p style={styles.summaryLabel}>Total asignaciones</p>
 
           <h3 style={styles.summaryValue}>{assignments.length}</h3>
 
           <div style={styles.summaryStats}>
             <div style={styles.statCard}>
-              <span style={styles.statNumber}>
-                {activeAssignments.length}
-              </span>
-
-              <span style={styles.statLabel}>
-                Activas
-              </span>
+              <span style={styles.statNumber}>{activeAssignments.length}</span>
+              <span style={styles.statLabel}>Activas</span>
             </div>
 
             <div style={styles.statCard}>
-              <span style={styles.statNumber}>
-                {inactiveAssignments.length}
-              </span>
-
-              <span style={styles.statLabel}>
-                Inactivas
-              </span>
+              <span style={styles.statNumber}>{inactiveAssignments.length}</span>
+              <span style={styles.statLabel}>Inactivas</span>
             </div>
           </div>
 
           <p style={styles.summaryText}>
-            Cada asignación conecta un cliente con una rutina creada por el trainer.
+            Cada asignación conecta un cliente con una rutina creada por el
+            trainer.
           </p>
-        </aside>
+        </SectionCard>
       </section>
 
       <section style={styles.listSection}>
         <h2 style={styles.sectionTitle}>Lista de asignaciones</h2>
 
         {loading ? (
-          <div style={styles.emptyCard}>
-            <p style={styles.sectionText}>Cargando asignaciones...</p>
-          </div>
+          <LoadingCard>Cargando asignaciones...</LoadingCard>
         ) : null}
 
         {!loading && assignments.length === 0 ? (
-          <div style={styles.emptyCard}>
-            <p style={styles.sectionText}>
-              Todavía no tienes rutinas asignadas.
-            </p>
-          </div>
+          <SectionCard>
+            <EmptyState>Todavía no tienes rutinas asignadas.</EmptyState>
+          </SectionCard>
         ) : null}
 
         {!loading && assignments.length > 0 ? (
-          <div style={styles.assignmentGrid}>
-            {assignments.map((assignment) => (
-              <article key={assignment.id} style={styles.assignmentCard}>
-                <p style={styles.assignmentTag}>Asignación</p>
-
-                <h3 style={styles.assignmentName}>
-                  {assignment.client?.fullName || "Cliente sin nombre"}
-                </h3>
-
-                <p style={styles.assignmentInfo}>
-                  <strong>Rutina:</strong>{" "}
-                  {assignment.workoutPlan?.name || "Rutina sin nombre"}
-                </p>
-
-                <p style={styles.assignmentInfo}>
-                  <strong>Estado:</strong>{" "}
-                  {assignment.isActive ? "Activa" : "Inactiva"}
-                </p>
-
-                <p style={styles.assignmentInfo}>
-                  <strong>Inicio:</strong>{" "}
-                  {assignment.startDate
-                    ? new Date(assignment.startDate).toLocaleDateString()
-                    : "N/A"}
-                </p>
-
-                <p style={styles.assignmentInfo}>
-                  <strong>Fin:</strong>{" "}
-                  {assignment.endDate
-                    ? new Date(assignment.endDate).toLocaleDateString()
-                    : "N/A"}
-                </p>
-
-                {assignment.isActive ? (
-                  <button
-                    style={styles.deactivateButton}
-                    onClick={() => handleDeactivate(assignment.id)}
-                    disabled={deactivatingId === assignment.id}
-                  >
-                    {deactivatingId === assignment.id
-                      ? "Desactivando..."
-                      : "Desactivar"}
-                  </button>
-                ) : (
-                  <div style={styles.inactiveBadge}>
-                    Asignación finalizada
-                  </div>
-                )}
-              </article>
-            ))}
-          </div>
+          <DataTable
+            columns={assignmentColumns}
+            data={assignments}
+            emptyMessage="Todavía no tienes rutinas asignadas."
+          />
         ) : null}
       </section>
     </TrainerShell>
@@ -323,19 +325,12 @@ const styles = {
     marginBottom: "32px",
   },
 
-  formCard: {
-    background: "rgba(15, 23, 42, 0.92)",
-    border: "1px solid rgba(148, 163, 184, 0.14)",
-    borderRadius: "18px",
-    padding: "24px",
-    boxShadow: "0 14px 30px rgba(0, 0, 0, 0.22)",
+  formCardOverride: {
+    minHeight: "auto",
   },
 
-  summaryCard: {
-    background: "rgba(15, 23, 42, 0.92)",
-    border: "1px solid rgba(148, 163, 184, 0.14)",
-    borderRadius: "18px",
-    padding: "24px",
+  summaryCardOverride: {
+    minHeight: "auto",
   },
 
   sectionTitle: {
@@ -377,42 +372,6 @@ const styles = {
     outline: "none",
   },
 
-  button: {
-    marginTop: "4px",
-    padding: "14px 16px",
-    borderRadius: "12px",
-    border: "none",
-    background: "#22c55e",
-    color: "#052e16",
-    fontWeight: "800",
-    cursor: "pointer",
-    fontSize: "15px",
-  },
-
-  deactivateButton: {
-    marginTop: "12px",
-    width: "100%",
-    padding: "12px 14px",
-    borderRadius: "12px",
-    border: "none",
-    background: "#ef4444",
-    color: "#ffffff",
-    fontWeight: "800",
-    cursor: "pointer",
-    fontSize: "14px",
-  },
-
-  inactiveBadge: {
-    marginTop: "12px",
-    padding: "12px 14px",
-    borderRadius: "12px",
-    background: "rgba(148, 163, 184, 0.14)",
-    color: "#94a3b8",
-    textAlign: "center",
-    fontWeight: "700",
-    fontSize: "14px",
-  },
-
   error: {
     margin: 0,
     color: "#f87171",
@@ -437,34 +396,34 @@ const styles = {
     fontWeight: "800",
   },
 
-      summaryStats: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: "12px",
-      marginBottom: "18px",
-    },
+  summaryStats: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "12px",
+    marginBottom: "18px",
+  },
 
-    statCard: {
-      background: "rgba(15, 23, 42, 0.9)",
-      border: "1px solid rgba(148, 163, 184, 0.14)",
-      borderRadius: "14px",
-      padding: "14px",
-      display: "flex",
-      flexDirection: "column",
-      gap: "6px",
-    },
+  statCard: {
+    background: "rgba(15, 23, 42, 0.9)",
+    border: "1px solid rgba(148, 163, 184, 0.14)",
+    borderRadius: "14px",
+    padding: "14px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+  },
 
-    statNumber: {
-      fontSize: "28px",
-      fontWeight: "800",
-      color: "#f8fafc",
-    },
+  statNumber: {
+    fontSize: "28px",
+    fontWeight: "800",
+    color: "#f8fafc",
+  },
 
-    statLabel: {
-      fontSize: "13px",
-      color: "#94a3b8",
-      textTransform: "uppercase",
-    },
+  statLabel: {
+    fontSize: "13px",
+    color: "#94a3b8",
+    textTransform: "uppercase",
+  },
 
   summaryText: {
     margin: 0,
@@ -474,44 +433,5 @@ const styles = {
 
   listSection: {
     marginTop: "16px",
-  },
-
-  emptyCard: {
-    background: "rgba(15, 23, 42, 0.92)",
-    border: "1px solid rgba(148, 163, 184, 0.14)",
-    borderRadius: "18px",
-    padding: "24px",
-  },
-
-  assignmentGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    gap: "16px",
-  },
-
-  assignmentCard: {
-    background: "rgba(15, 23, 42, 0.92)",
-    border: "1px solid rgba(148, 163, 184, 0.14)",
-    borderRadius: "18px",
-    padding: "22px",
-  },
-
-  assignmentTag: {
-    margin: "0 0 10px 0",
-    color: "#94a3b8",
-    fontSize: "13px",
-    textTransform: "uppercase",
-  },
-
-  assignmentName: {
-    margin: "0 0 16px 0",
-    fontSize: "30px",
-    fontWeight: "800",
-  },
-
-  assignmentInfo: {
-    margin: "0 0 10px 0",
-    color: "#e2e8f0",
-    lineHeight: 1.5,
   },
 };

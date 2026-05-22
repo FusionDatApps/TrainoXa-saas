@@ -1,4 +1,4 @@
-﻿export default function Badge({ children, variant = "default" }) {
+export default function Badge({ children, variant = "default" }) {
   const variantStyles = {
     default: {
       background: "rgba(148, 163, 184, 0.14)",

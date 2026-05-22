@@ -1,4 +1,4 @@
-﻿export default function DataTable({
+export default function DataTable({
   columns = [],
   data = [],
   emptyMessage = "No hay datos disponibles",

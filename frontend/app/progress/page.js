@@ -2,7 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import TrainerShell from "../../components/TrainerShell";
+
 import { apiFetch } from "../../lib/api";
+
+import SectionCard from "../../components/ui/SectionCard";
+import LoadingCard from "../../components/ui/LoadingCard";
+import EmptyState from "../../components/ui/EmptyState";
+import StatCard from "../../components/ui/StatCard";
+import Badge from "../../components/ui/Badge";
+import ActionButton from "../../components/ui/ActionButton";
+import DataTable from "../../components/ui/DataTable";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +53,7 @@ export default function ProgressPage() {
 
     try {
       const response = await apiFetch("/assignments");
+
       const data = response.data || [];
 
       setAssignments(data);
@@ -71,6 +81,7 @@ export default function ProgressPage() {
 
     try {
       const response = await apiFetch(`/workouts/${workoutPlanId}/exercises`);
+
       const data = response.data || [];
 
       setWorkoutExercises(data);
@@ -125,6 +136,7 @@ export default function ProgressPage() {
     }
 
     loadWorkoutExercises(selectedAssignment.workoutPlanId);
+
     loadProgress(selectedAssignment.id);
   }, [selectedAssignment]);
 
@@ -167,26 +179,66 @@ export default function ProgressPage() {
     }
   }
 
+  const columns = [
+    {
+      key: "exercise",
+      label: "Ejercicio",
+      render: (row) => row.exercise?.name || "Sin nombre",
+    },
+
+    {
+      key: "repsCompleted",
+      label: "Reps",
+      render: (row) => row.repsCompleted || "N/A",
+    },
+
+    {
+      key: "weightUsedKg",
+      label: "Peso",
+      render: (row) =>
+        row.weightUsedKg ? `${row.weightUsedKg} kg` : "N/A",
+    },
+
+    {
+      key: "completed",
+      label: "Estado",
+      render: (row) =>
+        row.completed ? (
+          <Badge variant="success">Completado</Badge>
+        ) : (
+          <Badge variant="warning">Pendiente</Badge>
+        ),
+    },
+
+    {
+      key: "performedAt",
+      label: "Fecha",
+      render: (row) =>
+        row.performedAt
+          ? new Date(row.performedAt).toLocaleString()
+          : "N/A",
+    },
+  ];
+
   return (
     <TrainerShell title="Progreso" active="progress">
       <section style={styles.grid}>
-        <article style={styles.formCard}>
+        <SectionCard style={styles.formWrapper}>
           <h2 style={styles.sectionTitle}>Registrar progreso</h2>
 
           <p style={styles.sectionText}>
-            Selecciona una asignaci�n activa y registra la ejecuci�n real del
-            entrenamiento.
+            Registra la ejecución real del entrenamiento del cliente.
           </p>
 
           {activeAssignments.length === 0 ? (
-            <p style={styles.error}>
+            <EmptyState>
               No tienes asignaciones activas para registrar progreso.
-            </p>
+            </EmptyState>
           ) : null}
 
           <form onSubmit={handleSubmit} style={styles.form}>
             <div style={styles.field}>
-              <label style={styles.label}>Asignaci�n activa</label>
+              <label style={styles.label}>Asignación activa</label>
 
               <select
                 style={styles.input}
@@ -194,7 +246,7 @@ export default function ProgressPage() {
                 onChange={(e) => setAssignmentId(e.target.value)}
                 required
               >
-                <option value="">Selecciona asignaci�n</option>
+                <option value="">Selecciona asignación</option>
 
                 {activeAssignments.map((assignment) => (
                   <option key={assignment.id} value={assignment.id}>
@@ -249,7 +301,7 @@ export default function ProgressPage() {
                   style={styles.input}
                   value={repsCompleted}
                   onChange={(e) => setRepsCompleted(e.target.value)}
-                  placeholder="Ej: 10, 8-10, 12 reps"
+                  placeholder="Ej: 10, 8-10"
                 />
               </div>
 
@@ -289,9 +341,7 @@ export default function ProgressPage() {
               />
             </div>
 
-            <button
-              type="submit"
-              style={styles.button}
+            <ActionButton
               disabled={
                 creating ||
                 activeAssignments.length === 0 ||
@@ -299,75 +349,45 @@ export default function ProgressPage() {
               }
             >
               {creating ? "Registrando..." : "Registrar progreso"}
-            </button>
+            </ActionButton>
 
             {error ? <p style={styles.error}>{error}</p> : null}
             {success ? <p style={styles.success}>{success}</p> : null}
           </form>
-        </article>
+        </SectionCard>
 
-        <aside style={styles.summaryCard}>
-          <p style={styles.summaryLabel}>Asignaciones activas</p>
-
-          <h3 style={styles.summaryValue}>{activeAssignments.length}</h3>
-
-          <p style={styles.summaryText}>
-            El progreso se registra �nicamente sobre asignaciones activas.
-          </p>
-        </aside>
+        <StatCard
+          label="Asignaciones activas"
+          value={activeAssignments.length}
+          description="El progreso solo puede registrarse sobre asignaciones activas."
+        />
       </section>
 
-      <section style={styles.listSection}>
+      <section style={styles.tableSection}>
         <h2 style={styles.sectionTitle}>Historial de progreso</h2>
 
         {loading || loadingProgress ? (
-          <div style={styles.emptyCard}>
-            <p style={styles.sectionText}>Cargando progreso...</p>
-          </div>
+          <LoadingCard>Cargando progreso...</LoadingCard>
         ) : null}
 
-        {!loading && !loadingProgress && progressLogs.length === 0 ? (
-          <div style={styles.emptyCard}>
-            <p style={styles.sectionText}>
-              Todav�a no hay progreso registrado para esta asignaci�n.
-            </p>
-          </div>
+        {!loading &&
+        !loadingProgress &&
+        progressLogs.length === 0 ? (
+          <SectionCard>
+            <EmptyState>
+              Todavía no hay progreso registrado para esta asignación.
+            </EmptyState>
+          </SectionCard>
         ) : null}
 
-        {!loading && !loadingProgress && progressLogs.length > 0 ? (
-          <div style={styles.progressGrid}>
-            {progressLogs.map((log) => (
-              <article key={log.id} style={styles.progressCard}>
-                <p style={styles.progressTag}>
-                  {log.completed ? "Completado" : "Pendiente"}
-                </p>
-
-                <h3 style={styles.progressName}>
-                  {log.exercise?.name || "Ejercicio sin nombre"}
-                </h3>
-
-                <p style={styles.progressInfo}>
-                  <strong>Fecha:</strong>{" "}
-                  {log.performedAt
-                    ? new Date(log.performedAt).toLocaleString()
-                    : "N/A"}
-                </p>
-
-                <p style={styles.progressInfo}>
-                  <strong>Reps:</strong> {log.repsCompleted || "N/A"}
-                </p>
-
-                <p style={styles.progressInfo}>
-                  <strong>Peso:</strong>{" "}
-                  {log.weightUsedKg ? `${log.weightUsedKg} kg` : "N/A"}
-                </p>
-
-                <p style={styles.progressInfo}>
-                  <strong>Notas:</strong> {log.notes || "Sin notas"}
-                </p>
-              </article>
-            ))}
-          </div>
+        {!loading &&
+        !loadingProgress &&
+        progressLogs.length > 0 ? (
+          <DataTable
+            columns={columns}
+            data={progressLogs}
+            emptyMessage="No hay registros de progreso"
+          />
         ) : null}
       </section>
     </TrainerShell>
@@ -382,19 +402,8 @@ const styles = {
     marginBottom: "32px",
   },
 
-  formCard: {
-    background: "rgba(15, 23, 42, 0.92)",
-    border: "1px solid rgba(148, 163, 184, 0.14)",
-    borderRadius: "18px",
-    padding: "24px",
-    boxShadow: "0 14px 30px rgba(0, 0, 0, 0.22)",
-  },
-
-  summaryCard: {
-    background: "rgba(15, 23, 42, 0.92)",
-    border: "1px solid rgba(148, 163, 184, 0.14)",
-    borderRadius: "18px",
-    padding: "24px",
+  formWrapper: {
+    minHeight: "unset",
   },
 
   sectionTitle: {
@@ -462,16 +471,8 @@ const styles = {
     fontWeight: "700",
   },
 
-  button: {
-    marginTop: "4px",
-    padding: "14px 16px",
-    borderRadius: "12px",
-    border: "none",
-    background: "#22c55e",
-    color: "#052e16",
-    fontWeight: "800",
-    cursor: "pointer",
-    fontSize: "15px",
+  tableSection: {
+    marginTop: "16px",
   },
 
   error: {
@@ -484,67 +485,5 @@ const styles = {
     margin: 0,
     color: "#4ade80",
     fontSize: "14px",
-  },
-
-  summaryLabel: {
-    margin: 0,
-    color: "#94a3b8",
-    fontSize: "14px",
-  },
-
-  summaryValue: {
-    margin: "12px 0",
-    fontSize: "56px",
-    fontWeight: "800",
-  },
-
-  summaryText: {
-    margin: 0,
-    color: "#cbd5e1",
-    lineHeight: 1.5,
-  },
-
-  listSection: {
-    marginTop: "16px",
-  },
-
-  emptyCard: {
-    background: "rgba(15, 23, 42, 0.92)",
-    border: "1px solid rgba(148, 163, 184, 0.14)",
-    borderRadius: "18px",
-    padding: "24px",
-  },
-
-  progressGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    gap: "16px",
-  },
-
-  progressCard: {
-    background: "rgba(15, 23, 42, 0.92)",
-    border: "1px solid rgba(148, 163, 184, 0.14)",
-    borderRadius: "18px",
-    padding: "22px",
-  },
-
-  progressTag: {
-    margin: "0 0 10px 0",
-    color: "#4ade80",
-    fontSize: "13px",
-    textTransform: "uppercase",
-    fontWeight: "800",
-  },
-
-  progressName: {
-    margin: "0 0 16px 0",
-    fontSize: "28px",
-    fontWeight: "800",
-  },
-
-  progressInfo: {
-    margin: "0 0 10px 0",
-    color: "#e2e8f0",
-    lineHeight: 1.5,
   },
 };
