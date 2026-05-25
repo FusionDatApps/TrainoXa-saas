@@ -773,47 +773,12 @@ export default function WorkoutsPage() {
 }
 
 const styles = {
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "2fr 1fr",
-    gap: "16px",
-    marginBottom: "32px",
-  },
+  
 
-  formCard: {
-    background: "rgba(15, 23, 42, 0.92)",
-    border:
-      "1px solid rgba(148, 163, 184, 0.14)",
-    borderRadius: "18px",
-    padding: "24px",
-    boxShadow:
-      "0 14px 30px rgba(0, 0, 0, 0.22)",
-  },
-
-  summaryCard: {
-    background: "rgba(15, 23, 42, 0.92)",
-    border:
-      "1px solid rgba(148, 163, 184, 0.14)",
-    borderRadius: "18px",
-    padding: "24px",
-  },
-
-  sectionTitle: {
+    sectionTitle: {
     margin: "0 0 10px 0",
     fontSize: "24px",
     fontWeight: "800",
-  },
-
-  sectionText: {
-    margin: "0 0 18px 0",
-    color: "#94a3b8",
-    lineHeight: 1.5,
-  },
-
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "16px",
   },
 
   field: {
@@ -826,41 +791,7 @@ const styles = {
     fontSize: "14px",
     fontWeight: "700",
   },
-
-  input: {
-    padding: "14px 16px",
-    borderRadius: "12px",
-    border: "1px solid #334155",
-    background: "#0f172a",
-    color: "#f8fafc",
-    fontSize: "15px",
-    outline: "none",
-  },
-
-  textarea: {
-    minHeight: "90px",
-    padding: "14px 16px",
-    borderRadius: "12px",
-    border: "1px solid #334155",
-    background: "#0f172a",
-    color: "#f8fafc",
-    fontSize: "15px",
-    resize: "vertical",
-    outline: "none",
-  },
-
-  button: {
-    marginTop: "4px",
-    padding: "14px 16px",
-    borderRadius: "12px",
-    border: "none",
-    background: "#22c55e",
-    color: "#052e16",
-    fontWeight: "800",
-    cursor: "pointer",
-    fontSize: "15px",
-  },
-
+  
   error: {
     margin: 0,
     color: "#f87171",
@@ -873,34 +804,8 @@ const styles = {
     fontSize: "14px",
   },
 
-  summaryLabel: {
-    margin: 0,
-    color: "#94a3b8",
-    fontSize: "14px",
-  },
-
-  summaryValue: {
-    margin: "12px 0",
-    fontSize: "56px",
-    fontWeight: "800",
-  },
-
-  summaryText: {
-    margin: 0,
-    color: "#cbd5e1",
-    lineHeight: 1.5,
-  },
-
   listSection: {
     marginTop: "16px",
-  },
-
-  emptyCard: {
-    background: "rgba(15, 23, 42, 0.92)",
-    border:
-      "1px solid rgba(148, 163, 184, 0.14)",
-    borderRadius: "18px",
-    padding: "24px",
   },
 
   emptyTitle: {
@@ -916,14 +821,6 @@ const styles = {
     gap: "16px",
   },
 
-  workoutCard: {
-    background: "rgba(15, 23, 42, 0.92)",
-    border:
-      "1px solid rgba(148, 163, 184, 0.14)",
-    borderRadius: "18px",
-    padding: "22px",
-  },
-
   workoutTag: {
     margin: "0 0 10px 0",
     color: "#94a3b8",
@@ -935,12 +832,6 @@ const styles = {
     margin: "0 0 16px 0",
     fontSize: "30px",
     fontWeight: "800",
-  },
-
-  workoutInfo: {
-    margin: "0 0 10px 0",
-    color: "#e2e8f0",
-    lineHeight: 1.5,
   },
 
   divider: {
@@ -988,58 +879,7 @@ const styles = {
     resize: "vertical",
   },
 
-  addButton: {
-    padding: "12px",
-    borderRadius: "10px",
-    border: "none",
-    background: "#22c55e",
-    color: "#052e16",
-    fontWeight: "800",
-    cursor: "pointer",
-  },
-
-  removeButton: {
-    marginBottom: "10px",
-    padding: "8px 12px",
-    borderRadius: "8px",
-    border: "1px solid #7f1d1d",
-    background: "#450a0a",
-    color: "#fecaca",
-    fontWeight: "700",
-    fontSize: "13px",
-  },
-
-  exerciseList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-  },
-
-  exerciseItem: {
-    padding: "12px",
-    borderRadius: "12px",
-    background: "rgba(2, 6, 23, 0.7)",
-    border:
-      "1px solid rgba(148, 163, 184, 0.12)",
-  },
-
-  exerciseItemName: {
-    margin: "0 0 6px 0",
-    fontWeight: "800",
-  },
-
-  exerciseMeta: {
-    margin: 0,
-    color: "#94a3b8",
-    fontSize: "14px",
-  },
-
-  emptyExercises: {
-    color: "#94a3b8",
-    margin: 0,
-  },
-
-  topGrid: {
+ topGrid: {
     display: "grid",
     gridTemplateColumns: "2fr 1fr",
     gap: "16px",
