@@ -16,12 +16,13 @@ import SectionCard from "../../components/ui/SectionCard";
 import StatCard from "../../components/ui/StatCard";
 import LoadingCard from "../../components/ui/LoadingCard";
 import EmptyState from "../../components/ui/EmptyState";
-import ActionButton from "../../components/ui/ActionButton";
+
 import Badge from "../../components/ui/Badge";
 import DataTable from "../../components/ui/DataTable";
 import PageHeader from "../../components/ui/PageHeader";
 import FormField from "../../components/ui/FormField";
 import FeedbackMessage from "../../components/ui/FeedbackMessage";
+import FormActions from "../../components/ui/FormActions";
 
 export const dynamic = "force-dynamic";
 
@@ -53,26 +54,22 @@ export default function ClientsPage() {
   });
 
   async function handleSubmit(e) {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      await mutate({
-        fullName,
-        email,
-        password,
-      });
+  await mutate({
+    fullName,
+    email,
+    password,
+  });
 
-      setSuccessMessage("Cliente creado correctamente");
+  setSuccessMessage("Cliente creado correctamente");
 
-      setFullName("");
-      setEmail("");
-      setPassword("");
+  setFullName("");
+  setEmail("");
+  setPassword("");
 
-      await loadClients();
-    } catch (err) {
-      console.error(err);
-    }
-  }
+  await loadClients();
+}
 
   const columns = [
     {
@@ -143,11 +140,10 @@ export default function ClientsPage() {
                   onChange={(e) => setPassword(e.target.value)}
                 />
 
-                <div style={layoutStyles.actions}>
-                  <ActionButton disabled={creating}>
-                    {creating ? "Creando..." : "Crear cliente"}
-                  </ActionButton>
-                </div>
+                <FormActions
+                  loading={creating}
+                  submitText="Crear cliente"
+                />
 
                 {error ? (
                   <FeedbackMessage variant="error">{error}</FeedbackMessage>
