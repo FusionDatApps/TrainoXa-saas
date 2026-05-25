@@ -6,6 +6,7 @@ import TrainerShell from "../../components/TrainerShell";
 
 import { apiFetch } from "../../lib/api";
 import { uiStyles } from "../../lib/ui-styles";
+import { layoutStyles } from "../../lib/layout-styles";
 
 import useFetch from "../../hooks/useFetch";
 import useMutation from "../../hooks/useMutation";
@@ -110,7 +111,7 @@ export default function ClientsPage() {
     <TrainerShell title="Clientes" active="clients">
       <PageContainer>
         <div style={uiStyles.page}>
-          <section style={styles.topGrid}>
+          <section style={layoutStyles.topGrid}>
             <SectionCard>
               <PageHeader
                 eyebrow="Gestión de clientes"
@@ -142,7 +143,7 @@ export default function ClientsPage() {
                   onChange={(e) => setPassword(e.target.value)}
                 />
 
-                <div style={styles.actions}>
+                <div style={layoutStyles.actions}>
                   <ActionButton disabled={creating}>
                     {creating ? "Creando..." : "Crear cliente"}
                   </ActionButton>
@@ -168,7 +169,7 @@ export default function ClientsPage() {
           <SectionCard style={styles.tableSection}>
             <div style={uiStyles.sectionHeader}>
               <div>
-                <p style={styles.eyebrow}>Base de clientes</p>
+                <p style={layoutStyles.eyebrow}>Base de clientes</p>
                 <h2 style={uiStyles.sectionTitle}>Lista de clientes</h2>
               </div>
 
@@ -200,29 +201,9 @@ export default function ClientsPage() {
 }
 
 const styles = {
-  topGrid: {
-    display: "grid",
-    gridTemplateColumns: "2fr minmax(260px, 320px)",
-    gap: "18px",
-  },
-
+  
   tableSection: {
     minHeight: "auto",
-  },
-
-  actions: {
-    display: "flex",
-    justifyContent: "flex-start",
-    marginTop: "8px",
-  },
-
-  eyebrow: {
-    margin: "0 0 10px 0",
-    color: "#4ade80",
-    fontSize: "12px",
-    fontWeight: "900",
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
   },
 
   clientName: {

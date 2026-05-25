@@ -7,6 +7,7 @@ import TrainerShell from "../../components/TrainerShell";
 import { apiFetch } from "../../lib/api";
 import useMutation from "../../hooks/useMutation";
 import { uiStyles } from "../../lib/ui-styles";
+import { layoutStyles } from "../../lib/layout-styles";
 
 import PageContainer from "../../components/ui/PageContainer";
 import SectionCard from "../../components/ui/SectionCard";
@@ -310,7 +311,7 @@ export default function ProgressPage() {
     >
       <PageContainer>
         <div style={uiStyles.page}>
-          <section style={styles.topGrid}>
+          <section style={layoutStyles.topGrid}>
             <SectionCard style={styles.formCard}>
               <PageHeader
                 eyebrow="Tracking fitness"
@@ -332,12 +333,12 @@ export default function ProgressPage() {
                 style={uiStyles.stack}
               >
                 <div style={uiStyles.stack}>
-                  <label style={styles.label}>
+                  <label style={layoutStyles.label}>
                     Asignación activa
                   </label>
 
                   <select
-                    style={styles.select}
+                    style={layoutStyles.select}
                     value={assignmentId}
                     onChange={(e) =>
                       setAssignmentId(
@@ -424,7 +425,7 @@ export default function ProgressPage() {
                   }
                 />
 
-                <div style={styles.twoColumns}>
+                <div style={layoutStyles.twoColumns}>
                   <FormField
                     label="Repeticiones"
                     placeholder="Ej: 10, 8-10"
@@ -475,7 +476,7 @@ export default function ProgressPage() {
                   textarea
                 />
 
-                <div style={styles.actions}>
+                <div style={layoutStyles.actions}>
                   <ActionButton
                     disabled={
                       creating ||
@@ -517,7 +518,7 @@ export default function ProgressPage() {
           >
             <div style={uiStyles.sectionHeader}>
               <div>
-                <p style={styles.eyebrow}>
+                <p style={layoutStyles.eyebrow}>
                   Historial fitness
                 </p>
 
@@ -562,68 +563,13 @@ export default function ProgressPage() {
 }
 
 const styles = {
-  topGrid: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "2fr minmax(260px, 320px)",
-
-    gap: "18px",
-  },
-
+  
   formCard: {
     minHeight: "unset",
   },
 
   tableSection: {
     minHeight: "auto",
-  },
-
-  eyebrow: {
-    margin: "0 0 10px 0",
-
-    color: "#4ade80",
-
-    fontSize: "12px",
-
-    fontWeight: "900",
-
-    textTransform: "uppercase",
-
-    letterSpacing: "0.08em",
-  },
-
-  label: {
-    color: "#e2e8f0",
-
-    fontSize: "14px",
-
-    fontWeight: "700",
-  },
-
-  select: {
-    padding: "14px 16px",
-
-    borderRadius: "12px",
-
-    border: "1px solid #334155",
-
-    background: "#0f172a",
-
-    color: "#f8fafc",
-
-    fontSize: "15px",
-
-    outline: "none",
-  },
-
-  twoColumns: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "1fr 1fr",
-
-    gap: "14px",
   },
 
   checkboxRow: {
@@ -636,14 +582,6 @@ const styles = {
     color: "#cbd5e1",
 
     fontWeight: "700",
-  },
-
-  actions: {
-    display: "flex",
-
-    justifyContent: "flex-start",
-
-    marginTop: "8px",
   },
 
   exerciseName: {
