@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import TrainerShell from "../../components/TrainerShell";
 
 import { apiFetch } from "../../lib/api";
-import { extractApiError } from "../../lib/form-helpers";
 import { uiStyles } from "../../lib/ui-styles";
+
+import useFetch from "../../hooks/useFetch";
+import useMutation from "../../hooks/useMutation";
 
 import PageContainer from "../../components/ui/PageContainer";
 import SectionCard from "../../components/ui/SectionCard";
@@ -23,52 +25,43 @@ import FeedbackMessage from "../../components/ui/FeedbackMessage";
 export const dynamic = "force-dynamic";
 
 export default function ClientsPage() {
-  const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: clients = [],
+    loading,
+    error: fetchError,
+    refetch: loadClients,
+  } = useFetch("/clients", {
+    initialData: [],
+  });
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const [creating, setCreating] = useState(false);
-
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  async function loadClients() {
-    try {
-      const res = await apiFetch("/clients");
-
-      setClients(res.data || []);
-    } catch (err) {
-      console.error("Error cargando clientes:", err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    loadClients();
-  }, []);
+  const {
+    loading: creating,
+    error,
+    success,
+    mutate,
+    setSuccessMessage,
+  } = useMutation(async (payload) => {
+    return apiFetch("/clients", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  });
 
   async function handleSubmit(e) {
     e.preventDefault();
 
-    setCreating(true);
-    setError("");
-    setSuccess("");
-
     try {
-      await apiFetch("/clients", {
-        method: "POST",
-        body: JSON.stringify({
-          fullName,
-          email,
-          password,
-        }),
+      await mutate({
+        fullName,
+        email,
+        password,
       });
 
-      setSuccess("Cliente creado correctamente");
+      setSuccessMessage("Cliente creado correctamente");
 
       setFullName("");
       setEmail("");
@@ -76,9 +69,7 @@ export default function ClientsPage() {
 
       await loadClients();
     } catch (err) {
-      setError(extractApiError(err));
-    } finally {
-      setCreating(false);
+      console.error(err);
     }
   }
 
@@ -88,13 +79,8 @@ export default function ClientsPage() {
       label: "Cliente",
       render: (client) => (
         <div>
-          <p style={styles.clientName}>
-            {client.fullName || "Sin nombre"}
-          </p>
-
-          <p style={styles.clientEmail}>
-            {client.email || "Sin email"}
-          </p>
+          <p style={styles.clientName}>{client.fullName || "Sin nombre"}</p>
+          <p style={styles.clientEmail}>{client.email || "Sin email"}</p>
         </div>
       ),
     },
@@ -183,7 +169,6 @@ export default function ClientsPage() {
             <div style={uiStyles.sectionHeader}>
               <div>
                 <p style={styles.eyebrow}>Base de clientes</p>
-
                 <h2 style={uiStyles.sectionTitle}>Lista de clientes</h2>
               </div>
 
@@ -191,6 +176,10 @@ export default function ClientsPage() {
             </div>
 
             {loading ? <LoadingCard>Cargando clientes...</LoadingCard> : null}
+
+            {fetchError ? (
+              <FeedbackMessage variant="error">{fetchError}</FeedbackMessage>
+            ) : null}
 
             {!loading && clients.length === 0 ? (
               <EmptyState>Todavía no existen clientes registrados.</EmptyState>

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import TrainerShell from "../../components/TrainerShell";
 
 import { apiFetch } from "../../lib/api";
-import { extractApiError } from "../../lib/form-helpers";
+import useMutation from "../../hooks/useMutation";
 import { uiStyles } from "../../lib/ui-styles";
 
 import PageContainer from "../../components/ui/PageContainer";
@@ -43,15 +43,8 @@ export default function AssignmentsPage() {
   const [endDate, setEndDate] =
     useState("");
 
-  const [creating, setCreating] =
-    useState(false);
-
   const [deactivatingId, setDeactivatingId] =
     useState(null);
-
-  const [error, setError] = useState("");
-  const [success, setSuccess] =
-    useState("");
 
   const activeAssignments = useMemo(
     () =>
@@ -68,6 +61,32 @@ export default function AssignmentsPage() {
       ),
     [assignments]
   );
+
+  const {
+      loading: creating,
+      error,
+      success,
+      mutate: createAssignment,
+      setSuccessMessage,
+    } = useMutation(async (payload) => {
+      return apiFetch("/assignments", {
+        method: "POST",
+
+        body: JSON.stringify(payload),
+      });
+    });
+
+  const {
+      loading: deactivating,
+      mutate: deactivateAssignment,
+    } = useMutation(async (assignmentId) => {
+      return apiFetch(
+        `/assignments/${assignmentId}/deactivate`,
+        {
+          method: "PATCH",
+        }
+      );
+    });
 
   async function loadData() {
     setLoading(true);
@@ -95,7 +114,7 @@ export default function AssignmentsPage() {
         err.message
       );
 
-      setError(extractApiError(err));
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -106,73 +125,50 @@ export default function AssignmentsPage() {
   }, []);
 
   async function handleSubmit(e) {
-    e.preventDefault();
+  e.preventDefault();
 
-    setCreating(true);
+  await createAssignment({
+    clientId,
+    workoutPlanId,
 
-    setError("");
-    setSuccess("");
+    startDate:
+      startDate || undefined,
 
-    try {
-      await apiFetch("/assignments", {
-        method: "POST",
+    endDate:
+      endDate || undefined,
+  });
 
-        body: JSON.stringify({
-          clientId,
-          workoutPlanId,
+  setClientId("");
+  setWorkoutPlanId("");
+  setStartDate("");
+  setEndDate("");
 
-          startDate:
-            startDate || undefined,
+  setSuccessMessage(
+    "Rutina asignada correctamente"
+  );
 
-          endDate:
-            endDate || undefined,
-        }),
-      });
-
-      setClientId("");
-      setWorkoutPlanId("");
-      setStartDate("");
-      setEndDate("");
-
-      setSuccess(
-        "Rutina asignada correctamente"
-      );
-
-      await loadData();
-    } catch (err) {
-      setError(extractApiError(err));
-    } finally {
-      setCreating(false);
-    }
-  }
+  await loadData();
+}
 
   async function handleDeactivate(
-    assignmentId
-  ) {
-    try {
-      setDeactivatingId(assignmentId);
+  assignmentId
+) {
+  try {
+    setDeactivatingId(assignmentId);
 
-      setError("");
-      setSuccess("");
+    await deactivateAssignment(
+      assignmentId
+    );
 
-      await apiFetch(
-        `/assignments/${assignmentId}/deactivate`,
-        {
-          method: "PATCH",
-        }
-      );
+    setSuccessMessage(
+      "Asignación desactivada correctamente"
+    );
 
-      setSuccess(
-        "Asignación desactivada correctamente"
-      );
-
-      await loadData();
-    } catch (err) {
-      setError(extractApiError(err));
-    } finally {
-      setDeactivatingId(null);
-    }
+    await loadData();
+  } finally {
+    setDeactivatingId(null);
   }
+}
 
   const assignmentColumns = [
     {
@@ -262,8 +258,8 @@ export default function AssignmentsPage() {
               )
             }
             disabled={
-              deactivatingId ===
-              assignment.id
+              deactivating &&
+              deactivatingId === assignment.id
             }
           >
             {deactivatingId ===

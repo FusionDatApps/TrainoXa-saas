@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
 
+import { useState } from "react";
+
+import useFetch from "../../hooks/useFetch";
+import useMutation from "../../hooks/useMutation";
 import TrainerShell from "../../components/TrainerShell";
 
 import { apiFetch } from "../../lib/api";
-import { extractApiError } from "../../lib/form-helpers";
+
 import { uiStyles } from "../../lib/ui-styles";
 
 import PageContainer from "../../components/ui/PageContainer";
@@ -34,8 +37,13 @@ const MUSCLE_GROUPS = [
 ];
 
 export default function ExercisesPage() {
-  const [exercises, setExercises] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const {
+      data: exercises = [],
+      loading,
+      refetch,
+    } = useFetch("/exercises", {
+      initialData: [],
+    });
 
   const [name, setName] = useState("");
   const [muscleGroup, setMuscleGroup] =
@@ -44,52 +52,30 @@ export default function ExercisesPage() {
   const [description, setDescription] =
     useState("");
 
-  const [creating, setCreating] =
-    useState(false);
+  const {
+    loading: creating,
+    error,
+    success,
+    mutate,
+    setSuccessMessage,
+  } = useMutation(async (payload) => {
+    return apiFetch("/exercises", {
+      method: "POST",
 
-  const [error, setError] = useState("");
-  const [success, setSuccess] =
-    useState("");
-
-  async function loadExercises() {
-    try {
-      const res = await apiFetch("/exercises");
-
-      setExercises(res.data || []);
-    } catch (err) {
-      console.error(
-        "Error cargando ejercicios:",
-        err.message
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    loadExercises();
-  }, []);
+      body: JSON.stringify(payload),
+    });
+  });
 
   async function handleSubmit(e) {
-    e.preventDefault();
+      e.preventDefault();
 
-    setCreating(true);
-
-    setError("");
-    setSuccess("");
-
-    try {
-      await apiFetch("/exercises", {
-        method: "POST",
-
-        body: JSON.stringify({
-          name,
-          muscleGroup,
-          description,
-        }),
+      await mutate({
+        name,
+        muscleGroup,
+        description,
       });
 
-      setSuccess(
+      setSuccessMessage(
         "Ejercicio creado correctamente"
       );
 
@@ -97,13 +83,8 @@ export default function ExercisesPage() {
       setDescription("");
       setMuscleGroup("Pecho");
 
-      await loadExercises();
-    } catch (err) {
-      setError(extractApiError(err));
-    } finally {
-      setCreating(false);
+      await refetch();
     }
-  }
 
   const columns = [
     {

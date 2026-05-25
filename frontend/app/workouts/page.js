@@ -17,7 +17,7 @@ import FormField from "../../components/ui/FormField";
 import FeedbackMessage from "../../components/ui/FeedbackMessage";
 import StateRenderer from "../../components/ui/StateRenderer";
 
-import { extractApiError } from "../../lib/form-helpers";
+import useMutation from "../../hooks/useMutation";
 import { uiStyles } from "../../lib/ui-styles";
 
 export const dynamic = "force-dynamic";
@@ -30,9 +30,45 @@ export default function WorkoutsPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
-  const [creating, setCreating] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const {
+      loading: creating,
+      error,
+      success,
+      mutate: createWorkout,
+      setSuccessMessage,
+    } = useMutation(async (payload) => {
+      return apiFetch("/workouts", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    });
+
+  const {
+      mutate: addWorkoutExercise,
+    } = useMutation(
+      async ({ workoutId, payload }) => {
+        return apiFetch(
+          `/workouts/${workoutId}/exercises`,
+          {
+            method: "POST",
+            body: JSON.stringify(payload),
+          }
+        );
+      }
+    );
+
+  const {
+      mutate: removeWorkoutExercise,
+    } = useMutation(
+      async ({ workoutId, itemId }) => {
+        return apiFetch(
+          `/workouts/${workoutId}/exercises/${itemId}`,
+          {
+            method: "DELETE",
+          }
+        );
+      }
+    );
 
   const [selectedExercises, setSelectedExercises] = useState({});
   const [workoutExercises, setWorkoutExercises] = useState({});
@@ -67,7 +103,7 @@ export default function WorkoutsPage() {
       );
     } catch (err) {
       console.error("Error cargando rutinas:", err.message);
-      setError(err.message || "No se pudieron cargar las rutinas");
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -92,32 +128,23 @@ export default function WorkoutsPage() {
   }, []);
 
   async function handleSubmit(e) {
-    e.preventDefault();
+      e.preventDefault();
 
-    setCreating(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      await apiFetch("/workouts", {
-        method: "POST",
-        body: JSON.stringify({
-          name: name.trim(),
-          description: description.trim() || undefined,
-        }),
+      await createWorkout({
+        name: name.trim(),
+        description:
+          description.trim() || undefined,
       });
 
       setName("");
       setDescription("");
-      setSuccess("Rutina creada correctamente");
+
+      setSuccessMessage(
+        "Rutina creada correctamente"
+      );
 
       await loadWorkouts();
-    } catch (err) {
-      setError(err.message || "No se pudo crear la rutina");
-    } finally {
-      setCreating(false);
     }
-  }
 
   async function handleAddExercise(workoutId) {
   const form = selectedExercises[workoutId];
@@ -151,16 +178,19 @@ export default function WorkoutsPage() {
       form.exerciseOrder || currentItems.length + 1
     );
 
-    await apiFetch(`/workouts/${workoutId}/exercises`, {
-      method: "POST",
-      body: JSON.stringify({
+    await addWorkoutExercise({
+      workoutId,
+
+      payload: {
         exerciseId: form.exerciseId,
         exerciseOrder: nextOrder,
         sets: Number(form.sets || 4),
         reps: form.reps || "12",
-        restSeconds: Number(form.restSeconds || 60),
+        restSeconds: Number(
+          form.restSeconds || 60
+        ),
         notes: form.notes || "",
-      }),
+      },
     });
 
     setSelectedExercises((prev) => ({
@@ -223,9 +253,11 @@ async function handleRemoveExercise(workoutId, itemId) {
   }));
 
   try {
-    await apiFetch(`/workouts/${workoutId}/exercises/${itemId}`, {
-      method: "DELETE",
+    await removeWorkoutExercise({
+      workoutId,
+      itemId,
     });
+    
 
     setExerciseFeedback((prev) => ({
       ...prev,

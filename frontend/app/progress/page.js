@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import TrainerShell from "../../components/TrainerShell";
 
 import { apiFetch } from "../../lib/api";
-import { extractApiError } from "../../lib/form-helpers";
+import useMutation from "../../hooks/useMutation";
 import { uiStyles } from "../../lib/ui-styles";
 
 import PageContainer from "../../components/ui/PageContainer";
@@ -62,12 +62,19 @@ export default function ProgressPage() {
   const [loadingProgress, setLoadingProgress] =
     useState(false);
 
-  const [creating, setCreating] =
-    useState(false);
+  const {
+      loading: creating,
+      error,
+      success,
+      mutate: createProgress,
+      setSuccessMessage,
+    } = useMutation(async (payload) => {
+      return apiFetch("/progress", {
+        method: "POST",
 
-  const [error, setError] = useState("");
-  const [success, setSuccess] =
-    useState("");
+        body: JSON.stringify(payload),
+      });
+    });
 
   const activeAssignments = useMemo(
     () =>
@@ -107,7 +114,7 @@ export default function ProgressPage() {
         setAssignmentId(firstActive.id);
       }
     } catch (err) {
-      setError(extractApiError(err));
+  console.error(err);
     } finally {
       setLoading(false);
     }
@@ -142,7 +149,7 @@ export default function ProgressPage() {
       setWorkoutExercises([]);
       setExerciseId("");
 
-      setError(extractApiError(err));
+  console.error(err);
     } finally {
       setLoadingExercises(false);
     }
@@ -168,7 +175,7 @@ export default function ProgressPage() {
     } catch (err) {
       setProgressLogs([]);
 
-      setError(extractApiError(err));
+      console.error(err);
     } finally {
       setLoadingProgress(false);
     }
@@ -194,57 +201,42 @@ export default function ProgressPage() {
   }, [selectedAssignment]);
 
   async function handleSubmit(e) {
-    e.preventDefault();
+  e.preventDefault();
 
-    setCreating(true);
+  await createProgress({
+    assignmentId,
+    exerciseId,
 
-    setError("");
-    setSuccess("");
+    performedAt: performedAt
+      ? new Date(
+          performedAt
+        ).toISOString()
+      : undefined,
 
-    try {
-      await apiFetch("/progress", {
-        method: "POST",
+    repsCompleted:
+      repsCompleted || undefined,
 
-        body: JSON.stringify({
-          assignmentId,
-          exerciseId,
+    weightUsedKg: weightUsedKg
+      ? Number(weightUsedKg)
+      : undefined,
 
-          performedAt: performedAt
-            ? new Date(
-                performedAt
-              ).toISOString()
-            : undefined,
+    completed,
 
-          repsCompleted:
-            repsCompleted || undefined,
+    notes: notes || undefined,
+  });
 
-          weightUsedKg: weightUsedKg
-            ? Number(weightUsedKg)
-            : undefined,
+  setPerformedAt("");
+  setRepsCompleted("");
+  setWeightUsedKg("");
+  setCompleted(true);
+  setNotes("");
 
-          completed,
+  setSuccessMessage(
+    "Progreso registrado correctamente"
+  );
 
-          notes: notes || undefined,
-        }),
-      });
-
-      setPerformedAt("");
-      setRepsCompleted("");
-      setWeightUsedKg("");
-      setCompleted(true);
-      setNotes("");
-
-      setSuccess(
-        "Progreso registrado correctamente"
-      );
-
-      await loadProgress(assignmentId);
-    } catch (err) {
-      setError(extractApiError(err));
-    } finally {
-      setCreating(false);
-    }
-  }
+  await loadProgress(assignmentId);
+}
 
   const columns = [
     {
