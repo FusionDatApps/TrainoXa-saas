@@ -11,15 +11,14 @@ import { layoutStyles } from "../../lib/layout-styles";
 
 import PageContainer from "../../components/ui/PageContainer";
 import SectionCard from "../../components/ui/SectionCard";
-import LoadingCard from "../../components/ui/LoadingCard";
-import EmptyState from "../../components/ui/EmptyState";
-import ActionButton from "../../components/ui/ActionButton";
 import Badge from "../../components/ui/Badge";
 import DataTable from "../../components/ui/DataTable";
 import PageHeader from "../../components/ui/PageHeader";
 import FeedbackMessage from "../../components/ui/FeedbackMessage";
 import StatCard from "../../components/ui/StatCard";
 import StateRenderer from "../../components/ui/StateRenderer";
+import FormActions from "../../components/ui/FormActions";
+import ActionButton from "../../components/ui/ActionButton";
 
 export const dynamic = "force-dynamic";
 
@@ -64,30 +63,30 @@ export default function AssignmentsPage() {
   );
 
   const {
-      loading: creating,
-      error,
-      success,
-      mutate: createAssignment,
-      setSuccessMessage,
-    } = useMutation(async (payload) => {
-      return apiFetch("/assignments", {
-        method: "POST",
+    loading: creating,
+    error,
+    success,
+    mutate: createAssignment,
+    setSuccessMessage,
+  } = useMutation(async (payload) => {
+    return apiFetch("/assignments", {
+      method: "POST",
 
-        body: JSON.stringify(payload),
-      });
+      body: JSON.stringify(payload),
     });
+  });
 
   const {
-      loading: deactivating,
-      mutate: deactivateAssignment,
-    } = useMutation(async (assignmentId) => {
-      return apiFetch(
-        `/assignments/${assignmentId}/deactivate`,
-        {
-          method: "PATCH",
-        }
-      );
-    });
+    loading: deactivating,
+    mutate: deactivateAssignment,
+  } = useMutation(async (assignmentId) => {
+    return apiFetch(
+      `/assignments/${assignmentId}/deactivate`,
+      {
+        method: "PATCH",
+      }
+    );
+  });
 
   async function loadData() {
     setLoading(true);
@@ -126,50 +125,50 @@ export default function AssignmentsPage() {
   }, []);
 
   async function handleSubmit(e) {
-  e.preventDefault();
+    e.preventDefault();
 
-  await createAssignment({
-    clientId,
-    workoutPlanId,
+    await createAssignment({
+      clientId,
+      workoutPlanId,
 
-    startDate:
-      startDate || undefined,
+      startDate:
+        startDate || undefined,
 
-    endDate:
-      endDate || undefined,
-  });
+      endDate:
+        endDate || undefined,
+    });
 
-  setClientId("");
-  setWorkoutPlanId("");
-  setStartDate("");
-  setEndDate("");
-
-  setSuccessMessage(
-    "Rutina asignada correctamente"
-  );
-
-  await loadData();
-}
-
-  async function handleDeactivate(
-  assignmentId
-) {
-  try {
-    setDeactivatingId(assignmentId);
-
-    await deactivateAssignment(
-      assignmentId
-    );
+    setClientId("");
+    setWorkoutPlanId("");
+    setStartDate("");
+    setEndDate("");
 
     setSuccessMessage(
-      "Asignación desactivada correctamente"
+      "Rutina asignada correctamente"
     );
 
     await loadData();
-  } finally {
-    setDeactivatingId(null);
   }
-}
+
+  async function handleDeactivate(
+    assignmentId
+  ) {
+    try {
+      setDeactivatingId(assignmentId);
+
+      await deactivateAssignment(
+        assignmentId
+      );
+
+      setSuccessMessage(
+        "Asignación desactivada correctamente"
+      );
+
+      await loadData();
+    } finally {
+      setDeactivatingId(null);
+    }
+  }
 
   const assignmentColumns = [
     {
@@ -345,12 +344,12 @@ export default function AssignmentsPage() {
                 </div>
 
                 <div style={uiStyles.stack}>
-                  <label style={styles.label}>
+                  <label style={layoutStyles.label}>
                     Rutina
                   </label>
 
                   <select
-                    style={styles.select}
+                    style={layoutStyles.select}
                     value={workoutPlanId}
                     onChange={(e) =>
                       setWorkoutPlanId(
@@ -380,13 +379,17 @@ export default function AssignmentsPage() {
                 <div style={layoutStyles.twoColumns}>
                   <div style={uiStyles.stack}>
                     <label
-                      style={styles.label}
+                      style={
+                        layoutStyles.label
+                      }
                     >
                       Fecha inicio
                     </label>
 
                     <input
-                      style={styles.select}
+                      style={
+                        layoutStyles.select
+                      }
                       type="date"
                       value={startDate}
                       onChange={(e) =>
@@ -399,13 +402,17 @@ export default function AssignmentsPage() {
 
                   <div style={uiStyles.stack}>
                     <label
-                      style={styles.label}
+                      style={
+                        layoutStyles.label
+                      }
                     >
                       Fecha fin
                     </label>
 
                     <input
-                      style={styles.select}
+                      style={
+                        layoutStyles.select
+                      }
                       type="date"
                       value={endDate}
                       onChange={(e) =>
@@ -417,20 +424,10 @@ export default function AssignmentsPage() {
                   </div>
                 </div>
 
-                <div style={layoutStyles.actions}>
-                  <ActionButton
-                    disabled={
-                      creating ||
-                      clients.length ===
-                        0 ||
-                      workouts.length === 0
-                    }
-                  >
-                    {creating
-                      ? "Asignando..."
-                      : "Asignar rutina"}
-                  </ActionButton>
-                </div>
+                <FormActions
+                  loading={creating}
+                  submitText="Asignar rutina"
+                />
 
                 {error ? (
                   <FeedbackMessage variant="error">
@@ -514,7 +511,6 @@ export default function AssignmentsPage() {
 }
 
 const styles = {
-  
   formCard: {
     minHeight: "auto",
   },
@@ -522,7 +518,7 @@ const styles = {
   tableSection: {
     minHeight: "auto",
   },
- 
+
   primaryText: {
     fontWeight: "800",
 

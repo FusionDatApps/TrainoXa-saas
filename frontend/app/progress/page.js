@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import TrainerShell from "../../components/TrainerShell";
 
@@ -11,16 +15,15 @@ import { layoutStyles } from "../../lib/layout-styles";
 
 import PageContainer from "../../components/ui/PageContainer";
 import SectionCard from "../../components/ui/SectionCard";
-import LoadingCard from "../../components/ui/LoadingCard";
 import EmptyState from "../../components/ui/EmptyState";
 import StatCard from "../../components/ui/StatCard";
 import Badge from "../../components/ui/Badge";
-import ActionButton from "../../components/ui/ActionButton";
 import DataTable from "../../components/ui/DataTable";
 import PageHeader from "../../components/ui/PageHeader";
 import FormField from "../../components/ui/FormField";
 import FeedbackMessage from "../../components/ui/FeedbackMessage";
 import StateRenderer from "../../components/ui/StateRenderer";
+import FormActions from "../../components/ui/FormActions";
 
 export const dynamic = "force-dynamic";
 
@@ -64,18 +67,18 @@ export default function ProgressPage() {
     useState(false);
 
   const {
-      loading: creating,
-      error,
-      success,
-      mutate: createProgress,
-      setSuccessMessage,
-    } = useMutation(async (payload) => {
-      return apiFetch("/progress", {
-        method: "POST",
+    loading: creating,
+    error,
+    success,
+    mutate: createProgress,
+    setSuccessMessage,
+  } = useMutation(async (payload) => {
+    return apiFetch("/progress", {
+      method: "POST",
 
-        body: JSON.stringify(payload),
-      });
+      body: JSON.stringify(payload),
     });
+  });
 
   const activeAssignments = useMemo(
     () =>
@@ -96,7 +99,6 @@ export default function ProgressPage() {
 
   async function loadAssignments() {
     setLoading(true);
-    setError("");
 
     try {
       const response = await apiFetch(
@@ -115,7 +117,7 @@ export default function ProgressPage() {
         setAssignmentId(firstActive.id);
       }
     } catch (err) {
-  console.error(err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -130,7 +132,6 @@ export default function ProgressPage() {
     }
 
     setLoadingExercises(true);
-    setError("");
 
     try {
       const response = await apiFetch(
@@ -150,7 +151,7 @@ export default function ProgressPage() {
       setWorkoutExercises([]);
       setExerciseId("");
 
-  console.error(err);
+      console.error(err);
     } finally {
       setLoadingExercises(false);
     }
@@ -165,7 +166,6 @@ export default function ProgressPage() {
     }
 
     setLoadingProgress(true);
-    setError("");
 
     try {
       const response = await apiFetch(
@@ -202,42 +202,42 @@ export default function ProgressPage() {
   }, [selectedAssignment]);
 
   async function handleSubmit(e) {
-  e.preventDefault();
+    e.preventDefault();
 
-  await createProgress({
-    assignmentId,
-    exerciseId,
+    await createProgress({
+      assignmentId,
+      exerciseId,
 
-    performedAt: performedAt
-      ? new Date(
-          performedAt
-        ).toISOString()
-      : undefined,
+      performedAt: performedAt
+        ? new Date(
+            performedAt
+          ).toISOString()
+        : undefined,
 
-    repsCompleted:
-      repsCompleted || undefined,
+      repsCompleted:
+        repsCompleted || undefined,
 
-    weightUsedKg: weightUsedKg
-      ? Number(weightUsedKg)
-      : undefined,
+      weightUsedKg: weightUsedKg
+        ? Number(weightUsedKg)
+        : undefined,
 
-    completed,
+      completed,
 
-    notes: notes || undefined,
-  });
+      notes: notes || undefined,
+    });
 
-  setPerformedAt("");
-  setRepsCompleted("");
-  setWeightUsedKg("");
-  setCompleted(true);
-  setNotes("");
+    setPerformedAt("");
+    setRepsCompleted("");
+    setWeightUsedKg("");
+    setCompleted(true);
+    setNotes("");
 
-  setSuccessMessage(
-    "Progreso registrado correctamente"
-  );
+    setSuccessMessage(
+      "Progreso registrado correctamente"
+    );
 
-  await loadProgress(assignmentId);
-}
+    await loadProgress(assignmentId);
+  }
 
   const columns = [
     {
@@ -372,12 +372,12 @@ export default function ProgressPage() {
                 </div>
 
                 <div style={uiStyles.stack}>
-                  <label style={styles.label}>
+                  <label style={layoutStyles.label}>
                     Ejercicio
                   </label>
 
                   <select
-                    style={styles.select}
+                    style={layoutStyles.select}
                     value={exerciseId}
                     onChange={(e) =>
                       setExerciseId(
@@ -476,21 +476,10 @@ export default function ProgressPage() {
                   textarea
                 />
 
-                <div style={layoutStyles.actions}>
-                  <ActionButton
-                    disabled={
-                      creating ||
-                      activeAssignments.length ===
-                        0 ||
-                      workoutExercises.length ===
-                        0
-                    }
-                  >
-                    {creating
-                      ? "Registrando..."
-                      : "Registrar progreso"}
-                  </ActionButton>
-                </div>
+                <FormActions
+                  loading={creating}
+                  submitText="Registrar progreso"
+                />
 
                 {error ? (
                   <FeedbackMessage variant="error">
@@ -563,7 +552,6 @@ export default function ProgressPage() {
 }
 
 const styles = {
-  
   formCard: {
     minHeight: "unset",
   },

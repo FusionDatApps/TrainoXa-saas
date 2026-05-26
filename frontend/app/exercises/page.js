@@ -1,6 +1,5 @@
 "use client";
 
-
 import { useState } from "react";
 
 import useFetch from "../../hooks/useFetch";
@@ -8,7 +7,6 @@ import useMutation from "../../hooks/useMutation";
 import TrainerShell from "../../components/TrainerShell";
 
 import { apiFetch } from "../../lib/api";
-
 import { uiStyles } from "../../lib/ui-styles";
 import { layoutStyles } from "../../lib/layout-styles";
 
@@ -17,7 +15,7 @@ import SectionCard from "../../components/ui/SectionCard";
 import StatCard from "../../components/ui/StatCard";
 import LoadingCard from "../../components/ui/LoadingCard";
 import EmptyState from "../../components/ui/EmptyState";
-import ActionButton from "../../components/ui/ActionButton";
+import FormActions from "../../components/ui/FormActions";
 import Badge from "../../components/ui/Badge";
 import DataTable from "../../components/ui/DataTable";
 import PageHeader from "../../components/ui/PageHeader";
@@ -39,19 +37,16 @@ const MUSCLE_GROUPS = [
 
 export default function ExercisesPage() {
   const {
-      data: exercises = [],
-      loading,
-      refetch,
-    } = useFetch("/exercises", {
-      initialData: [],
-    });
+    data: exercises = [],
+    loading,
+    refetch,
+  } = useFetch("/exercises", {
+    initialData: [],
+  });
 
   const [name, setName] = useState("");
-  const [muscleGroup, setMuscleGroup] =
-    useState("Pecho");
-
-  const [description, setDescription] =
-    useState("");
+  const [muscleGroup, setMuscleGroup] = useState("Pecho");
+  const [description, setDescription] = useState("");
 
   const {
     loading: creating,
@@ -62,37 +57,32 @@ export default function ExercisesPage() {
   } = useMutation(async (payload) => {
     return apiFetch("/exercises", {
       method: "POST",
-
       body: JSON.stringify(payload),
     });
   });
 
   async function handleSubmit(e) {
-      e.preventDefault();
+    e.preventDefault();
 
-      await mutate({
-        name,
-        muscleGroup,
-        description,
-      });
+    await mutate({
+      name,
+      muscleGroup,
+      description,
+    });
 
-      setSuccessMessage(
-        "Ejercicio creado correctamente"
-      );
+    setSuccessMessage("Ejercicio creado correctamente");
 
-      setName("");
-      setDescription("");
-      setMuscleGroup("Pecho");
+    setName("");
+    setDescription("");
+    setMuscleGroup("Pecho");
 
-      await refetch();
-    }
+    await refetch();
+  }
 
   const columns = [
     {
       key: "exercise",
-
       label: "Ejercicio",
-
       render: (exercise) => (
         <div>
           <p style={styles.exerciseName}>
@@ -100,8 +90,7 @@ export default function ExercisesPage() {
           </p>
 
           <p style={styles.exerciseDescription}>
-            {exercise.description ||
-              "Sin descripción"}
+            {exercise.description || "Sin descripción"}
           </p>
         </div>
       ),
@@ -109,9 +98,7 @@ export default function ExercisesPage() {
 
     {
       key: "group",
-
       label: "Grupo muscular",
-
       render: (exercise) => (
         <Badge variant="default">
           {exercise.muscleGroup || "N/A"}
@@ -121,9 +108,7 @@ export default function ExercisesPage() {
 
     {
       key: "status",
-
       label: "Estado",
-
       render: () => (
         <Badge variant="success">
           Disponible
@@ -155,9 +140,7 @@ export default function ExercisesPage() {
                   label="Nombre del ejercicio"
                   placeholder="Ej: Press banca plano"
                   value={name}
-                  onChange={(e) =>
-                    setName(e.target.value)
-                  }
+                  onChange={(e) => setName(e.target.value)}
                 />
 
                 <div style={uiStyles.stack}>
@@ -169,21 +152,17 @@ export default function ExercisesPage() {
                     style={layoutStyles.select}
                     value={muscleGroup}
                     onChange={(e) =>
-                      setMuscleGroup(
-                        e.target.value
-                      )
+                      setMuscleGroup(e.target.value)
                     }
                   >
-                    {MUSCLE_GROUPS.map(
-                      (group) => (
-                        <option
-                          key={group}
-                          value={group}
-                        >
-                          {group}
-                        </option>
-                      )
-                    )}
+                    {MUSCLE_GROUPS.map((group) => (
+                      <option
+                        key={group}
+                        value={group}
+                      >
+                        {group}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -192,22 +171,15 @@ export default function ExercisesPage() {
                   placeholder="Opcional"
                   value={description}
                   onChange={(e) =>
-                    setDescription(
-                      e.target.value
-                    )
+                    setDescription(e.target.value)
                   }
                   textarea
                 />
 
-                <div style={layoutStyles.actions}>
-                  <ActionButton
-                    disabled={creating}
-                  >
-                    {creating
-                      ? "Creando..."
-                      : "Crear ejercicio"}
-                  </ActionButton>
-                </div>
+                <FormActions
+                  loading={creating}
+                  submitText="Crear ejercicio"
+                />
 
                 {error ? (
                   <FeedbackMessage variant="error">
@@ -253,16 +225,13 @@ export default function ExercisesPage() {
               </LoadingCard>
             ) : null}
 
-            {!loading &&
-            exercises.length === 0 ? (
+            {!loading && exercises.length === 0 ? (
               <EmptyState>
-                Todavía no existen ejercicios
-                registrados.
+                Todavía no existen ejercicios registrados.
               </EmptyState>
             ) : null}
 
-            {!loading &&
-            exercises.length > 0 ? (
+            {!loading && exercises.length > 0 ? (
               <DataTable
                 columns={columns}
                 data={exercises}
@@ -277,26 +246,20 @@ export default function ExercisesPage() {
 }
 
 const styles = {
-
   tableSection: {
     minHeight: "auto",
   },
- 
+
   exerciseName: {
     margin: "0 0 4px 0",
-
     fontWeight: "800",
-
     color: "#f8fafc",
   },
 
   exerciseDescription: {
     margin: 0,
-
     color: "#94a3b8",
-
     fontSize: "13px",
-
     lineHeight: 1.5,
   },
 };
