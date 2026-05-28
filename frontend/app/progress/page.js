@@ -9,6 +9,7 @@ import {
 import TrainerShell from "../../components/TrainerShell";
 
 import { apiFetch } from "../../lib/api";
+import useFetch from "../../hooks/useFetch";
 import useMutation from "../../hooks/useMutation";
 import { uiStyles } from "../../lib/ui-styles";
 import { layoutStyles } from "../../lib/layout-styles";
@@ -28,8 +29,14 @@ import FormActions from "../../components/ui/FormActions";
 export const dynamic = "force-dynamic";
 
 export default function ProgressPage() {
-  const [assignments, setAssignments] =
-    useState([]);
+  const {
+    data: assignments = [],
+    loading,
+    error: assignmentsError,
+    refetch: refetchAssignments,
+  } = useFetch("/assignments", {
+    initialData: [],
+  });
 
   const [workoutExercises, setWorkoutExercises] =
     useState([]);
@@ -56,9 +63,6 @@ export default function ProgressPage() {
     useState(true);
 
   const [notes, setNotes] = useState("");
-
-  const [loading, setLoading] =
-    useState(true);
 
   const [loadingExercises, setLoadingExercises] =
     useState(false);
@@ -97,31 +101,16 @@ export default function ProgressPage() {
     [assignments, assignmentId]
   );
 
-  async function loadAssignments() {
-    setLoading(true);
-
-    try {
-      const response = await apiFetch(
-        "/assignments"
+  useEffect(() => {
+    if (
+      !assignmentId &&
+      activeAssignments.length > 0
+    ) {
+      setAssignmentId(
+        activeAssignments[0].id
       );
-
-      const data = response.data || [];
-
-      setAssignments(data);
-
-      const firstActive = data.find(
-        (assignment) => assignment.isActive
-      );
-
-      if (firstActive) {
-        setAssignmentId(firstActive.id);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
-  }
+  }, [activeAssignments, assignmentId]);
 
   async function loadWorkoutExercises(
     workoutPlanId
@@ -183,10 +172,6 @@ export default function ProgressPage() {
   }
 
   useEffect(() => {
-    loadAssignments();
-  }, []);
-
-  useEffect(() => {
     if (!selectedAssignment) {
       setWorkoutExercises([]);
       setExerciseId("");
@@ -237,6 +222,7 @@ export default function ProgressPage() {
     );
 
     await loadProgress(assignmentId);
+    await refetchAssignments();
   }
 
   const columns = [
@@ -481,6 +467,12 @@ export default function ProgressPage() {
                   submitText="Registrar progreso"
                 />
 
+                {assignmentsError ? (
+                  <FeedbackMessage variant="error">
+                    {assignmentsError}
+                  </FeedbackMessage>
+                ) : null}
+
                 {error ? (
                   <FeedbackMessage variant="error">
                     {error}
@@ -529,7 +521,7 @@ export default function ProgressPage() {
               loading={
                 loading || loadingProgress
               }
-              error={error}
+              error={assignmentsError || error}
               isEmpty={
                 !loading &&
                 !loadingProgress &&
