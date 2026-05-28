@@ -11,12 +11,21 @@ import LoadingCard from "../../components/ui/LoadingCard";
 import DashboardGrid from "../../components/dashboard/DashboardGrid";
 import KpiCard from "../../components/dashboard/KpiCard";
 import RecentActivityList from "../../components/dashboard/RecentActivityList";
+import ProgressTrendCard from "../../components/dashboard/ProgressTrendCard";
+import TopClientsCard from "../../components/dashboard/TopClientsCard";
+import WorkoutVolumeCard from "../../components/dashboard/WorkoutVolumeCard";
 
 import {
   formatKg,
   formatPercentage,
   pluralize,
 } from "../../lib/dashboard-formatters";
+
+import {
+  calculateProgressTrend,
+  calculateTopClients,
+  calculateWorkoutVolume,
+} from "../../lib/dashboard-analytics";
 
 import { apiFetch } from "../../lib/api";
 
@@ -82,6 +91,24 @@ export default function DashboardPage() {
     );
   }, [summary]);
 
+  const progressTrend = useMemo(() => {
+    return calculateProgressTrend(
+      recentActivity
+    );
+  }, [recentActivity]);
+
+  const topClients = useMemo(() => {
+    return calculateTopClients(
+      recentActivity
+    );
+  }, [recentActivity]);
+
+  const recentVolume = useMemo(() => {
+    return calculateWorkoutVolume(
+      recentActivity
+    );
+  }, [recentActivity]);
+
   const metrics = [
     {
       label: "Clientes",
@@ -142,7 +169,7 @@ export default function DashboardPage() {
       ),
 
       description:
-        "Suma de peso registrado",
+        "Suma total de peso registrado",
     },
 
     {
@@ -204,12 +231,11 @@ export default function DashboardPage() {
               </h2>
 
               <p style={styles.heroText}>
-                Este panel combina
+                Este panel centraliza
                 clientes, rutinas,
-                asignaciones y registros
-                de progreso para mostrar
-                el estado real del
-                entrenamiento.
+                asignaciones, volumen de
+                entrenamiento y actividad
+                reciente del sistema.
               </p>
             </div>
 
@@ -245,6 +271,22 @@ export default function DashboardPage() {
                 }
               />
             ))}
+          </section>
+
+          <section
+            style={styles.analyticsGrid}
+          >
+            <ProgressTrendCard
+              items={progressTrend}
+            />
+
+            <TopClientsCard
+              clients={topClients}
+            />
+
+            <WorkoutVolumeCard
+              totalKg={recentVolume}
+            />
           </section>
 
           <DashboardGrid>
@@ -470,6 +512,17 @@ const styles = {
 
     gridTemplateColumns:
       "repeat(auto-fit, minmax(220px, 1fr))",
+
+    gap: "16px",
+
+    marginBottom: "24px",
+  },
+
+  analyticsGrid: {
+    display: "grid",
+
+    gridTemplateColumns:
+      "repeat(auto-fit, minmax(280px, 1fr))",
 
     gap: "16px",
 
