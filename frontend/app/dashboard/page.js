@@ -11,9 +11,14 @@ import LoadingCard from "../../components/ui/LoadingCard";
 import DashboardGrid from "../../components/dashboard/DashboardGrid";
 import KpiCard from "../../components/dashboard/KpiCard";
 import RecentActivityList from "../../components/dashboard/RecentActivityList";
+
 import ProgressTrendCard from "../../components/dashboard/ProgressTrendCard";
 import TopClientsCard from "../../components/dashboard/TopClientsCard";
 import WorkoutVolumeCard from "../../components/dashboard/WorkoutVolumeCard";
+
+import CompletionRateChart from "../../components/dashboard/CompletionRateChart";
+import ActivityBarChart from "../../components/dashboard/ActivityBarChart";
+import MetricTrendCard from "../../components/dashboard/MetricTrendCard";
 
 import {
   formatKg,
@@ -274,6 +279,36 @@ export default function DashboardPage() {
           </section>
 
           <section
+            style={styles.visualAnalyticsGrid}
+          >
+            <MetricTrendCard
+              title="Cumplimiento"
+              value={formatPercentage(
+                completionRate
+              )}
+              description="Porcentaje global de ejercicios completados correctamente."
+            >
+              <CompletionRateChart
+                percentage={
+                  completionRate
+                }
+              />
+            </MetricTrendCard>
+
+            <MetricTrendCard
+              title="Actividad reciente"
+              value={
+                progressTrend.length
+              }
+              description="Distribución reciente de registros de entrenamiento."
+            >
+              <ActivityBarChart
+                items={progressTrend}
+              />
+            </MetricTrendCard>
+          </section>
+
+          <section
             style={styles.analyticsGrid}
           >
             <ProgressTrendCard
@@ -512,6 +547,17 @@ const styles = {
 
     gridTemplateColumns:
       "repeat(auto-fit, minmax(220px, 1fr))",
+
+    gap: "16px",
+
+    marginBottom: "24px",
+  },
+
+  visualAnalyticsGrid: {
+    display: "grid",
+
+    gridTemplateColumns:
+      "repeat(auto-fit, minmax(320px, 1fr))",
 
     gap: "16px",
 
