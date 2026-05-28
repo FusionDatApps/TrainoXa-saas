@@ -7,6 +7,7 @@ import TrainerShell from "../../components/TrainerShell";
 import SectionCard from "../../components/ui/SectionCard";
 import EmptyState from "../../components/ui/EmptyState";
 import LoadingCard from "../../components/ui/LoadingCard";
+import ResponsiveGrid from "../../components/ui/ResponsiveGrid";
 
 import DashboardGrid from "../../components/dashboard/DashboardGrid";
 import KpiCard from "../../components/dashboard/KpiCard";
@@ -265,7 +266,11 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          <section style={styles.metricsGrid}>
+          <ResponsiveGrid
+            min={220}
+            gap={16}
+            style={styles.sectionSpacing}
+          >
             {metrics.map((item) => (
               <KpiCard
                 key={item.label}
@@ -276,10 +281,12 @@ export default function DashboardPage() {
                 }
               />
             ))}
-          </section>
+          </ResponsiveGrid>
 
-          <section
-            style={styles.visualAnalyticsGrid}
+          <ResponsiveGrid
+            min={320}
+            gap={16}
+            style={styles.sectionSpacing}
           >
             <MetricTrendCard
               title="Cumplimiento"
@@ -306,10 +313,12 @@ export default function DashboardPage() {
                 items={progressTrend}
               />
             </MetricTrendCard>
-          </section>
+          </ResponsiveGrid>
 
-          <section
-            style={styles.analyticsGrid}
+          <ResponsiveGrid
+            min={280}
+            gap={16}
+            style={styles.sectionSpacing}
           >
             <ProgressTrendCard
               items={progressTrend}
@@ -322,7 +331,7 @@ export default function DashboardPage() {
             <WorkoutVolumeCard
               totalKg={recentVolume}
             />
-          </section>
+          </ResponsiveGrid>
 
           <DashboardGrid>
             <SectionCard>
@@ -542,36 +551,7 @@ const styles = {
     fontWeight: "800",
   },
 
-  metricsGrid: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "repeat(auto-fit, minmax(220px, 1fr))",
-
-    gap: "16px",
-
-    marginBottom: "24px",
-  },
-
-  visualAnalyticsGrid: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "repeat(auto-fit, minmax(320px, 1fr))",
-
-    gap: "16px",
-
-    marginBottom: "24px",
-  },
-
-  analyticsGrid: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "repeat(auto-fit, minmax(280px, 1fr))",
-
-    gap: "16px",
-
+  sectionSpacing: {
     marginBottom: "24px",
   },
 
