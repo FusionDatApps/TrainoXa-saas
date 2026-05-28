@@ -2,6 +2,9 @@
 
 import SectionCard from "../ui/SectionCard";
 import EmptyState from "../ui/EmptyState";
+import SectionTitle from "../ui/SectionTitle";
+
+import { theme } from "../../lib/theme";
 
 export default function TopClientsCard({
   clients = [],
@@ -9,15 +12,10 @@ export default function TopClientsCard({
   return (
     <SectionCard>
       <div style={styles.header}>
-        <div>
-          <p style={styles.eyebrow}>
-            Clientes
-          </p>
-
-          <h2 style={styles.title}>
-            Más activos
-          </h2>
-        </div>
+        <SectionTitle
+          eyebrow="Clientes"
+          title="Más activos"
+        />
       </div>
 
       {clients.length === 0 ? (
@@ -55,61 +53,72 @@ export default function TopClientsCard({
 
 const styles = {
   header: {
-    marginBottom: "18px",
-  },
-
-  eyebrow: {
-    margin: "0 0 6px 0",
-    color: "#94a3b8",
-    fontSize: "13px",
-    textTransform: "uppercase",
-  },
-
-  title: {
-    margin: 0,
-    fontSize: "24px",
-    fontWeight: "800",
+    marginBottom:
+      theme.spacing.lg,
   },
 
   list: {
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
+    gap: theme.spacing.sm,
   },
 
   item: {
     display: "flex",
+
     alignItems: "center",
+
     gap: "14px",
+
     padding: "14px",
-    borderRadius: "14px",
+
+    borderRadius:
+      theme.radius.sm,
+
     background:
-      "rgba(15, 23, 42, 0.9)",
-    border:
-      "1px solid rgba(148, 163, 184, 0.12)",
+      theme.colors.surface,
+
+    border: `1px solid ${theme.colors.border}`,
   },
 
   rank: {
     width: "34px",
+
     height: "34px",
-    borderRadius: "999px",
-    background: "#22c55e",
-    color: "#052e16",
+
+    borderRadius:
+      theme.radius.full,
+
+    background:
+      theme.colors.success,
+
+    color:
+      theme.colors.successDark,
+
     display: "flex",
+
     alignItems: "center",
+
     justifyContent: "center",
+
     fontWeight: "900",
   },
 
   name: {
     margin: "0 0 4px 0",
-    color: "#f8fafc",
+
+    color:
+      theme.colors.textPrimary,
+
     fontWeight: "800",
   },
 
   meta: {
     margin: 0,
-    color: "#94a3b8",
+
+    color:
+      theme.colors.textMuted,
+
     fontSize: "13px",
   },
 };

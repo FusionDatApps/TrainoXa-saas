@@ -1,5 +1,7 @@
 "use client";
 
+import { theme } from "../../lib/theme";
+
 export default function MetricCard({
   label,
   value,
@@ -25,33 +27,30 @@ export default function MetricCard({
 const styles = {
   card: {
     padding: "20px",
-    borderRadius: "18px",
-    background:
-      "linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.82))",
-    border: "1px solid rgba(148, 163, 184, 0.14)",
-    boxShadow: "0 14px 28px rgba(0, 0, 0, 0.18)",
+    borderRadius: theme.radius.md,
+    background: `linear-gradient(145deg, ${theme.colors.surface}, ${theme.colors.surfaceAlt})`,
+    border: `1px solid ${theme.colors.border}`,
+    boxShadow: theme.shadows.card,
   },
 
   label: {
     margin: "0 0 10px 0",
-    color: "#94a3b8",
-    fontSize: "13px",
-    fontWeight: "800",
-    textTransform: "uppercase",
+    color: theme.colors.textMuted,
+    ...theme.typography.eyebrow,
     letterSpacing: "0.06em",
   },
 
   value: {
     display: "block",
     marginBottom: "10px",
-    color: "#f8fafc",
+    color: theme.colors.textPrimary,
     fontSize: "30px",
     fontWeight: "900",
   },
 
   description: {
     margin: 0,
-    color: "#cbd5e1",
+    color: theme.colors.textSecondary,
     fontSize: "14px",
     lineHeight: 1.5,
   },

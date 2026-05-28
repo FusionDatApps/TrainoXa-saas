@@ -2,6 +2,10 @@
 
 import SectionCard from "../ui/SectionCard";
 import EmptyState from "../ui/EmptyState";
+import StatusBadge from "../ui/StatusBadge";
+import SectionTitle from "../ui/SectionTitle";
+
+import { theme } from "../../lib/theme";
 
 export default function ProgressTrendCard({
   items = [],
@@ -9,15 +13,10 @@ export default function ProgressTrendCard({
   return (
     <SectionCard>
       <div style={styles.header}>
-        <div>
-          <p style={styles.eyebrow}>
-            Tendencia
-          </p>
-
-          <h2 style={styles.title}>
-            Progreso reciente
-          </h2>
-        </div>
+        <SectionTitle
+          eyebrow="Tendencia"
+          title="Progreso reciente"
+        />
       </div>
 
       {items.length === 0 ? (
@@ -44,9 +43,9 @@ export default function ProgressTrendCard({
                 </p>
               </div>
 
-              <div style={styles.badge}>
+              <StatusBadge variant="success">
                 {item.percentage}%
-              </div>
+              </StatusBadge>
             </div>
           ))}
         </div>
@@ -57,58 +56,50 @@ export default function ProgressTrendCard({
 
 const styles = {
   header: {
-    marginBottom: "18px",
-  },
-
-  eyebrow: {
-    margin: "0 0 6px 0",
-    color: "#94a3b8",
-    fontSize: "13px",
-    textTransform: "uppercase",
-  },
-
-  title: {
-    margin: 0,
-    fontSize: "24px",
-    fontWeight: "800",
+    marginBottom:
+      theme.spacing.lg,
   },
 
   list: {
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
+    gap: theme.spacing.sm,
   },
 
   item: {
     display: "flex",
-    justifyContent: "space-between",
+
+    justifyContent:
+      "space-between",
+
     alignItems: "center",
+
     padding: "14px",
-    borderRadius: "14px",
+
+    borderRadius:
+      theme.radius.sm,
+
     background:
-      "rgba(15, 23, 42, 0.9)",
-    border:
-      "1px solid rgba(148, 163, 184, 0.12)",
+      theme.colors.surface,
+
+    border: `1px solid ${theme.colors.border}`,
   },
 
   date: {
     margin: "0 0 4px 0",
-    color: "#f8fafc",
+
+    color:
+      theme.colors.textPrimary,
+
     fontWeight: "800",
   },
 
   meta: {
     margin: 0,
-    color: "#94a3b8",
-    fontSize: "13px",
-  },
 
-  badge: {
-    padding: "8px 12px",
-    borderRadius: "999px",
-    background:
-      "rgba(34, 197, 94, 0.16)",
-    color: "#4ade80",
-    fontWeight: "900",
+    color:
+      theme.colors.textMuted,
+
+    fontSize: "13px",
   },
 };
