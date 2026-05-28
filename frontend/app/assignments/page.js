@@ -20,6 +20,7 @@ import StatCard from "../../components/ui/StatCard";
 import StateRenderer from "../../components/ui/StateRenderer";
 import FormActions from "../../components/ui/FormActions";
 import ActionButton from "../../components/ui/ActionButton";
+import SelectField from "../../components/ui/SelectField";
 
 export const dynamic = "force-dynamic";
 
@@ -95,7 +96,6 @@ export default function AssignmentsPage() {
   } = useMutation(async (payload) => {
     return apiFetch("/assignments", {
       method: "POST",
-
       body: JSON.stringify(payload),
     });
   });
@@ -126,12 +126,8 @@ export default function AssignmentsPage() {
     await createAssignment({
       clientId,
       workoutPlanId,
-
-      startDate:
-        startDate || undefined,
-
-      endDate:
-        endDate || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
     });
 
     setClientId("");
@@ -169,9 +165,7 @@ export default function AssignmentsPage() {
   const assignmentColumns = [
     {
       key: "client",
-
       label: "Cliente",
-
       render: (assignment) => (
         <span style={styles.primaryText}>
           {assignment.client?.fullName ||
@@ -182,9 +176,7 @@ export default function AssignmentsPage() {
 
     {
       key: "workout",
-
       label: "Rutina",
-
       render: (assignment) => (
         <span style={styles.primaryText}>
           {assignment.workoutPlan?.name ||
@@ -195,9 +187,7 @@ export default function AssignmentsPage() {
 
     {
       key: "status",
-
       label: "Estado",
-
       render: (assignment) => (
         <Badge
           variant={
@@ -215,9 +205,7 @@ export default function AssignmentsPage() {
 
     {
       key: "startDate",
-
       label: "Inicio",
-
       render: (assignment) =>
         assignment.startDate
           ? new Date(
@@ -228,9 +216,7 @@ export default function AssignmentsPage() {
 
     {
       key: "endDate",
-
       label: "Fin",
-
       render: (assignment) =>
         assignment.endDate
           ? new Date(
@@ -241,9 +227,7 @@ export default function AssignmentsPage() {
 
     {
       key: "actions",
-
       label: "Acción",
-
       render: (assignment) =>
         assignment.isActive ? (
           <ActionButton
@@ -308,69 +292,55 @@ export default function AssignmentsPage() {
                 onSubmit={handleSubmit}
                 style={uiStyles.stack}
               >
-                <div style={uiStyles.stack}>
-                  <label style={layoutStyles.label}>
-                    Cliente
-                  </label>
+                <SelectField
+                  label="Cliente"
+                  value={clientId}
+                  onChange={(e) =>
+                    setClientId(
+                      e.target.value
+                    )
+                  }
+                  required
+                >
+                  <option value="">
+                    Selecciona cliente
+                  </option>
 
-                  <select
-                    style={layoutStyles.select}
-                    value={clientId}
-                    onChange={(e) =>
-                      setClientId(
-                        e.target.value
-                      )
-                    }
-                    required
-                  >
-                    <option value="">
-                      Selecciona cliente
+                  {clients.map((client) => (
+                    <option
+                      key={client.id}
+                      value={client.id}
+                    >
+                      {client.fullName ||
+                        "Cliente sin nombre"}
                     </option>
+                  ))}
+                </SelectField>
 
-                    {clients.map((client) => (
-                      <option
-                        key={client.id}
-                        value={client.id}
-                      >
-                        {client.fullName ||
-                          "Cliente sin nombre"}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <SelectField
+                  label="Rutina"
+                  value={workoutPlanId}
+                  onChange={(e) =>
+                    setWorkoutPlanId(
+                      e.target.value
+                    )
+                  }
+                  required
+                >
+                  <option value="">
+                    Selecciona rutina
+                  </option>
 
-                <div style={uiStyles.stack}>
-                  <label style={layoutStyles.label}>
-                    Rutina
-                  </label>
-
-                  <select
-                    style={layoutStyles.select}
-                    value={workoutPlanId}
-                    onChange={(e) =>
-                      setWorkoutPlanId(
-                        e.target.value
-                      )
-                    }
-                    required
-                  >
-                    <option value="">
-                      Selecciona rutina
+                  {workouts.map((workout) => (
+                    <option
+                      key={workout.id}
+                      value={workout.id}
+                    >
+                      {workout.name ||
+                        "Rutina sin nombre"}
                     </option>
-
-                    {workouts.map(
-                      (workout) => (
-                        <option
-                          key={workout.id}
-                          value={workout.id}
-                        >
-                          {workout.name ||
-                            "Rutina sin nombre"}
-                        </option>
-                      )
-                    )}
-                  </select>
-                </div>
+                  ))}
+                </SelectField>
 
                 <div style={layoutStyles.twoColumns}>
                   <div style={uiStyles.stack}>
@@ -523,7 +493,6 @@ const styles = {
 
   primaryText: {
     fontWeight: "800",
-
     color: "#f8fafc",
   },
 };
