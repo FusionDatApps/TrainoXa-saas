@@ -1,6 +1,6 @@
 "use client";
 
-import StatCard from "../ui/StatCard";
+import MetricCard from "../ui/MetricCard";
 
 export default function KpiCard({
   label,
@@ -8,7 +8,7 @@ export default function KpiCard({
   description,
 }) {
   return (
-    <StatCard
+    <MetricCard
       label={label}
       value={value}
       description={description}
