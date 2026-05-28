@@ -1,6 +1,9 @@
+"use client";
+
 export default function ContentStack({
   children,
-  gap = 24,
+  gap = 16,
+  style = {},
 }) {
   return (
     <div
@@ -8,6 +11,7 @@ export default function ContentStack({
         display: "flex",
         flexDirection: "column",
         gap: `${gap}px`,
+        ...style,
       }}
     >
       {children}

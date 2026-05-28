@@ -1,16 +1,22 @@
+"use client";
+
+import SectionTitle from "./SectionTitle";
+
+import { theme } from "../../lib/theme";
+
 export default function PageHeader({
   eyebrow,
   title,
   description,
+  actions,
 }) {
   return (
-    <header style={styles.header}>
-      <div>
-        {eyebrow ? (
-          <p style={styles.eyebrow}>{eyebrow}</p>
-        ) : null}
-
-        <h1 style={styles.title}>{title}</h1>
+    <div style={styles.wrapper}>
+      <div style={styles.content}>
+        <SectionTitle
+          eyebrow={eyebrow}
+          title={title}
+        />
 
         {description ? (
           <p style={styles.description}>
@@ -18,38 +24,43 @@ export default function PageHeader({
           </p>
         ) : null}
       </div>
-    </header>
+
+      {actions ? (
+        <div style={styles.actions}>
+          {actions}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
 const styles = {
-  header: {
+  wrapper: {
     display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
+    justifyContent:
+      "space-between",
+    alignItems: "flex-start",
     gap: "16px",
+    flexWrap: "wrap",
   },
 
-  eyebrow: {
-    margin: "0 0 8px 0",
-    color: "#22c55e",
-    fontSize: "12px",
-    fontWeight: "800",
-    letterSpacing: "0.08em",
-    textTransform: "uppercase",
-  },
-
-  title: {
-    margin: 0,
-    color: "#f8fafc",
-    fontSize: "40px",
-    fontWeight: "900",
+  content: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
   },
 
   description: {
-    margin: "12px 0 0 0",
-    color: "#94a3b8",
+    margin: 0,
+    maxWidth: "760px",
     lineHeight: 1.6,
-    maxWidth: "720px",
+    color:
+      theme.colors.textSecondary,
+  },
+
+  actions: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
   },
 };
