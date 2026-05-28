@@ -1,20 +1,15 @@
-﻿import {
+import {
   colors,
   radius,
   shadows,
   spacing,
-  transitions,
-} from "./tokens";
-
-import { surfaces } from "./surfaces";
-import { typography } from "./typography";
+  typography,
+} from "./ui-tokens";
 
 export const theme = {
   colors,
-  spacing,
   radius,
   shadows,
-  transitions,
-  surfaces,
+  spacing,
   typography,
 };

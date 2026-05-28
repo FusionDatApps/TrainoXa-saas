@@ -1,51 +1,38 @@
-﻿export default function SectionTitle({
+"use client";
+
+import { theme } from "../../lib/theme";
+
+export default function SectionTitle({
   eyebrow,
   title,
-  description,
 }) {
   return (
-    <div style={styles.wrapper}>
+    <div>
       {eyebrow ? (
-        <p style={styles.eyebrow}>{eyebrow}</p>
-      ) : null}
-
-      <h2 style={styles.title}>{title}</h2>
-
-      {description ? (
-        <p style={styles.description}>
-          {description}
+        <p style={styles.eyebrow}>
+          {eyebrow}
         </p>
       ) : null}
+
+      <h2 style={styles.title}>
+        {title}
+      </h2>
     </div>
   );
 }
 
 const styles = {
-  wrapper: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-  },
-
   eyebrow: {
-    margin: 0,
-    color: "#4ade80",
-    fontSize: "12px",
-    fontWeight: "900",
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
+    margin: "0 0 6px 0",
+    color:
+      theme.colors.textMuted,
+    ...theme.typography.eyebrow,
   },
 
   title: {
     margin: 0,
-    color: "#f8fafc",
-    fontSize: "26px",
-    fontWeight: "900",
-  },
-
-  description: {
-    margin: 0,
-    color: "#94a3b8",
-    lineHeight: 1.6,
+    color:
+      theme.colors.textPrimary,
+    ...theme.typography.sectionTitle,
   },
 };
