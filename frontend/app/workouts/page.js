@@ -21,6 +21,8 @@ import FormField from "../../components/ui/FormField";
 import FeedbackMessage from "../../components/ui/FeedbackMessage";
 import StateRenderer from "../../components/ui/StateRenderer";
 import FormActions from "../../components/ui/FormActions";
+import AsyncButton from "../../components/ui/AsyncButton";
+import SelectField from "../../components/ui/SelectField";
 
 import useMutation from "../../hooks/useMutation";
 import useItemFeedback from "../../hooks/useItemFeedback";
@@ -36,8 +38,7 @@ export default function WorkoutsPage() {
   const [loading, setLoading] = useState(true);
 
   const [name, setName] = useState("");
-  const [description, setDescription] =
-    useState("");
+  const [description, setDescription] = useState("");
 
   const {
     loading: creating,
@@ -195,9 +196,7 @@ export default function WorkoutsPage() {
     await loadWorkouts();
   }
 
-  async function handleAddExercise(
-    workoutId
-  ) {
+  async function handleAddExercise(workoutId) {
     const form = selectedExercises[workoutId];
 
     if (!form || !form.exerciseId) {
@@ -508,53 +507,43 @@ export default function WorkoutsPage() {
                   </h4>
 
                   <div style={styles.exerciseForm}>
-                    <div style={styles.field}>
-                      <label style={styles.label}>
-                        Ejercicio
-                      </label>
+                    <SelectField
+                      label="Ejercicio"
+                      value={
+                        selectedExercises[
+                          workout.id
+                        ]?.exerciseId || ""
+                      }
+                      onChange={(e) =>
+                        setSelectedExercises(
+                          (prev) => ({
+                            ...prev,
 
-                      <select
-                        style={styles.select}
-                        value={
-                          selectedExercises[
-                            workout.id
-                          ]?.exerciseId || ""
-                        }
-                        onChange={(e) =>
-                          setSelectedExercises(
-                            (prev) => ({
-                              ...prev,
+                            [workout.id]: {
+                              ...prev[
+                                workout.id
+                              ],
 
-                              [workout.id]: {
-                                ...prev[
-                                  workout.id
-                                ],
+                              exerciseId:
+                                e.target.value,
+                            },
+                          })
+                        )
+                      }
+                    >
+                      <option value="">
+                        Selecciona ejercicio
+                      </option>
 
-                                exerciseId:
-                                  e.target.value,
-                              },
-                            })
-                          )
-                        }
-                      >
-                        <option value="">
-                          Selecciona ejercicio
+                      {exercises.map((exercise) => (
+                        <option
+                          key={exercise.id}
+                          value={exercise.id}
+                        >
+                          {exercise.name}
                         </option>
-
-                        {exercises.map(
-                          (exercise) => (
-                            <option
-                              key={exercise.id}
-                              value={
-                                exercise.id
-                              }
-                            >
-                              {exercise.name}
-                            </option>
-                          )
-                        )}
-                      </select>
-                    </div>
+                      ))}
+                    </SelectField>
 
                     <div style={styles.inlineGrid}>
                       <div style={styles.field}>
@@ -718,24 +707,21 @@ export default function WorkoutsPage() {
                       />
                     </div>
 
-                    <ActionButton
-                      disabled={
+                    <AsyncButton
+                      loading={
                         addingExercise[
                           workout.id
                         ]
                       }
+                      loadingText="Agregando ejercicio..."
                       onClick={() =>
                         handleAddExercise(
                           workout.id
                         )
                       }
                     >
-                      {addingExercise[
-                        workout.id
-                      ]
-                        ? "Agregando ejercicio..."
-                        : "Agregar ejercicio"}
-                    </ActionButton>
+                      Agregar ejercicio
+                    </AsyncButton>
 
                     {exerciseFeedback[
                       workout.id
@@ -862,39 +848,30 @@ export default function WorkoutsPage() {
 const styles = {
   sectionTitle: {
     margin: "0 0 10px 0",
-
     fontSize: "24px",
-
     fontWeight: "800",
   },
 
   field: {
     display: "flex",
-
     flexDirection: "column",
-
     gap: "8px",
   },
 
   label: {
     fontSize: "14px",
-
     fontWeight: "700",
   },
 
   error: {
     margin: 0,
-
     color: "#f87171",
-
     fontSize: "14px",
   },
 
   success: {
     margin: 0,
-
     color: "#4ade80",
-
     fontSize: "14px",
   },
 
@@ -904,101 +881,64 @@ const styles = {
 
   emptyTitle: {
     margin: "0 0 10px 0",
-
     fontSize: "20px",
-
     fontWeight: "800",
   },
 
   workoutGrid: {
     display: "grid",
-
     gridTemplateColumns:
       "repeat(auto-fit, minmax(320px, 1fr))",
-
     gap: "16px",
   },
 
   workoutTag: {
     margin: "0 0 10px 0",
-
     color: "#94a3b8",
-
     fontSize: "13px",
-
     textTransform: "uppercase",
   },
 
   workoutName: {
     margin: "0 0 16px 0",
-
     fontSize: "30px",
-
     fontWeight: "800",
   },
 
   divider: {
     border: "none",
-
     borderTop:
       "1px solid rgba(148, 163, 184, 0.14)",
-
     margin: "18px 0",
   },
 
   subTitle: {
     margin: "0 0 14px 0",
-
     fontSize: "16px",
-
     fontWeight: "800",
   },
 
   exerciseForm: {
     display: "flex",
-
     flexDirection: "column",
-
     gap: "12px",
-  },
-
-  select: {
-    padding: "12px",
-
-    borderRadius: "10px",
-
-    border: "1px solid #334155",
-
-    background: "#0f172a",
-
-    color: "#f8fafc",
   },
 
   smallInput: {
     padding: "12px",
-
     borderRadius: "10px",
-
     border: "1px solid #334155",
-
     background: "#0f172a",
-
     color: "#f8fafc",
   },
 
   notesInput: {
     minHeight: "70px",
-
     padding: "12px",
-
     borderRadius: "10px",
-
     border: "1px solid #334155",
-
     background: "#0f172a",
-
     color: "#f8fafc",
-
     resize: "vertical",
   },
 
@@ -1008,48 +948,35 @@ const styles = {
 
   headerRow: {
     display: "flex",
-
     justifyContent: "space-between",
-
     alignItems: "flex-start",
-
     gap: "16px",
-
     marginBottom: "18px",
   },
 
   infoGrid: {
     display: "grid",
-
     gridTemplateColumns: "1fr",
-
     gap: "12px",
   },
 
   infoLabel: {
     margin: "0 0 4px 0",
-
     color: "#94a3b8",
-
     fontSize: "13px",
-
     fontWeight: "700",
   },
 
   infoValue: {
     margin: 0,
-
     color: "#f8fafc",
-
     wordBreak: "break-word",
   },
 
   inlineGrid: {
     display: "grid",
-
     gridTemplateColumns:
       "repeat(auto-fit, minmax(120px, 1fr))",
-
     gap: "12px",
   },
 };
