@@ -9,6 +9,12 @@ import EmptyState from "../../components/ui/EmptyState";
 import LoadingCard from "../../components/ui/LoadingCard";
 import ResponsiveGrid from "../../components/ui/ResponsiveGrid";
 
+import ContentStack from "../../components/ui/ContentStack";
+import InlineGroup from "../../components/ui/InlineGroup";
+import PageHeader from "../../components/ui/PageHeader";
+import PageSection from "../../components/ui/PageSection";
+import SectionTitle from "../../components/ui/SectionTitle";
+
 import DashboardGrid from "../../components/dashboard/DashboardGrid";
 import KpiCard from "../../components/dashboard/KpiCard";
 import RecentActivityList from "../../components/dashboard/RecentActivityList";
@@ -32,6 +38,8 @@ import {
   calculateTopClients,
   calculateWorkoutVolume,
 } from "../../lib/dashboard-analytics";
+
+import { theme } from "../../lib/theme";
 
 import { apiFetch } from "../../lib/api";
 
@@ -206,244 +214,211 @@ export default function DashboardPage() {
       title="Dashboard"
       active="dashboard"
     >
-      {loading ? (
-        <LoadingCard>
-          Cargando resumen del
-          dashboard...
-        </LoadingCard>
-      ) : null}
+      <ContentStack gap={24}>
+        {loading ? (
+          <LoadingCard>
+            Cargando resumen del
+            dashboard...
+          </LoadingCard>
+        ) : null}
 
-      {!loading && error ? (
-        <LoadingCard>
-          <span style={styles.errorText}>
-            {error}
-          </span>
-        </LoadingCard>
-      ) : null}
+        {!loading && error ? (
+          <LoadingCard>
+            <span style={styles.errorText}>
+              {error}
+            </span>
+          </LoadingCard>
+        ) : null}
 
-      {!loading && !error ? (
-        <>
-          <section style={styles.heroCard}>
-            <div>
-              <p style={styles.heroEyebrow}>
-                Resumen del negocio
-                fitness
-              </p>
+        {!loading && !error ? (
+          <>
+            <PageSection>
+              <section style={styles.heroCard}>
+                <PageHeader
+                  eyebrow="Resumen del negocio fitness"
+                  title="Control operativo y progreso real de tus clientes"
+                  description="Este panel centraliza clientes, rutinas, asignaciones, volumen de entrenamiento y actividad reciente del sistema."
+                />
 
-              <h2 style={styles.heroTitle}>
-                Control operativo y
-                progreso real de tus
-                clientes
-              </h2>
-
-              <p style={styles.heroText}>
-                Este panel centraliza
-                clientes, rutinas,
-                asignaciones, volumen de
-                entrenamiento y actividad
-                reciente del sistema.
-              </p>
-            </div>
-
-            <div style={styles.heroBadge}>
-              <span
-                style={
-                  styles.heroBadgeNumber
-                }
-              >
-                {formatPercentage(
-                  completionRate
-                )}
-              </span>
-
-              <span
-                style={
-                  styles.heroBadgeLabel
-                }
-              >
-                cumplimiento
-              </span>
-            </div>
-          </section>
-
-          <ResponsiveGrid
-            min={220}
-            gap={16}
-            style={styles.sectionSpacing}
-          >
-            {metrics.map((item) => (
-              <KpiCard
-                key={item.label}
-                label={item.label}
-                value={item.value}
-                description={
-                  item.description
-                }
-              />
-            ))}
-          </ResponsiveGrid>
-
-          <ResponsiveGrid
-            min={320}
-            gap={16}
-            style={styles.sectionSpacing}
-          >
-            <MetricTrendCard
-              title="Cumplimiento"
-              value={formatPercentage(
-                completionRate
-              )}
-              description="Porcentaje global de ejercicios completados correctamente."
-            >
-              <CompletionRateChart
-                percentage={
-                  completionRate
-                }
-              />
-            </MetricTrendCard>
-
-            <MetricTrendCard
-              title="Actividad reciente"
-              value={
-                progressTrend.length
-              }
-              description="Distribución reciente de registros de entrenamiento."
-            >
-              <ActivityBarChart
-                items={progressTrend}
-              />
-            </MetricTrendCard>
-          </ResponsiveGrid>
-
-          <ResponsiveGrid
-            min={280}
-            gap={16}
-            style={styles.sectionSpacing}
-          >
-            <ProgressTrendCard
-              items={progressTrend}
-            />
-
-            <TopClientsCard
-              clients={topClients}
-            />
-
-            <WorkoutVolumeCard
-              totalKg={recentVolume}
-            />
-          </ResponsiveGrid>
-
-          <DashboardGrid>
-            <SectionCard>
-              <div style={styles.panelHeader}>
-                <div>
-                  <p
+                <div style={styles.heroBadge}>
+                  <span
                     style={
-                      styles.panelEyebrow
+                      styles.heroBadgeNumber
                     }
                   >
-                    Ranking
-                  </p>
+                    {formatPercentage(
+                      completionRate
+                    )}
+                  </span>
 
-                  <h2
+                  <span
                     style={
-                      styles.sectionTitle
+                      styles.heroBadgeLabel
                     }
                   >
-                    Ejercicios más usados
-                  </h2>
+                    cumplimiento
+                  </span>
                 </div>
-              </div>
+              </section>
 
-              {summary?.ejerciciosMasUsados
-                ?.length > 0 ? (
-                <div style={styles.rankingList}>
-                  {summary.ejerciciosMasUsados.map(
-                    (
-                      exercise,
-                      index
-                    ) => (
-                      <div
-                        key={
-                          exercise.exerciseId
-                        }
-                        style={
-                          styles.rankingItem
-                        }
-                      >
-                        <span
-                          style={
-                            styles.rankingPosition
-                          }
-                        >
-                          {index + 1}
-                        </span>
+              <ResponsiveGrid
+                min={220}
+                gap={16}
+              >
+                {metrics.map((item) => (
+                  <KpiCard
+                    key={item.label}
+                    label={item.label}
+                    value={item.value}
+                    description={
+                      item.description
+                    }
+                  />
+                ))}
+              </ResponsiveGrid>
+            </PageSection>
 
-                        <div>
-                          <p
-                            style={
-                              styles.rankingName
-                            }
-                          >
-                            {
-                              exercise.name
-                            }
-                          </p>
-
-                          <p
-                            style={
-                              styles.rankingMeta
-                            }
-                          >
-                            {pluralize(
-                              exercise.total,
-                              "registro",
-                              "registros"
-                            )}{" "}
-                            de progreso
-                          </p>
-                        </div>
-                      </div>
-                    )
+            <PageSection>
+              <ResponsiveGrid
+                min={320}
+                gap={16}
+              >
+                <MetricTrendCard
+                  title="Cumplimiento"
+                  value={formatPercentage(
+                    completionRate
                   )}
-                </div>
-              ) : (
-                <EmptyState>
-                  Todavía no hay
-                  ejercicios con progreso
-                  registrado.
-                </EmptyState>
-              )}
-            </SectionCard>
-
-            <SectionCard>
-              <div style={styles.panelHeader}>
-                <div>
-                  <p
-                    style={
-                      styles.panelEyebrow
+                  description="Porcentaje global de ejercicios completados correctamente."
+                >
+                  <CompletionRateChart
+                    percentage={
+                      completionRate
                     }
-                  >
-                    Actividad
-                  </p>
+                  />
+                </MetricTrendCard>
 
-                  <h2
-                    style={
-                      styles.sectionTitle
-                    }
-                  >
-                    Últimos registros
-                  </h2>
-                </div>
-              </div>
+                <MetricTrendCard
+                  title="Actividad reciente"
+                  value={
+                    progressTrend.length
+                  }
+                  description="Distribución reciente de registros de entrenamiento."
+                >
+                  <ActivityBarChart
+                    items={progressTrend}
+                  />
+                </MetricTrendCard>
+              </ResponsiveGrid>
 
-              <RecentActivityList
-                items={recentActivity}
-              />
-            </SectionCard>
-          </DashboardGrid>
-        </>
-      ) : null}
+              <ResponsiveGrid
+                min={280}
+                gap={16}
+              >
+                <ProgressTrendCard
+                  items={progressTrend}
+                />
+
+                <TopClientsCard
+                  clients={topClients}
+                />
+
+                <WorkoutVolumeCard
+                  totalKg={recentVolume}
+                />
+              </ResponsiveGrid>
+            </PageSection>
+
+            <PageSection>
+              <DashboardGrid>
+                <SectionCard>
+                  <ContentStack gap={18}>
+                    <SectionTitle
+                      eyebrow="Ranking"
+                      title="Ejercicios más usados"
+                    />
+
+                    {summary?.ejerciciosMasUsados
+                      ?.length > 0 ? (
+                      <ContentStack gap={12}>
+                        {summary.ejerciciosMasUsados.map(
+                          (
+                            exercise,
+                            index
+                          ) => (
+                            <InlineGroup
+                              key={
+                                exercise.exerciseId
+                              }
+                              justify="space-between"
+                              style={
+                                styles.rankingItem
+                              }
+                            >
+                              <InlineGroup gap={14}>
+                                <span
+                                  style={
+                                    styles.rankingPosition
+                                  }
+                                >
+                                  {index + 1}
+                                </span>
+
+                                <div>
+                                  <p
+                                    style={
+                                      styles.rankingName
+                                    }
+                                  >
+                                    {
+                                      exercise.name
+                                    }
+                                  </p>
+
+                                  <p
+                                    style={
+                                      styles.rankingMeta
+                                    }
+                                  >
+                                    {pluralize(
+                                      exercise.total,
+                                      "registro",
+                                      "registros"
+                                    )}{" "}
+                                    de progreso
+                                  </p>
+                                </div>
+                              </InlineGroup>
+                            </InlineGroup>
+                          )
+                        )}
+                      </ContentStack>
+                    ) : (
+                      <EmptyState>
+                        Todavía no hay
+                        ejercicios con
+                        progreso registrado.
+                      </EmptyState>
+                    )}
+                  </ContentStack>
+                </SectionCard>
+
+                <SectionCard>
+                  <ContentStack gap={18}>
+                    <SectionTitle
+                      eyebrow="Actividad"
+                      title="Últimos registros"
+                    />
+
+                    <RecentActivityList
+                      items={recentActivity}
+                    />
+                  </ContentStack>
+                </SectionCard>
+              </DashboardGrid>
+            </PageSection>
+          </>
+        ) : null}
+      </ContentStack>
     </TrainerShell>
   );
 }
@@ -457,7 +432,7 @@ const styles = {
 
     alignItems: "center",
 
-    gap: "24px",
+    gap: theme.spacing.lg,
 
     background:
       "linear-gradient(135deg, rgba(34, 197, 94, 0.18), rgba(15, 23, 42, 0.92))",
@@ -465,50 +440,15 @@ const styles = {
     border:
       "1px solid rgba(34, 197, 94, 0.24)",
 
-    borderRadius: "22px",
+    borderRadius:
+      theme.radius.lg,
 
     padding: "28px",
 
-    marginBottom: "24px",
-
     boxShadow:
-      "0 14px 30px rgba(0, 0, 0, 0.22)",
+      theme.shadows.elevated,
 
     flexWrap: "wrap",
-  },
-
-  heroEyebrow: {
-    margin: "0 0 8px 0",
-
-    color: "#86efac",
-
-    fontSize: "13px",
-
-    textTransform: "uppercase",
-
-    letterSpacing: "0.08em",
-
-    fontWeight: "800",
-  },
-
-  heroTitle: {
-    margin: "0 0 12px 0",
-
-    fontSize: "32px",
-
-    fontWeight: "900",
-
-    maxWidth: "780px",
-  },
-
-  heroText: {
-    margin: 0,
-
-    color: "#cbd5e1",
-
-    lineHeight: 1.6,
-
-    maxWidth: "760px",
   },
 
   heroBadge: {
@@ -516,7 +456,8 @@ const styles = {
 
     minHeight: "150px",
 
-    borderRadius: "999px",
+    borderRadius:
+      theme.radius.full,
 
     border:
       "1px solid rgba(34, 197, 94, 0.35)",
@@ -538,78 +479,31 @@ const styles = {
 
     fontWeight: "900",
 
-    color: "#4ade80",
+    color:
+      theme.colors.success,
   },
 
   heroBadgeLabel: {
-    color: "#cbd5e1",
+    color:
+      theme.colors.textSecondary,
 
     fontSize: "13px",
 
     textTransform: "uppercase",
 
     fontWeight: "800",
-  },
-
-  sectionSpacing: {
-    marginBottom: "24px",
-  },
-
-  panelHeader: {
-    display: "flex",
-
-    justifyContent:
-      "space-between",
-
-    alignItems: "center",
-
-    marginBottom: "18px",
-  },
-
-  panelEyebrow: {
-    margin: "0 0 6px 0",
-
-    color: "#94a3b8",
-
-    fontSize: "13px",
-
-    textTransform: "uppercase",
-
-    letterSpacing: "0.08em",
-  },
-
-  sectionTitle: {
-    margin: 0,
-
-    fontSize: "24px",
-
-    fontWeight: "800",
-  },
-
-  rankingList: {
-    display: "flex",
-
-    flexDirection: "column",
-
-    gap: "12px",
   },
 
   rankingItem: {
-    display: "flex",
-
-    alignItems: "center",
-
-    gap: "14px",
-
     padding: "14px",
 
-    borderRadius: "14px",
+    borderRadius:
+      theme.radius.sm,
 
     background:
-      "rgba(15, 23, 42, 0.9)",
+      theme.colors.surface,
 
-    border:
-      "1px solid rgba(148, 163, 184, 0.12)",
+    border: `1px solid ${theme.colors.border}`,
   },
 
   rankingPosition: {
@@ -617,11 +511,14 @@ const styles = {
 
     height: "34px",
 
-    borderRadius: "999px",
+    borderRadius:
+      theme.radius.full,
 
-    background: "#22c55e",
+    background:
+      theme.colors.success,
 
-    color: "#052e16",
+    color:
+      theme.colors.successDark,
 
     display: "flex",
 
@@ -635,7 +532,8 @@ const styles = {
   rankingName: {
     margin: "0 0 4px 0",
 
-    color: "#f8fafc",
+    color:
+      theme.colors.textPrimary,
 
     fontWeight: "800",
   },
@@ -643,12 +541,14 @@ const styles = {
   rankingMeta: {
     margin: 0,
 
-    color: "#94a3b8",
+    color:
+      theme.colors.textMuted,
 
     fontSize: "13px",
   },
 
   errorText: {
-    color: "#f87171",
+    color:
+      theme.colors.danger,
   },
 };
