@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import TrainerShell from "../../components/TrainerShell";
 
 import { apiFetch } from "../../lib/api";
+import useFetch from "../../hooks/useFetch";
 import useMutation from "../../hooks/useMutation";
 import { uiStyles } from "../../lib/ui-styles";
 import { layoutStyles } from "../../lib/layout-styles";
@@ -23,28 +24,51 @@ import ActionButton from "../../components/ui/ActionButton";
 export const dynamic = "force-dynamic";
 
 export default function AssignmentsPage() {
-  const [clients, setClients] = useState([]);
-  const [workouts, setWorkouts] = useState([]);
-  const [assignments, setAssignments] =
-    useState([]);
+  const {
+    data: clients = [],
+    loading: loadingClients,
+    error: clientsError,
+    refetch: refetchClients,
+  } = useFetch("/clients", {
+    initialData: [],
+  });
 
-  const [loading, setLoading] =
-    useState(true);
+  const {
+    data: workouts = [],
+    loading: loadingWorkouts,
+    error: workoutsError,
+    refetch: refetchWorkouts,
+  } = useFetch("/workouts", {
+    initialData: [],
+  });
 
-  const [clientId, setClientId] =
-    useState("");
+  const {
+    data: assignments = [],
+    loading: loadingAssignments,
+    error: assignmentsError,
+    refetch: refetchAssignments,
+  } = useFetch("/assignments", {
+    initialData: [],
+  });
 
+  const [clientId, setClientId] = useState("");
   const [workoutPlanId, setWorkoutPlanId] =
     useState("");
-
-  const [startDate, setStartDate] =
-    useState("");
-
-  const [endDate, setEndDate] =
-    useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const [deactivatingId, setDeactivatingId] =
     useState(null);
+
+  const loading =
+    loadingClients ||
+    loadingWorkouts ||
+    loadingAssignments;
+
+  const fetchError =
+    clientsError ||
+    workoutsError ||
+    assignmentsError;
 
   const activeAssignments = useMemo(
     () =>
@@ -88,41 +112,13 @@ export default function AssignmentsPage() {
     );
   });
 
-  async function loadData() {
-    setLoading(true);
-
-    try {
-      const [
-        clientsRes,
-        workoutsRes,
-        assignmentsRes,
-      ] = await Promise.all([
-        apiFetch("/clients"),
-        apiFetch("/workouts"),
-        apiFetch("/assignments"),
-      ]);
-
-      setClients(clientsRes.data || []);
-      setWorkouts(workoutsRes.data || []);
-
-      setAssignments(
-        assignmentsRes.data || []
-      );
-    } catch (err) {
-      console.error(
-        "Error cargando asignaciones:",
-        err.message
-      );
-
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+  async function refetchData() {
+    await Promise.all([
+      refetchClients(),
+      refetchWorkouts(),
+      refetchAssignments(),
+    ]);
   }
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -147,7 +143,7 @@ export default function AssignmentsPage() {
       "Rutina asignada correctamente"
     );
 
-    await loadData();
+    await refetchData();
   }
 
   async function handleDeactivate(
@@ -164,7 +160,7 @@ export default function AssignmentsPage() {
         "Asignación desactivada correctamente"
       );
 
-      await loadData();
+      await refetchAssignments();
     } finally {
       setDeactivatingId(null);
     }
@@ -429,6 +425,12 @@ export default function AssignmentsPage() {
                   submitText="Asignar rutina"
                 />
 
+                {fetchError ? (
+                  <FeedbackMessage variant="error">
+                    {fetchError}
+                  </FeedbackMessage>
+                ) : null}
+
                 {error ? (
                   <FeedbackMessage variant="error">
                     {error}
@@ -489,7 +491,7 @@ export default function AssignmentsPage() {
 
             <StateRenderer
               loading={loading}
-              error={error}
+              error={fetchError || error}
               isEmpty={
                 !loading &&
                 assignments.length === 0
