@@ -27,6 +27,7 @@ import FormField from "../../components/ui/FormField";
 import FeedbackMessage from "../../components/ui/FeedbackMessage";
 import StateRenderer from "../../components/ui/StateRenderer";
 import FormActions from "../../components/ui/FormActions";
+import SelectField from "../../components/ui/SelectField";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +70,6 @@ export default function ProgressPage() {
   } = useMutation(async (payload) => {
     return apiFetch("/progress", {
       method: "POST",
-
       body: JSON.stringify(payload),
     });
   });
@@ -209,9 +209,7 @@ export default function ProgressPage() {
   const columns = [
     {
       key: "exercise",
-
       label: "Ejercicio",
-
       render: (row) => (
         <span style={styles.exerciseName}>
           {row.exercise?.name ||
@@ -222,18 +220,14 @@ export default function ProgressPage() {
 
     {
       key: "repsCompleted",
-
       label: "Reps",
-
       render: (row) =>
         row.repsCompleted || "N/A",
     },
 
     {
       key: "weightUsedKg",
-
       label: "Peso",
-
       render: (row) =>
         row.weightUsedKg
           ? `${row.weightUsedKg} kg`
@@ -242,9 +236,7 @@ export default function ProgressPage() {
 
     {
       key: "completed",
-
       label: "Estado",
-
       render: (row) =>
         row.completed ? (
           <Badge variant="success">
@@ -259,9 +251,7 @@ export default function ProgressPage() {
 
     {
       key: "performedAt",
-
       label: "Fecha",
-
       render: (row) =>
         row.performedAt
           ? new Date(
@@ -299,87 +289,70 @@ export default function ProgressPage() {
                 onSubmit={handleSubmit}
                 style={uiStyles.stack}
               >
-                <div style={uiStyles.stack}>
-                  <label style={layoutStyles.label}>
-                    Asignación activa
-                  </label>
+                <SelectField
+                  label="Asignación activa"
+                  value={assignmentId}
+                  onChange={(e) =>
+                    setAssignmentId(
+                      e.target.value
+                    )
+                  }
+                  required
+                >
+                  <option value="">
+                    Selecciona asignación
+                  </option>
 
-                  <select
-                    style={layoutStyles.select}
-                    value={assignmentId}
-                    onChange={(e) =>
-                      setAssignmentId(
-                        e.target.value
-                      )
-                    }
-                    required
-                  >
-                    <option value="">
-                      Selecciona asignación
-                    </option>
-
-                    {activeAssignments.map(
-                      (assignment) => (
-                        <option
-                          key={assignment.id}
-                          value={assignment.id}
-                        >
-                          {(assignment.client
-                            ?.fullName ||
-                            "Cliente sin nombre") +
-                            " - " +
-                            (assignment
-                              .workoutPlan
-                              ?.name ||
-                              "Rutina sin nombre")}
-                        </option>
-                      )
-                    )}
-                  </select>
-                </div>
-
-                <div style={uiStyles.stack}>
-                  <label style={layoutStyles.label}>
-                    Ejercicio
-                  </label>
-
-                  <select
-                    style={layoutStyles.select}
-                    value={exerciseId}
-                    onChange={(e) =>
-                      setExerciseId(
-                        e.target.value
-                      )
-                    }
-                    required
-                    disabled={
-                      loadingExercises ||
-                      workoutExercises.length ===
-                        0
-                    }
-                  >
-                    <option value="">
-                      {loadingExercises
-                        ? "Cargando ejercicios..."
-                        : "Selecciona ejercicio"}
-                    </option>
-
-                    {workoutExercises.map(
-                      (item) => (
-                        <option
-                          key={item.id}
-                          value={
-                            item.exerciseId
-                          }
-                        >
-                          {item.exercise
+                  {activeAssignments.map(
+                    (assignment) => (
+                      <option
+                        key={assignment.id}
+                        value={assignment.id}
+                      >
+                        {(assignment.client
+                          ?.fullName ||
+                          "Cliente sin nombre") +
+                          " - " +
+                          (assignment.workoutPlan
                             ?.name ||
-                            "Ejercicio sin nombre"}
-                        </option>
-                      )
-                    )}
-                  </select>
-                </div>
+                            "Rutina sin nombre")}
+                      </option>
+                    )
+                  )}
+                </SelectField>
+
+                <SelectField
+                  label="Ejercicio"
+                  value={exerciseId}
+                  onChange={(e) =>
+                    setExerciseId(
+                      e.target.value
+                    )
+                  }
+                  required
+                  disabled={
+                    loadingExercises ||
+                    workoutExercises.length === 0
+                  }
+                >
+                  <option value="">
+                    {loadingExercises
+                      ? "Cargando ejercicios..."
+                      : "Selecciona ejercicio"}
+                  </option>
+
+                  {workoutExercises.map(
+                    (item) => (
+                      <option
+                        key={item.id}
+                        value={item.exerciseId}
+                      >
+                        {item.exercise?.name ||
+                          "Ejercicio sin nombre"}
+                      </option>
+                    )
+                  )}
+                </SelectField>
 
                 <FormField
                   label="Fecha y hora"
@@ -529,19 +502,14 @@ const styles = {
 
   checkboxRow: {
     display: "flex",
-
     alignItems: "center",
-
     gap: "10px",
-
     color: "#cbd5e1",
-
     fontWeight: "700",
   },
 
   exerciseName: {
     fontWeight: "800",
-
     color: "#f8fafc",
   },
 };
