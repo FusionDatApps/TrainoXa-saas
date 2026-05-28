@@ -20,9 +20,13 @@ import PageHeader from "../../components/ui/PageHeader";
 import FormField from "../../components/ui/FormField";
 import FeedbackMessage from "../../components/ui/FeedbackMessage";
 import StateRenderer from "../../components/ui/StateRenderer";
+import FormActions from "../../components/ui/FormActions";
 
 import useMutation from "../../hooks/useMutation";
+import useItemFeedback from "../../hooks/useItemFeedback";
+
 import { uiStyles } from "../../lib/ui-styles";
+import { layoutStyles } from "../../lib/layout-styles";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +36,8 @@ export default function WorkoutsPage() {
   const [loading, setLoading] = useState(true);
 
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  const [description, setDescription] =
+    useState("");
 
   const {
     loading: creating,
@@ -70,15 +75,37 @@ export default function WorkoutsPage() {
 
   const [selectedExercises, setSelectedExercises] =
     useState({});
+
   const [workoutExercises, setWorkoutExercises] =
     useState({});
 
   const [addingExercise, setAddingExercise] =
     useState({});
-  const [exerciseFeedback, setExerciseFeedback] =
-    useState({});
+
   const [removingExercise, setRemovingExercise] =
     useState({});
+
+  const [exerciseFeedback, setExerciseFeedback] =
+    useState({});
+
+  const {
+    setSuccess,
+    setError,
+    clearFeedback,
+  } = useItemFeedback();
+
+  const setWorkoutFeedback = useCallback(
+    (workoutId, type, message) => {
+      setExerciseFeedback((prev) => ({
+        ...prev,
+        [workoutId]: {
+          type,
+          message,
+        },
+      }));
+    },
+    []
+  );
 
   const loadWorkoutExercises = useCallback(
     async (workoutId) => {
@@ -104,6 +131,7 @@ export default function WorkoutsPage() {
   const loadWorkouts = useCallback(async () => {
     try {
       const res = await apiFetch("/workouts");
+
       const data = res.data || [];
 
       setWorkouts(data);
@@ -118,6 +146,7 @@ export default function WorkoutsPage() {
         "Error cargando rutinas:",
         err.message
       );
+
       console.error(err);
     } finally {
       setLoading(false);
@@ -127,6 +156,7 @@ export default function WorkoutsPage() {
   const loadExercises = useCallback(async () => {
     try {
       const res = await apiFetch("/exercises");
+
       setExercises(res.data || []);
     } catch (err) {
       console.error(
@@ -150,6 +180,7 @@ export default function WorkoutsPage() {
 
     await createWorkout({
       name: name.trim(),
+
       description:
         description.trim() || undefined,
     });
@@ -164,17 +195,17 @@ export default function WorkoutsPage() {
     await loadWorkouts();
   }
 
-  async function handleAddExercise(workoutId) {
+  async function handleAddExercise(
+    workoutId
+  ) {
     const form = selectedExercises[workoutId];
 
     if (!form || !form.exerciseId) {
-      setExerciseFeedback((prev) => ({
-        ...prev,
-        [workoutId]: {
-          type: "error",
-          message: "Debes seleccionar un ejercicio",
-        },
-      }));
+      setWorkoutFeedback(
+        workoutId,
+        "error",
+        "Debes seleccionar un ejercicio"
+      );
 
       return;
     }
@@ -184,10 +215,7 @@ export default function WorkoutsPage() {
       [workoutId]: true,
     }));
 
-    setExerciseFeedback((prev) => ({
-      ...prev,
-      [workoutId]: null,
-    }));
+    clearFeedback();
 
     try {
       const currentItems =
@@ -203,37 +231,49 @@ export default function WorkoutsPage() {
 
         payload: {
           exerciseId: form.exerciseId,
+
           exerciseOrder: nextOrder,
+
           sets: Number(form.sets || 4),
+
           reps: form.reps || "12",
+
           restSeconds: Number(
             form.restSeconds || 60
           ),
+
           notes: form.notes || "",
         },
       });
 
       setSelectedExercises((prev) => ({
         ...prev,
+
         [workoutId]: {
           exerciseId: "",
+
           exerciseOrder:
             currentItems.length + 2,
+
           sets: 4,
+
           reps: "12",
+
           restSeconds: 60,
+
           notes: "",
         },
       }));
 
-      setExerciseFeedback((prev) => ({
-        ...prev,
-        [workoutId]: {
-          type: "success",
-          message:
-            "Ejercicio agregado correctamente",
-        },
-      }));
+      setSuccess(
+        "Ejercicio agregado correctamente"
+      );
+
+      setWorkoutFeedback(
+        workoutId,
+        "success",
+        "Ejercicio agregado correctamente"
+      );
 
       await loadWorkoutExercises(workoutId);
     } catch (err) {
@@ -247,13 +287,13 @@ export default function WorkoutsPage() {
             : err.message ||
               "No se pudo agregar el ejercicio";
 
-      setExerciseFeedback((prev) => ({
-        ...prev,
-        [workoutId]: {
-          type: "error",
-          message,
-        },
-      }));
+      setError(message);
+
+      setWorkoutFeedback(
+        workoutId,
+        "error",
+        message
+      );
     } finally {
       setAddingExercise((prev) => ({
         ...prev,
@@ -285,26 +325,29 @@ export default function WorkoutsPage() {
         itemId,
       });
 
-      setExerciseFeedback((prev) => ({
-        ...prev,
-        [workoutId]: {
-          type: "success",
-          message:
-            "Ejercicio eliminado correctamente",
-        },
-      }));
+      setSuccess(
+        "Ejercicio eliminado correctamente"
+      );
+
+      setWorkoutFeedback(
+        workoutId,
+        "success",
+        "Ejercicio eliminado correctamente"
+      );
 
       await loadWorkoutExercises(workoutId);
     } catch (err) {
-      setExerciseFeedback((prev) => ({
-        ...prev,
-        [workoutId]: {
-          type: "error",
-          message:
-            err.message ||
-            "No se pudo eliminar el ejercicio de la rutina",
-        },
-      }));
+      const message =
+        err.message ||
+        "No se pudo eliminar el ejercicio de la rutina";
+
+      setError(message);
+
+      setWorkoutFeedback(
+        workoutId,
+        "error",
+        message
+      );
     } finally {
       setRemovingExercise((prev) => ({
         ...prev,
@@ -319,8 +362,10 @@ export default function WorkoutsPage() {
       active="workouts"
     >
       <PageContainer>
-        <section style={styles.topGrid}>
-          <SectionCard style={styles.createCard}>
+        <section style={layoutStyles.topGrid}>
+          <SectionCard
+            style={styles.createCard}
+          >
             <PageHeader
               eyebrow="Workout builder"
               title="Crear rutina"
@@ -345,16 +390,17 @@ export default function WorkoutsPage() {
                 placeholder="Opcional"
                 value={description}
                 onChange={(e) =>
-                  setDescription(e.target.value)
+                  setDescription(
+                    e.target.value
+                  )
                 }
                 textarea
               />
 
-              <ActionButton disabled={creating}>
-                {creating
-                  ? "Creando..."
-                  : "Crear rutina"}
-              </ActionButton>
+              <FormActions
+                loading={creating}
+                submitText="Crear rutina"
+              />
 
               {error ? (
                 <FeedbackMessage variant="error">
@@ -478,10 +524,12 @@ export default function WorkoutsPage() {
                           setSelectedExercises(
                             (prev) => ({
                               ...prev,
+
                               [workout.id]: {
                                 ...prev[
                                   workout.id
                                 ],
+
                                 exerciseId:
                                   e.target.value,
                               },
@@ -493,14 +541,18 @@ export default function WorkoutsPage() {
                           Selecciona ejercicio
                         </option>
 
-                        {exercises.map((exercise) => (
-                          <option
-                            key={exercise.id}
-                            value={exercise.id}
-                          >
-                            {exercise.name}
-                          </option>
-                        ))}
+                        {exercises.map(
+                          (exercise) => (
+                            <option
+                              key={exercise.id}
+                              value={
+                                exercise.id
+                              }
+                            >
+                              {exercise.name}
+                            </option>
+                          )
+                        )}
                       </select>
                     </div>
 
@@ -522,10 +574,12 @@ export default function WorkoutsPage() {
                             setSelectedExercises(
                               (prev) => ({
                                 ...prev,
+
                                 [workout.id]: {
                                   ...prev[
                                     workout.id
                                   ],
+
                                   exerciseOrder:
                                     e.target.value,
                                 },
@@ -552,10 +606,12 @@ export default function WorkoutsPage() {
                             setSelectedExercises(
                               (prev) => ({
                                 ...prev,
+
                                 [workout.id]: {
                                   ...prev[
                                     workout.id
                                   ],
+
                                   sets:
                                     e.target.value,
                                 },
@@ -582,10 +638,12 @@ export default function WorkoutsPage() {
                             setSelectedExercises(
                               (prev) => ({
                                 ...prev,
+
                                 [workout.id]: {
                                   ...prev[
                                     workout.id
                                   ],
+
                                   reps:
                                     e.target.value,
                                 },
@@ -612,10 +670,12 @@ export default function WorkoutsPage() {
                             setSelectedExercises(
                               (prev) => ({
                                 ...prev,
+
                                 [workout.id]: {
                                   ...prev[
                                     workout.id
                                   ],
+
                                   restSeconds:
                                     e.target.value,
                                 },
@@ -643,10 +703,12 @@ export default function WorkoutsPage() {
                           setSelectedExercises(
                             (prev) => ({
                               ...prev,
+
                               [workout.id]: {
                                 ...prev[
                                   workout.id
                                 ],
+
                                 notes:
                                   e.target.value,
                               },
@@ -658,18 +720,26 @@ export default function WorkoutsPage() {
 
                     <ActionButton
                       disabled={
-                        addingExercise[workout.id]
+                        addingExercise[
+                          workout.id
+                        ]
                       }
                       onClick={() =>
-                        handleAddExercise(workout.id)
+                        handleAddExercise(
+                          workout.id
+                        )
                       }
                     >
-                      {addingExercise[workout.id]
+                      {addingExercise[
+                        workout.id
+                      ]
                         ? "Agregando ejercicio..."
                         : "Agregar ejercicio"}
                     </ActionButton>
 
-                    {exerciseFeedback[workout.id] ? (
+                    {exerciseFeedback[
+                      workout.id
+                    ] ? (
                       <p
                         style={
                           exerciseFeedback[
@@ -694,9 +764,12 @@ export default function WorkoutsPage() {
                     Ejercicios asignados
                   </h4>
 
-                  {!workoutExercises[workout.id] ||
-                  workoutExercises[workout.id]
-                    .length === 0 ? (
+                  {!workoutExercises[
+                    workout.id
+                  ] ||
+                  workoutExercises[
+                    workout.id
+                  ].length === 0 ? (
                     <EmptyState>
                       Esta rutina todavía no tiene
                       ejercicios.
@@ -706,35 +779,45 @@ export default function WorkoutsPage() {
                       columns={[
                         {
                           key: "order",
+
                           label: "#",
+
                           render: (row) =>
                             row.exerciseOrder,
                         },
 
                         {
                           key: "exercise",
+
                           label: "Ejercicio",
+
                           render: (row) =>
                             row.exercise?.name,
                         },
 
                         {
                           key: "sets",
+
                           label: "Sets/Reps",
+
                           render: (row) =>
                             `${row.sets} x ${row.reps}`,
                         },
 
                         {
                           key: "rest",
+
                           label: "Descanso",
+
                           render: (row) =>
                             `${row.restSeconds || 0}s`,
                         },
 
                         {
                           key: "actions",
+
                           label: "Acciones",
+
                           render: (row) => (
                             <ActionButton
                               variant="danger"
@@ -750,7 +833,9 @@ export default function WorkoutsPage() {
                                 )
                               }
                             >
-                              {removingExercise[row.id]
+                              {removingExercise[
+                                row.id
+                              ]
                                 ? "Eliminando..."
                                 : "Eliminar"}
                             </ActionButton>
@@ -758,7 +843,9 @@ export default function WorkoutsPage() {
                         },
                       ]}
                       data={
-                        workoutExercises[workout.id]
+                        workoutExercises[
+                          workout.id
+                        ]
                       }
                     />
                   )}
@@ -773,34 +860,41 @@ export default function WorkoutsPage() {
 }
 
 const styles = {
-  
-
-    sectionTitle: {
+  sectionTitle: {
     margin: "0 0 10px 0",
+
     fontSize: "24px",
+
     fontWeight: "800",
   },
 
   field: {
     display: "flex",
+
     flexDirection: "column",
+
     gap: "8px",
   },
 
   label: {
     fontSize: "14px",
+
     fontWeight: "700",
   },
-  
+
   error: {
     margin: 0,
+
     color: "#f87171",
+
     fontSize: "14px",
   },
 
   success: {
     margin: 0,
+
     color: "#4ade80",
+
     fontSize: "14px",
   },
 
@@ -810,80 +904,102 @@ const styles = {
 
   emptyTitle: {
     margin: "0 0 10px 0",
+
     fontSize: "20px",
+
     fontWeight: "800",
   },
 
   workoutGrid: {
     display: "grid",
+
     gridTemplateColumns:
       "repeat(auto-fit, minmax(320px, 1fr))",
+
     gap: "16px",
   },
 
   workoutTag: {
     margin: "0 0 10px 0",
+
     color: "#94a3b8",
+
     fontSize: "13px",
+
     textTransform: "uppercase",
   },
 
   workoutName: {
     margin: "0 0 16px 0",
+
     fontSize: "30px",
+
     fontWeight: "800",
   },
 
   divider: {
     border: "none",
+
     borderTop:
       "1px solid rgba(148, 163, 184, 0.14)",
+
     margin: "18px 0",
   },
 
   subTitle: {
     margin: "0 0 14px 0",
+
     fontSize: "16px",
+
     fontWeight: "800",
   },
 
   exerciseForm: {
     display: "flex",
+
     flexDirection: "column",
+
     gap: "12px",
   },
 
   select: {
     padding: "12px",
+
     borderRadius: "10px",
+
     border: "1px solid #334155",
+
     background: "#0f172a",
+
     color: "#f8fafc",
   },
 
   smallInput: {
     padding: "12px",
+
     borderRadius: "10px",
+
     border: "1px solid #334155",
+
     background: "#0f172a",
+
     color: "#f8fafc",
   },
 
   notesInput: {
     minHeight: "70px",
-    padding: "12px",
-    borderRadius: "10px",
-    border: "1px solid #334155",
-    background: "#0f172a",
-    color: "#f8fafc",
-    resize: "vertical",
-  },
 
- topGrid: {
-    display: "grid",
-    gridTemplateColumns: "2fr 1fr",
-    gap: "16px",
-    marginBottom: "32px",
+    padding: "12px",
+
+    borderRadius: "10px",
+
+    border: "1px solid #334155",
+
+    background: "#0f172a",
+
+    color: "#f8fafc",
+
+    resize: "vertical",
   },
 
   createCard: {
@@ -892,35 +1008,48 @@ const styles = {
 
   headerRow: {
     display: "flex",
+
     justifyContent: "space-between",
+
     alignItems: "flex-start",
+
     gap: "16px",
+
     marginBottom: "18px",
   },
 
   infoGrid: {
     display: "grid",
+
     gridTemplateColumns: "1fr",
+
     gap: "12px",
   },
 
   infoLabel: {
     margin: "0 0 4px 0",
+
     color: "#94a3b8",
+
     fontSize: "13px",
+
     fontWeight: "700",
   },
 
   infoValue: {
     margin: 0,
+
     color: "#f8fafc",
+
     wordBreak: "break-word",
   },
 
   inlineGrid: {
     display: "grid",
+
     gridTemplateColumns:
       "repeat(auto-fit, minmax(120px, 1fr))",
+
     gap: "12px",
   },
 };
