@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -11,6 +12,7 @@ import TrainerShell from "../../components/TrainerShell";
 import { apiFetch } from "../../lib/api";
 import useFetch from "../../hooks/useFetch";
 import useMutation from "../../hooks/useMutation";
+import useDependentFetch from "../../hooks/useDependentFetch";
 import { uiStyles } from "../../lib/ui-styles";
 import { layoutStyles } from "../../lib/layout-styles";
 
@@ -38,12 +40,6 @@ export default function ProgressPage() {
     initialData: [],
   });
 
-  const [workoutExercises, setWorkoutExercises] =
-    useState([]);
-
-  const [progressLogs, setProgressLogs] =
-    useState([]);
-
   const [assignmentId, setAssignmentId] =
     useState("");
 
@@ -63,12 +59,6 @@ export default function ProgressPage() {
     useState(true);
 
   const [notes, setNotes] = useState("");
-
-  const [loadingExercises, setLoadingExercises] =
-    useState(false);
-
-  const [loadingProgress, setLoadingProgress] =
-    useState(false);
 
   const {
     loading: creating,
@@ -112,79 +102,63 @@ export default function ProgressPage() {
     }
   }, [activeAssignments, assignmentId]);
 
-  async function loadWorkoutExercises(
-    workoutPlanId
-  ) {
-    if (!workoutPlanId) {
-      setWorkoutExercises([]);
-      return;
-    }
-
-    setLoadingExercises(true);
-
-    try {
+  const fetchWorkoutExercises = useCallback(
+    async (workoutPlanId) => {
       const response = await apiFetch(
         `/workouts/${workoutPlanId}/exercises`
       );
 
-      const data = response.data || [];
+      return response.data || [];
+    },
+    []
+  );
 
-      setWorkoutExercises(data);
-
-      if (data.length > 0) {
-        setExerciseId(data[0].exerciseId);
-      } else {
-        setExerciseId("");
-      }
-    } catch (err) {
-      setWorkoutExercises([]);
-      setExerciseId("");
-
-      console.error(err);
-    } finally {
-      setLoadingExercises(false);
-    }
-  }
-
-  async function loadProgress(
-    selectedAssignmentId
-  ) {
-    if (!selectedAssignmentId) {
-      setProgressLogs([]);
-      return;
-    }
-
-    setLoadingProgress(true);
-
-    try {
+  const fetchProgressLogs = useCallback(
+    async (selectedAssignmentId) => {
       const response = await apiFetch(
         `/progress/assignment/${selectedAssignmentId}`
       );
 
-      setProgressLogs(response.data || []);
-    } catch (err) {
-      setProgressLogs([]);
+      return response.data || [];
+    },
+    []
+  );
 
-      console.error(err);
-    } finally {
-      setLoadingProgress(false);
+  const {
+    data: workoutExercises = [],
+    loading: loadingExercises,
+    error: workoutExercisesError,
+    refetch: refetchWorkoutExercises,
+  } = useDependentFetch(
+    selectedAssignment?.workoutPlanId,
+    fetchWorkoutExercises,
+    {
+      initialData: [],
     }
-  }
+  );
+
+  const {
+    data: progressLogs = [],
+    loading: loadingProgress,
+    error: progressLogsError,
+    refetch: refetchProgressLogs,
+  } = useDependentFetch(
+    selectedAssignment?.id,
+    fetchProgressLogs,
+    {
+      initialData: [],
+    }
+  );
 
   useEffect(() => {
-    if (!selectedAssignment) {
-      setWorkoutExercises([]);
+    if (workoutExercises.length > 0) {
+      setExerciseId(
+        workoutExercises[0].exerciseId
+      );
+    } else {
       setExerciseId("");
-      setProgressLogs([]);
-      return;
     }
-
-    loadWorkoutExercises(
-      selectedAssignment.workoutPlanId
-    );
-
-    loadProgress(selectedAssignment.id);
-  }, [selectedAssignment]);
+  }, [workoutExercises]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -221,9 +195,16 @@ export default function ProgressPage() {
       "Progreso registrado correctamente"
     );
 
-    await loadProgress(assignmentId);
+    await refetchProgressLogs();
+    await refetchWorkoutExercises();
     await refetchAssignments();
   }
+
+  const combinedError =
+    assignmentsError ||
+    workoutExercisesError ||
+    progressLogsError ||
+    error;
 
   const columns = [
     {
@@ -467,15 +448,9 @@ export default function ProgressPage() {
                   submitText="Registrar progreso"
                 />
 
-                {assignmentsError ? (
+                {combinedError ? (
                   <FeedbackMessage variant="error">
-                    {assignmentsError}
-                  </FeedbackMessage>
-                ) : null}
-
-                {error ? (
-                  <FeedbackMessage variant="error">
-                    {error}
+                    {combinedError}
                   </FeedbackMessage>
                 ) : null}
 
@@ -521,7 +496,7 @@ export default function ProgressPage() {
               loading={
                 loading || loadingProgress
               }
-              error={assignmentsError || error}
+              error={combinedError}
               isEmpty={
                 !loading &&
                 !loadingProgress &&
