@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import TrainerShell from "../../components/TrainerShell";
 
@@ -24,6 +24,16 @@ import FormField from "../../components/ui/FormField";
 import FeedbackMessage from "../../components/ui/FeedbackMessage";
 import FormActions from "../../components/ui/FormActions";
 
+import TableCard from "../../components/ui/TableCard";
+import TableToolbar from "../../components/ui/TableToolbar";
+import EmptySearchState from "../../components/ui/EmptySearchState";
+import FilterPill from "../../components/ui/FilterPill";
+
+import ContentStack from "../../components/ui/ContentStack";
+import InlineGroup from "../../components/ui/InlineGroup";
+import ResponsiveGrid from "../../components/ui/ResponsiveGrid";
+import PageSection from "../../components/ui/PageSection";
+
 export const dynamic = "force-dynamic";
 
 export default function ClientsPage() {
@@ -36,9 +46,20 @@ export default function ClientsPage() {
     initialData: [],
   });
 
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [fullName, setFullName] =
+    useState("");
+
+  const [email, setEmail] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [search, setSearch] =
+    useState("");
+
+  const [filter, setFilter] =
+    useState("all");
 
   const {
     loading: creating,
@@ -54,154 +75,376 @@ export default function ClientsPage() {
   });
 
   async function handleSubmit(e) {
-  e.preventDefault();
+    e.preventDefault();
 
-  await mutate({
-    fullName,
-    email,
-    password,
-  });
+    await mutate({
+      fullName,
+      email,
+      password,
+    });
 
-  setSuccessMessage("Cliente creado correctamente");
+    setSuccessMessage(
+      "Cliente creado correctamente"
+    );
 
-  setFullName("");
-  setEmail("");
-  setPassword("");
+    setFullName("");
+    setEmail("");
+    setPassword("");
 
-  await loadClients();
-}
+    await loadClients();
+  }
+
+  const filteredClients =
+    useMemo(() => {
+      let result = [...clients];
+
+      if (search.trim()) {
+        const term =
+          search.toLowerCase();
+
+        result = result.filter(
+          (client) =>
+            client.fullName
+              ?.toLowerCase()
+              .includes(term) ||
+            client.email
+              ?.toLowerCase()
+              .includes(term)
+        );
+      }
+
+      if (filter === "withWeight") {
+        result = result.filter(
+          (client) =>
+            client.weightKg
+        );
+      }
+
+      if (filter === "withAge") {
+        result = result.filter(
+          (client) => client.age
+        );
+      }
+
+      return result;
+    }, [clients, search, filter]);
 
   const columns = [
     {
       key: "name",
+
       label: "Cliente",
+
       render: (client) => (
         <div>
-          <p style={styles.clientName}>{client.fullName || "Sin nombre"}</p>
-          <p style={styles.clientEmail}>{client.email || "Sin email"}</p>
+          <p
+            style={
+              styles.clientName
+            }
+          >
+            {client.fullName ||
+              "Sin nombre"}
+          </p>
+
+          <p
+            style={
+              styles.clientEmail
+            }
+          >
+            {client.email ||
+              "Sin email"}
+          </p>
         </div>
       ),
     },
+
     {
       key: "age",
+
       label: "Edad",
-      render: (client) => <span>{client.age || "N/A"}</span>,
+
+      render: (client) => (
+        <span>
+          {client.age ||
+            "N/A"}
+        </span>
+      ),
     },
+
     {
       key: "weight",
+
       label: "Peso",
-      render: (client) => <span>{client.weightKg || "N/A"} kg</span>,
+
+      render: (client) => (
+        <span>
+          {client.weightKg ||
+            "N/A"}{" "}
+          kg
+        </span>
+      ),
     },
+
     {
       key: "height",
+
       label: "Altura",
-      render: (client) => <span>{client.heightCm || "N/A"} cm</span>,
+
+      render: (client) => (
+        <span>
+          {client.heightCm ||
+            "N/A"}{" "}
+          cm
+        </span>
+      ),
     },
+
     {
       key: "status",
+
       label: "Estado",
-      render: () => <Badge variant="success">Activo</Badge>,
+
+      render: () => (
+        <Badge variant="success">
+          Activo
+        </Badge>
+      ),
     },
   ];
 
   return (
-    <TrainerShell title="Clientes" active="clients">
+    <TrainerShell
+      title="Clientes"
+      active="clients"
+    >
       <PageContainer>
-        <div style={uiStyles.page}>
-          <section style={layoutStyles.topGrid}>
-            <SectionCard>
-              <PageHeader
-                eyebrow="Gestión de clientes"
-                title="Registrar nuevo cliente"
-                description="Crea nuevos clientes para administrar entrenamientos, rutinas y progreso físico."
+        <ContentStack gap={24}>
+          <PageSection>
+            <ResponsiveGrid
+              min={320}
+              gap={20}
+            >
+              <SectionCard>
+                <PageHeader
+                  eyebrow="Gestión de clientes"
+                  title="Registrar nuevo cliente"
+                  description="Crea nuevos clientes para administrar entrenamientos, rutinas y progreso físico."
+                />
+
+                <form
+                  onSubmit={
+                    handleSubmit
+                  }
+                  style={
+                    uiStyles.stack
+                  }
+                >
+                  <FormField
+                    label="Nombre completo"
+                    placeholder="Ej: Juan Pérez"
+                    value={
+                      fullName
+                    }
+                    onChange={(e) =>
+                      setFullName(
+                        e.target.value
+                      )
+                    }
+                  />
+
+                  <FormField
+                    label="Correo electrónico"
+                    type="email"
+                    placeholder="cliente@correo.com"
+                    value={email}
+                    onChange={(e) =>
+                      setEmail(
+                        e.target.value
+                      )
+                    }
+                  />
+
+                  <FormField
+                    label="Password inicial"
+                    type="password"
+                    placeholder="Mínimo 6 caracteres"
+                    value={
+                      password
+                    }
+                    onChange={(e) =>
+                      setPassword(
+                        e.target.value
+                      )
+                    }
+                  />
+
+                  <FormActions
+                    loading={
+                      creating
+                    }
+                    submitText="Crear cliente"
+                  />
+
+                  {error ? (
+                    <FeedbackMessage variant="error">
+                      {error}
+                    </FeedbackMessage>
+                  ) : null}
+
+                  {success ? (
+                    <FeedbackMessage variant="success">
+                      {success}
+                    </FeedbackMessage>
+                  ) : null}
+                </form>
+              </SectionCard>
+
+              <StatCard
+                label="Clientes"
+                value={
+                  clients.length
+                }
+                description="Clientes registrados para este trainer."
               />
+            </ResponsiveGrid>
+          </PageSection>
 
-              <form onSubmit={handleSubmit} style={uiStyles.stack}>
-                <FormField
-                  label="Nombre completo"
-                  placeholder="Ej: Juan Pérez"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+          <PageSection>
+            <TableCard
+              toolbar={
+                <TableToolbar
+                  title="Lista de clientes"
+                  description="Consulta, filtra y administra tu base de clientes fitness."
+                  searchValue={
+                    search
+                  }
+                  onSearchChange={(
+                    e
+                  ) =>
+                    setSearch(
+                      e.target.value
+                    )
+                  }
+                  searchPlaceholder="Buscar cliente o correo..."
+                >
+                  <InlineGroup gap={10}>
+                    <FilterPill
+                      active={
+                        filter ===
+                        "all"
+                      }
+                      onClick={() =>
+                        setFilter(
+                          "all"
+                        )
+                      }
+                    >
+                      Todos
+                    </FilterPill>
+
+                    <FilterPill
+                      active={
+                        filter ===
+                        "withWeight"
+                      }
+                      onClick={() =>
+                        setFilter(
+                          "withWeight"
+                        )
+                      }
+                    >
+                      Con peso
+                    </FilterPill>
+
+                    <FilterPill
+                      active={
+                        filter ===
+                        "withAge"
+                      }
+                      onClick={() =>
+                        setFilter(
+                          "withAge"
+                        )
+                      }
+                    >
+                      Con edad
+                    </FilterPill>
+                  </InlineGroup>
+                </TableToolbar>
+              }
+            >
+              <InlineGroup justify="space-between">
+                <p
+                  style={
+                    layoutStyles.eyebrow
+                  }
+                >
+                  Base de
+                  clientes
+                </p>
+
+                <Badge variant="default">
+                  {
+                    filteredClients.length
+                  }{" "}
+                  registros
+                </Badge>
+              </InlineGroup>
+
+              {loading ? (
+                <LoadingCard>
+                  Cargando
+                  clientes...
+                </LoadingCard>
+              ) : null}
+
+              {fetchError ? (
+                <FeedbackMessage variant="error">
+                  {fetchError}
+                </FeedbackMessage>
+              ) : null}
+
+              {!loading &&
+              clients.length ===
+                0 ? (
+                <EmptyState>
+                  Todavía no
+                  existen
+                  clientes
+                  registrados.
+                </EmptyState>
+              ) : null}
+
+              {!loading &&
+              clients.length >
+                0 &&
+              filteredClients.length ===
+                0 ? (
+                <EmptySearchState />
+              ) : null}
+
+              {!loading &&
+              filteredClients.length >
+                0 ? (
+                <DataTable
+                  columns={
+                    columns
+                  }
+                  data={
+                    filteredClients
+                  }
+                  emptyMessage="No hay clientes disponibles"
                 />
-
-                <FormField
-                  label="Correo electrónico"
-                  type="email"
-                  placeholder="cliente@correo.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-
-                <FormField
-                  label="Password inicial"
-                  type="password"
-                  placeholder="Mínimo 6 caracteres"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-
-                <FormActions
-                  loading={creating}
-                  submitText="Crear cliente"
-                />
-
-                {error ? (
-                  <FeedbackMessage variant="error">{error}</FeedbackMessage>
-                ) : null}
-
-                {success ? (
-                  <FeedbackMessage variant="success">{success}</FeedbackMessage>
-                ) : null}
-              </form>
-            </SectionCard>
-
-            <StatCard
-              label="Clientes"
-              value={clients.length}
-              description="Clientes registrados para este trainer."
-            />
-          </section>
-
-          <SectionCard style={styles.tableSection}>
-            <div style={uiStyles.sectionHeader}>
-              <div>
-                <p style={layoutStyles.eyebrow}>Base de clientes</p>
-                <h2 style={uiStyles.sectionTitle}>Lista de clientes</h2>
-              </div>
-
-              <Badge variant="default">{clients.length} registros</Badge>
-            </div>
-
-            {loading ? <LoadingCard>Cargando clientes...</LoadingCard> : null}
-
-            {fetchError ? (
-              <FeedbackMessage variant="error">{fetchError}</FeedbackMessage>
-            ) : null}
-
-            {!loading && clients.length === 0 ? (
-              <EmptyState>Todavía no existen clientes registrados.</EmptyState>
-            ) : null}
-
-            {!loading && clients.length > 0 ? (
-              <DataTable
-                columns={columns}
-                data={clients}
-                emptyMessage="No hay clientes disponibles"
-              />
-            ) : null}
-          </SectionCard>
-        </div>
+              ) : null}
+            </TableCard>
+          </PageSection>
+        </ContentStack>
       </PageContainer>
     </TrainerShell>
   );
 }
 
 const styles = {
-  
-  tableSection: {
-    minHeight: "auto",
-  },
-
   clientName: {
     margin: "0 0 4px 0",
     fontWeight: "800",
