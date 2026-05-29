@@ -6,7 +6,6 @@ import TrainerShell from "../../components/TrainerShell";
 
 import SectionCard from "../../components/ui/SectionCard";
 import EmptyState from "../../components/ui/EmptyState";
-import LoadingCard from "../../components/ui/LoadingCard";
 import ResponsiveGrid from "../../components/ui/ResponsiveGrid";
 
 import ContentStack from "../../components/ui/ContentStack";
@@ -26,6 +25,10 @@ import WorkoutVolumeCard from "../../components/dashboard/WorkoutVolumeCard";
 import CompletionRateChart from "../../components/dashboard/CompletionRateChart";
 import ActivityBarChart from "../../components/dashboard/ActivityBarChart";
 import MetricTrendCard from "../../components/dashboard/MetricTrendCard";
+
+import SkeletonCard from "../../components/ui/SkeletonCard";
+import EmptyDashboardState from "../../components/ui/EmptyDashboardState";
+import QuickActionCard from "../../components/ui/QuickActionCard";
 
 import {
   formatKg,
@@ -209,6 +212,12 @@ export default function DashboardPage() {
     },
   ];
 
+  const hasData =
+    metrics.some(
+      (metric) =>
+        Number(metric.value) > 0
+    ) || recentActivity.length > 0;
+
   return (
     <TrainerShell
       title="Dashboard"
@@ -216,21 +225,53 @@ export default function DashboardPage() {
     >
       <ContentStack gap={24}>
         {loading ? (
-          <LoadingCard>
-            Cargando resumen del
-            dashboard...
-          </LoadingCard>
+          <>
+            <ResponsiveGrid
+              min={220}
+              gap={16}
+            >
+              {Array.from({
+                length: 4,
+              }).map((_, index) => (
+                <SkeletonCard
+                  key={index}
+                  height={150}
+                />
+              ))}
+            </ResponsiveGrid>
+
+            <ResponsiveGrid
+              min={320}
+              gap={16}
+            >
+              <SkeletonCard
+                height={240}
+              />
+
+              <SkeletonCard
+                height={240}
+              />
+            </ResponsiveGrid>
+          </>
         ) : null}
 
         {!loading && error ? (
-          <LoadingCard>
+          <SectionCard>
             <span style={styles.errorText}>
               {error}
             </span>
-          </LoadingCard>
+          </SectionCard>
         ) : null}
 
-        {!loading && !error ? (
+        {!loading &&
+        !error &&
+        !hasData ? (
+          <EmptyDashboardState />
+        ) : null}
+
+        {!loading &&
+        !error &&
+        hasData ? (
           <>
             <PageSection>
               <section style={styles.heroCard}>
@@ -275,6 +316,40 @@ export default function DashboardPage() {
                     }
                   />
                 ))}
+              </ResponsiveGrid>
+            </PageSection>
+
+            <PageSection>
+              <PageHeader
+                eyebrow="Acciones rápidas"
+                title="Flujo operativo rápido"
+                description="Accede rápidamente a las tareas principales del sistema."
+              />
+
+              <ResponsiveGrid
+                min={260}
+                gap={16}
+              >
+                <QuickActionCard
+                  title="Crear cliente"
+                  description="Registra nuevos clientes fitness dentro de la plataforma."
+                  href="/clients"
+                  accent="#22c55e"
+                />
+
+                <QuickActionCard
+                  title="Crear rutina"
+                  description="Diseña nuevos planes de entrenamiento personalizados."
+                  href="/workouts"
+                  accent="#38bdf8"
+                />
+
+                <QuickActionCard
+                  title="Registrar progreso"
+                  description="Actualiza el rendimiento real de tus clientes."
+                  href="/progress"
+                  accent="#a855f7"
+                />
               </ResponsiveGrid>
             </PageSection>
 
