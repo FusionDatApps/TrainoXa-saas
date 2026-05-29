@@ -26,6 +26,7 @@ import AsyncButton from "../../components/ui/AsyncButton";
 import SelectField from "../../components/ui/SelectField";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import Modal from "../../components/ui/Modal";
+import Drawer from "../../components/ui/Drawer";
 import { useToast } from "../../components/ui/ToastProvider";
 
 import ContentStack from "../../components/ui/ContentStack";
@@ -66,6 +67,7 @@ export default function WorkoutsPage() {
   const [exerciseFeedback, setExerciseFeedback] = useState({});
   const [pendingRemoveExercise, setPendingRemoveExercise] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState(null);
 
   const {
     loading: creating,
@@ -111,6 +113,10 @@ export default function WorkoutsPage() {
     [workouts]
   );
 
+  const selectedWorkout = useMemo(() => {
+    return workouts.find((workout) => workout.id === selectedWorkoutId) || null;
+  }, [workouts, selectedWorkoutId]);
+
   const filteredWorkouts = useMemo(() => {
     let result = [...workouts];
 
@@ -141,6 +147,14 @@ export default function WorkoutsPage() {
       0
     );
   }, [workoutExercises]);
+
+  const selectedAssignedExercises = selectedWorkout
+    ? workoutExercises[selectedWorkout.id] || []
+    : [];
+
+  const selectedExerciseForm = selectedWorkout
+    ? selectedExercises[selectedWorkout.id] || {}
+    : {};
 
   const setWorkoutFeedback = useCallback((workoutId, type, message) => {
     setExerciseFeedback((prev) => ({
@@ -378,6 +392,14 @@ export default function WorkoutsPage() {
     }));
   }
 
+  function openWorkoutDrawer(workoutId) {
+    setSelectedWorkoutId(workoutId);
+  }
+
+  function closeWorkoutDrawer() {
+    setSelectedWorkoutId(null);
+  }
+
   function buildExerciseColumns(workoutId) {
     return [
       {
@@ -525,9 +547,6 @@ export default function WorkoutsPage() {
                         const assignedExercises =
                           workoutExercises[workout.id] || [];
 
-                        const currentForm =
-                          selectedExercises[workout.id] || {};
-
                         return (
                           <SectionCard key={workout.id}>
                             <ContentStack gap={20}>
@@ -576,170 +595,11 @@ export default function WorkoutsPage() {
                                 </div>
                               </ResponsiveGrid>
 
-                              <div style={styles.divider} />
-
-                              <ContentStack gap={14}>
-                                <h4 style={styles.subTitle}>
-                                  Agregar ejercicio
-                                </h4>
-
-                                <SelectField
-                                  label="Ejercicio"
-                                  value={currentForm.exerciseId || ""}
-                                  onChange={(e) =>
-                                    updateWorkoutExerciseForm(
-                                      workout.id,
-                                      "exerciseId",
-                                      e.target.value
-                                    )
-                                  }
-                                >
-                                  <option value="">Selecciona ejercicio</option>
-
-                                  {exercises.map((exercise) => (
-                                    <option
-                                      key={exercise.id}
-                                      value={exercise.id}
-                                    >
-                                      {exercise.name}
-                                    </option>
-                                  ))}
-                                </SelectField>
-
-                                <ResponsiveGrid min={120} gap={12}>
-                                  <div style={styles.field}>
-                                    <label style={styles.label}>Orden</label>
-
-                                    <input
-                                      style={styles.smallInput}
-                                      type="number"
-                                      value={currentForm.exerciseOrder || 1}
-                                      onChange={(e) =>
-                                        updateWorkoutExerciseForm(
-                                          workout.id,
-                                          "exerciseOrder",
-                                          e.target.value
-                                        )
-                                      }
-                                    />
-                                  </div>
-
-                                  <div style={styles.field}>
-                                    <label style={styles.label}>Sets</label>
-
-                                    <input
-                                      style={styles.smallInput}
-                                      type="number"
-                                      value={currentForm.sets || 4}
-                                      onChange={(e) =>
-                                        updateWorkoutExerciseForm(
-                                          workout.id,
-                                          "sets",
-                                          e.target.value
-                                        )
-                                      }
-                                    />
-                                  </div>
-
-                                  <div style={styles.field}>
-                                    <label style={styles.label}>Reps</label>
-
-                                    <input
-                                      style={styles.smallInput}
-                                      type="text"
-                                      value={currentForm.reps || "12"}
-                                      onChange={(e) =>
-                                        updateWorkoutExerciseForm(
-                                          workout.id,
-                                          "reps",
-                                          e.target.value
-                                        )
-                                      }
-                                    />
-                                  </div>
-
-                                  <div style={styles.field}>
-                                    <label style={styles.label}>Descanso</label>
-
-                                    <input
-                                      style={styles.smallInput}
-                                      type="number"
-                                      value={currentForm.restSeconds || 60}
-                                      onChange={(e) =>
-                                        updateWorkoutExerciseForm(
-                                          workout.id,
-                                          "restSeconds",
-                                          e.target.value
-                                        )
-                                      }
-                                    />
-                                  </div>
-                                </ResponsiveGrid>
-
-                                <div style={styles.field}>
-                                  <label style={styles.label}>Notas</label>
-
-                                  <textarea
-                                    style={styles.notesInput}
-                                    placeholder="Indicaciones opcionales"
-                                    value={currentForm.notes || ""}
-                                    onChange={(e) =>
-                                      updateWorkoutExerciseForm(
-                                        workout.id,
-                                        "notes",
-                                        e.target.value
-                                      )
-                                    }
-                                  />
-                                </div>
-
-                                <AsyncButton
-                                  loading={addingExercise[workout.id]}
-                                  loadingText="Agregando ejercicio..."
-                                  onClick={() => handleAddExercise(workout.id)}
-                                >
-                                  Agregar ejercicio
-                                </AsyncButton>
-
-                                {exerciseFeedback[workout.id] ? (
-                                  <p
-                                    style={
-                                      exerciseFeedback[workout.id].type ===
-                                      "error"
-                                        ? styles.error
-                                        : styles.success
-                                    }
-                                  >
-                                    {exerciseFeedback[workout.id].message}
-                                  </p>
-                                ) : null}
-                              </ContentStack>
-
-                              <div style={styles.divider} />
-
-                              <ContentStack gap={14}>
-                                <InlineGroup justify="space-between">
-                                  <h4 style={styles.subTitle}>
-                                    Ejercicios asignados
-                                  </h4>
-
-                                  <Badge variant="default">
-                                    {assignedExercises.length} items
-                                  </Badge>
-                                </InlineGroup>
-
-                                {assignedExercises.length === 0 ? (
-                                  <EmptyState>
-                                    Esta rutina todavia no tiene ejercicios.
-                                  </EmptyState>
-                                ) : (
-                                  <DataTable
-                                    columns={buildExerciseColumns(workout.id)}
-                                    data={assignedExercises}
-                                    emptyMessage="No hay ejercicios asignados"
-                                  />
-                                )}
-                              </ContentStack>
+                              <ActionButton
+                                onClick={() => openWorkoutDrawer(workout.id)}
+                              >
+                                Gestionar rutina
+                              </ActionButton>
                             </ContentStack>
                           </SectionCard>
                         );
@@ -787,6 +647,196 @@ export default function WorkoutsPage() {
           ) : null}
         </form>
       </Modal>
+
+      <Drawer
+        open={Boolean(selectedWorkout)}
+        onClose={closeWorkoutDrawer}
+        title={selectedWorkout?.name || "Gestionar rutina"}
+        description={selectedWorkout?.description || "Administra los ejercicios asignados a esta rutina."}
+        width={720}
+      >
+        {selectedWorkout ? (
+          <ContentStack gap={24}>
+            <ResponsiveGrid min={160} gap={12}>
+              <div style={styles.infoBox}>
+                <p style={styles.infoLabel}>Ejercicios</p>
+
+                <p style={styles.infoValue}>
+                  {selectedAssignedExercises.length}
+                </p>
+              </div>
+
+              <div style={styles.infoBox}>
+                <p style={styles.infoLabel}>Estado</p>
+
+                <p style={styles.infoValue}>
+                  {selectedWorkout.isActive ? "Disponible" : "Pausada"}
+                </p>
+              </div>
+            </ResponsiveGrid>
+
+            <div style={styles.divider} />
+
+            <ContentStack gap={14}>
+              <h4 style={styles.subTitle}>Agregar ejercicio</h4>
+
+              <SelectField
+                label="Ejercicio"
+                value={selectedExerciseForm.exerciseId || ""}
+                onChange={(e) =>
+                  updateWorkoutExerciseForm(
+                    selectedWorkout.id,
+                    "exerciseId",
+                    e.target.value
+                  )
+                }
+              >
+                <option value="">Selecciona ejercicio</option>
+
+                {exercises.map((exercise) => (
+                  <option
+                    key={exercise.id}
+                    value={exercise.id}
+                  >
+                    {exercise.name}
+                  </option>
+                ))}
+              </SelectField>
+
+              <ResponsiveGrid min={120} gap={12}>
+                <div style={styles.field}>
+                  <label style={styles.label}>Orden</label>
+
+                  <input
+                    style={styles.smallInput}
+                    type="number"
+                    value={selectedExerciseForm.exerciseOrder || 1}
+                    onChange={(e) =>
+                      updateWorkoutExerciseForm(
+                        selectedWorkout.id,
+                        "exerciseOrder",
+                        e.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div style={styles.field}>
+                  <label style={styles.label}>Sets</label>
+
+                  <input
+                    style={styles.smallInput}
+                    type="number"
+                    value={selectedExerciseForm.sets || 4}
+                    onChange={(e) =>
+                      updateWorkoutExerciseForm(
+                        selectedWorkout.id,
+                        "sets",
+                        e.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div style={styles.field}>
+                  <label style={styles.label}>Reps</label>
+
+                  <input
+                    style={styles.smallInput}
+                    type="text"
+                    value={selectedExerciseForm.reps || "12"}
+                    onChange={(e) =>
+                      updateWorkoutExerciseForm(
+                        selectedWorkout.id,
+                        "reps",
+                        e.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div style={styles.field}>
+                  <label style={styles.label}>Descanso</label>
+
+                  <input
+                    style={styles.smallInput}
+                    type="number"
+                    value={selectedExerciseForm.restSeconds || 60}
+                    onChange={(e) =>
+                      updateWorkoutExerciseForm(
+                        selectedWorkout.id,
+                        "restSeconds",
+                        e.target.value
+                      )
+                    }
+                  />
+                </div>
+              </ResponsiveGrid>
+
+              <div style={styles.field}>
+                <label style={styles.label}>Notas</label>
+
+                <textarea
+                  style={styles.notesInput}
+                  placeholder="Indicaciones opcionales"
+                  value={selectedExerciseForm.notes || ""}
+                  onChange={(e) =>
+                    updateWorkoutExerciseForm(
+                      selectedWorkout.id,
+                      "notes",
+                      e.target.value
+                    )
+                  }
+                />
+              </div>
+
+              <AsyncButton
+                loading={addingExercise[selectedWorkout.id]}
+                loadingText="Agregando ejercicio..."
+                onClick={() => handleAddExercise(selectedWorkout.id)}
+              >
+                Agregar ejercicio
+              </AsyncButton>
+
+              {exerciseFeedback[selectedWorkout.id] ? (
+                <p
+                  style={
+                    exerciseFeedback[selectedWorkout.id].type === "error"
+                      ? styles.error
+                      : styles.success
+                  }
+                >
+                  {exerciseFeedback[selectedWorkout.id].message}
+                </p>
+              ) : null}
+            </ContentStack>
+
+            <div style={styles.divider} />
+
+            <ContentStack gap={14}>
+              <InlineGroup justify="space-between">
+                <h4 style={styles.subTitle}>Ejercicios asignados</h4>
+
+                <Badge variant="default">
+                  {selectedAssignedExercises.length} items
+                </Badge>
+              </InlineGroup>
+
+              {selectedAssignedExercises.length === 0 ? (
+                <EmptyState>
+                  Esta rutina todavia no tiene ejercicios.
+                </EmptyState>
+              ) : (
+                <DataTable
+                  columns={buildExerciseColumns(selectedWorkout.id)}
+                  data={selectedAssignedExercises}
+                  emptyMessage="No hay ejercicios asignados"
+                />
+              )}
+            </ContentStack>
+          </ContentStack>
+        ) : null}
+      </Drawer>
 
       <ConfirmDialog
         open={Boolean(pendingRemoveExercise)}
