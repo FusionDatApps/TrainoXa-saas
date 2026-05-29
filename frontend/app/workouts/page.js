@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   useCallback,
@@ -24,6 +24,8 @@ import StateRenderer from "../../components/ui/StateRenderer";
 import FormActions from "../../components/ui/FormActions";
 import AsyncButton from "../../components/ui/AsyncButton";
 import SelectField from "../../components/ui/SelectField";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import { useToast } from "../../components/ui/ToastProvider";
 
 import ContentStack from "../../components/ui/ContentStack";
 import InlineGroup from "../../components/ui/InlineGroup";
@@ -38,12 +40,14 @@ import useMutation from "../../hooks/useMutation";
 import useItemFeedback from "../../hooks/useItemFeedback";
 
 import { uiStyles } from "../../lib/ui-styles";
-import { layoutStyles } from "../../lib/layout-styles";
 import { theme } from "../../lib/theme";
+import { getApiErrorMessage } from "../../lib/ui-feedback";
 
 export const dynamic = "force-dynamic";
 
 export default function WorkoutsPage() {
+  const toast = useToast();
+
   const [workouts, setWorkouts] = useState([]);
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,6 +57,13 @@ export default function WorkoutsPage() {
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+
+  const [selectedExercises, setSelectedExercises] = useState({});
+  const [workoutExercises, setWorkoutExercises] = useState({});
+  const [addingExercise, setAddingExercise] = useState({});
+  const [removingExercise, setRemovingExercise] = useState({});
+  const [exerciseFeedback, setExerciseFeedback] = useState({});
+  const [pendingRemoveExercise, setPendingRemoveExercise] = useState(null);
 
   const {
     loading: creating,
@@ -77,19 +88,10 @@ export default function WorkoutsPage() {
 
   const { mutate: removeWorkoutExercise } =
     useMutation(async ({ workoutId, itemId }) => {
-      return apiFetch(
-        `/workouts/${workoutId}/exercises/${itemId}`,
-        {
-          method: "DELETE",
-        }
-      );
+      return apiFetch(`/workouts/${workoutId}/exercises/${itemId}`, {
+        method: "DELETE",
+      });
     });
-
-  const [selectedExercises, setSelectedExercises] = useState({});
-  const [workoutExercises, setWorkoutExercises] = useState({});
-  const [addingExercise, setAddingExercise] = useState({});
-  const [removingExercise, setRemovingExercise] = useState({});
-  const [exerciseFeedback, setExerciseFeedback] = useState({});
 
   const {
     setSuccess,
@@ -98,18 +100,12 @@ export default function WorkoutsPage() {
   } = useItemFeedback();
 
   const activeWorkouts = useMemo(
-    () =>
-      workouts.filter(
-        (workout) => workout.isActive
-      ),
+    () => workouts.filter((workout) => workout.isActive),
     [workouts]
   );
 
   const inactiveWorkouts = useMemo(
-    () =>
-      workouts.filter(
-        (workout) => !workout.isActive
-      ),
+    () => workouts.filter((workout) => !workout.isActive),
     [workouts]
   );
 
@@ -144,39 +140,28 @@ export default function WorkoutsPage() {
     );
   }, [workoutExercises]);
 
-  const setWorkoutFeedback = useCallback(
-    (workoutId, type, message) => {
-      setExerciseFeedback((prev) => ({
+  const setWorkoutFeedback = useCallback((workoutId, type, message) => {
+    setExerciseFeedback((prev) => ({
+      ...prev,
+      [workoutId]: {
+        type,
+        message,
+      },
+    }));
+  }, []);
+
+  const loadWorkoutExercises = useCallback(async (workoutId) => {
+    try {
+      const res = await apiFetch(`/workouts/${workoutId}/exercises`);
+
+      setWorkoutExercises((prev) => ({
         ...prev,
-        [workoutId]: {
-          type,
-          message,
-        },
+        [workoutId]: res.data || [],
       }));
-    },
-    []
-  );
-
-  const loadWorkoutExercises = useCallback(
-    async (workoutId) => {
-      try {
-        const res = await apiFetch(
-          `/workouts/${workoutId}/exercises`
-        );
-
-        setWorkoutExercises((prev) => ({
-          ...prev,
-          [workoutId]: res.data || [],
-        }));
-      } catch (err) {
-        console.error(
-          "Error cargando ejercicios de rutina:",
-          err.message
-        );
-      }
-    },
-    []
-  );
+    } catch (err) {
+      console.error("Error cargando ejercicios de rutina:", err.message);
+    }
+  }, []);
 
   const loadWorkouts = useCallback(async () => {
     try {
@@ -187,16 +172,10 @@ export default function WorkoutsPage() {
       setWorkouts(data);
 
       await Promise.all(
-        data.map((workout) =>
-          loadWorkoutExercises(workout.id)
-        )
+        data.map((workout) => loadWorkoutExercises(workout.id))
       );
     } catch (err) {
-      console.error(
-        "Error cargando rutinas:",
-        err.message
-      );
-
+      console.error("Error cargando rutinas:", err.message);
       console.error(err);
     } finally {
       setLoading(false);
@@ -209,10 +188,7 @@ export default function WorkoutsPage() {
 
       setExercises(res.data || []);
     } catch (err) {
-      console.error(
-        "Error cargando ejercicios:",
-        err.message
-      );
+      console.error("Error cargando ejercicios:", err.message);
     }
   }, []);
 
@@ -228,32 +204,41 @@ export default function WorkoutsPage() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    await createWorkout({
-      name: name.trim(),
+    try {
+      await createWorkout({
+        name: name.trim(),
+        description: description.trim() || undefined,
+      });
 
-      description:
-        description.trim() || undefined,
-    });
+      setName("");
+      setDescription("");
 
-    setName("");
-    setDescription("");
+      setSuccessMessage("Rutina creada correctamente");
 
-    setSuccessMessage(
-      "Rutina creada correctamente"
-    );
+      toast.success({
+        title: "Rutina creada",
+        message: "La rutina fue creada correctamente.",
+      });
 
-    await loadWorkouts();
+      await loadWorkouts();
+    } catch (err) {
+      toast.error({
+        title: "No se pudo crear la rutina",
+        message: getApiErrorMessage(err),
+      });
+    }
   }
 
   async function handleAddExercise(workoutId) {
     const form = selectedExercises[workoutId];
 
     if (!form || !form.exerciseId) {
-      setWorkoutFeedback(
-        workoutId,
-        "error",
-        "Debes seleccionar un ejercicio"
-      );
+      setWorkoutFeedback(workoutId, "error", "Debes seleccionar un ejercicio");
+
+      toast.warning({
+        title: "Selecciona un ejercicio",
+        message: "Debes elegir un ejercicio antes de agregarlo.",
+      });
 
       return;
     }
@@ -266,17 +251,11 @@ export default function WorkoutsPage() {
     clearFeedback();
 
     try {
-      const currentItems =
-        workoutExercises[workoutId] || [];
-
-      const nextOrder = Number(
-        form.exerciseOrder ||
-          currentItems.length + 1
-      );
+      const currentItems = workoutExercises[workoutId] || [];
+      const nextOrder = Number(form.exerciseOrder || currentItems.length + 1);
 
       await addWorkoutExercise({
         workoutId,
-
         payload: {
           exerciseId: form.exerciseId,
           exerciseOrder: nextOrder,
@@ -289,7 +268,6 @@ export default function WorkoutsPage() {
 
       setSelectedExercises((prev) => ({
         ...prev,
-
         [workoutId]: {
           exerciseId: "",
           exerciseOrder: currentItems.length + 2,
@@ -300,35 +278,30 @@ export default function WorkoutsPage() {
         },
       }));
 
-      setSuccess(
-        "Ejercicio agregado correctamente"
-      );
+      setSuccess("Ejercicio agregado correctamente");
+      setWorkoutFeedback(workoutId, "success", "Ejercicio agregado correctamente");
 
-      setWorkoutFeedback(
-        workoutId,
-        "success",
-        "Ejercicio agregado correctamente"
-      );
+      toast.success({
+        title: "Ejercicio agregado",
+        message: "El ejercicio fue agregado correctamente a la rutina.",
+      });
 
       await loadWorkoutExercises(workoutId);
     } catch (err) {
       const message =
-        err.message ===
-        "Este ejercicio ya fue agregado a la rutina"
+        err.message === "Este ejercicio ya fue agregado a la rutina"
           ? "Ese ejercicio ya existe dentro de la rutina"
-          : err.message ===
-              "Ya existe un ejercicio con ese orden dentro de la rutina"
-            ? "Ese número de orden ya está ocupado"
-            : err.message ||
-              "No se pudo agregar el ejercicio";
+          : err.message === "Ya existe un ejercicio con ese orden dentro de la rutina"
+            ? "Ese numero de orden ya esta ocupado"
+            : err.message || "No se pudo agregar el ejercicio";
 
       setError(message);
+      setWorkoutFeedback(workoutId, "error", message);
 
-      setWorkoutFeedback(
-        workoutId,
-        "error",
-        message
-      );
+      toast.error({
+        title: "No se pudo agregar",
+        message,
+      });
     } finally {
       setAddingExercise((prev) => ({
         ...prev,
@@ -337,17 +310,19 @@ export default function WorkoutsPage() {
     }
   }
 
-  async function handleRemoveExercise(
-    workoutId,
-    itemId
-  ) {
-    const confirmDelete = window.confirm(
-      "¿Eliminar este ejercicio de la rutina?"
-    );
+  function requestRemoveExercise(workoutId, itemId) {
+    setPendingRemoveExercise({
+      workoutId,
+      itemId,
+    });
+  }
 
-    if (!confirmDelete) {
+  async function confirmRemoveExercise() {
+    if (!pendingRemoveExercise) {
       return;
     }
+
+    const { workoutId, itemId } = pendingRemoveExercise;
 
     setRemovingExercise((prev) => ({
       ...prev,
@@ -360,29 +335,28 @@ export default function WorkoutsPage() {
         itemId,
       });
 
-      setSuccess(
-        "Ejercicio eliminado correctamente"
-      );
+      setSuccess("Ejercicio eliminado correctamente");
+      setWorkoutFeedback(workoutId, "success", "Ejercicio eliminado correctamente");
 
-      setWorkoutFeedback(
-        workoutId,
-        "success",
-        "Ejercicio eliminado correctamente"
-      );
+      toast.success({
+        title: "Ejercicio eliminado",
+        message: "El ejercicio fue eliminado correctamente de la rutina.",
+      });
+
+      setPendingRemoveExercise(null);
 
       await loadWorkoutExercises(workoutId);
     } catch (err) {
       const message =
-        err.message ||
-        "No se pudo eliminar el ejercicio de la rutina";
+        err.message || "No se pudo eliminar el ejercicio de la rutina";
 
       setError(message);
+      setWorkoutFeedback(workoutId, "error", message);
 
-      setWorkoutFeedback(
-        workoutId,
-        "error",
-        message
-      );
+      toast.error({
+        title: "No se pudo eliminar",
+        message,
+      });
     } finally {
       setRemovingExercise((prev) => ({
         ...prev,
@@ -391,14 +365,9 @@ export default function WorkoutsPage() {
     }
   }
 
-  function updateWorkoutExerciseForm(
-    workoutId,
-    key,
-    value
-  ) {
+  function updateWorkoutExerciseForm(workoutId, key, value) {
     setSelectedExercises((prev) => ({
       ...prev,
-
       [workoutId]: {
         ...prev[workoutId],
         [key]: value,
@@ -413,7 +382,6 @@ export default function WorkoutsPage() {
         label: "#",
         render: (row) => row.exerciseOrder,
       },
-
       {
         key: "exercise",
         label: "Ejercicio",
@@ -423,19 +391,16 @@ export default function WorkoutsPage() {
           </span>
         ),
       },
-
       {
         key: "sets",
         label: "Sets/Reps",
         render: (row) => `${row.sets} x ${row.reps}`,
       },
-
       {
         key: "rest",
         label: "Descanso",
         render: (row) => `${row.restSeconds || 0}s`,
       },
-
       {
         key: "actions",
         label: "Acciones",
@@ -443,16 +408,9 @@ export default function WorkoutsPage() {
           <ActionButton
             variant="danger"
             disabled={removingExercise[row.id]}
-            onClick={() =>
-              handleRemoveExercise(
-                workoutId,
-                row.id
-              )
-            }
+            onClick={() => requestRemoveExercise(workoutId, row.id)}
           >
-            {removingExercise[row.id]
-              ? "Eliminando..."
-              : "Eliminar"}
+            {removingExercise[row.id] ? "Eliminando..." : "Eliminar"}
           </ActionButton>
         ),
       },
@@ -460,10 +418,7 @@ export default function WorkoutsPage() {
   }
 
   return (
-    <TrainerShell
-      title="Rutinas"
-      active="workouts"
-    >
+    <TrainerShell title="Rutinas" active="workouts">
       <PageContainer>
         <ContentStack gap={24}>
           <PageSection>
@@ -476,46 +431,30 @@ export default function WorkoutsPage() {
                     description="Crea una rutina base y luego agrega ejercicios con orden, sets, reps y descanso."
                   />
 
-                  <form
-                    onSubmit={handleSubmit}
-                    style={uiStyles.stack}
-                  >
+                  <form onSubmit={handleSubmit} style={uiStyles.stack}>
                     <FormField
                       label="Nombre de la rutina"
                       placeholder="Ej: Push Pull Legs"
                       value={name}
-                      onChange={(e) =>
-                        setName(e.target.value)
-                      }
+                      onChange={(e) => setName(e.target.value)}
                     />
 
                     <FormField
-                      label="Descripción"
+                      label="Descripcion"
                       placeholder="Opcional"
                       value={description}
-                      onChange={(e) =>
-                        setDescription(
-                          e.target.value
-                        )
-                      }
+                      onChange={(e) => setDescription(e.target.value)}
                       textarea
                     />
 
-                    <FormActions
-                      loading={creating}
-                      submitText="Crear rutina"
-                    />
+                    <FormActions loading={creating} submitText="Crear rutina" />
 
                     {error ? (
-                      <FeedbackMessage variant="error">
-                        {error}
-                      </FeedbackMessage>
+                      <FeedbackMessage variant="error">{error}</FeedbackMessage>
                     ) : null}
 
                     {success ? (
-                      <FeedbackMessage variant="success">
-                        {success}
-                      </FeedbackMessage>
+                      <FeedbackMessage variant="success">{success}</FeedbackMessage>
                     ) : null}
                   </form>
                 </ContentStack>
@@ -531,7 +470,13 @@ export default function WorkoutsPage() {
                 <StatCard
                   label="Activas"
                   value={activeWorkouts.length}
-                  description="Rutinas disponibles para asignación."
+                  description="Rutinas disponibles para asignacion."
+                />
+
+                <StatCard
+                  label="Inactivas"
+                  value={inactiveWorkouts.length}
+                  description="Rutinas pausadas o no disponibles."
                 />
 
                 <StatCard
@@ -550,35 +495,27 @@ export default function WorkoutsPage() {
                   title="Workspace de rutinas"
                   description="Busca, filtra y administra rutinas con sus ejercicios asociados."
                   searchValue={search}
-                  onSearchChange={(e) =>
-                    setSearch(e.target.value)
-                  }
-                  searchPlaceholder="Buscar rutina o descripción..."
+                  onSearchChange={(e) => setSearch(e.target.value)}
+                  searchPlaceholder="Buscar rutina o descripcion..."
                 >
                   <InlineGroup gap={10}>
                     <FilterPill
                       active={filter === "all"}
-                      onClick={() =>
-                        setFilter("all")
-                      }
+                      onClick={() => setFilter("all")}
                     >
                       Todas
                     </FilterPill>
 
                     <FilterPill
                       active={filter === "active"}
-                      onClick={() =>
-                        setFilter("active")
-                      }
+                      onClick={() => setFilter("active")}
                     >
                       Activas
                     </FilterPill>
 
                     <FilterPill
                       active={filter === "inactive"}
-                      onClick={() =>
-                        setFilter("inactive")
-                      }
+                      onClick={() => setFilter("inactive")}
                     >
                       Inactivas
                     </FilterPill>
@@ -588,9 +525,7 @@ export default function WorkoutsPage() {
             >
               <ContentStack gap={24}>
                 <InlineGroup justify="space-between">
-                  <p style={styles.sectionEyebrow}>
-                    Builder operacional
-                  </p>
+                  <p style={styles.sectionEyebrow}>Builder operacional</p>
 
                   <Badge variant="default">
                     {filteredWorkouts.length} rutinas
@@ -600,15 +535,11 @@ export default function WorkoutsPage() {
                 <StateRenderer
                   loading={loading}
                   error={error}
-                  isEmpty={
-                    !loading &&
-                    workouts.length === 0
-                  }
+                  isEmpty={!loading && workouts.length === 0}
                   loadingMessage="Cargando rutinas..."
-                  emptyMessage="Todavía no tienes rutinas registradas."
+                  emptyMessage="Todavia no tienes rutinas registradas."
                 >
-                  {workouts.length > 0 &&
-                  filteredWorkouts.length === 0 ? (
+                  {workouts.length > 0 && filteredWorkouts.length === 0 ? (
                     <EmptySearchState />
                   ) : (
                     <ResponsiveGrid min={340} gap={18}>
@@ -627,37 +558,29 @@ export default function WorkoutsPage() {
                                 align="flex-start"
                               >
                                 <div>
-                                  <p style={styles.workoutTag}>
-                                    Rutina
-                                  </p>
+                                  <p style={styles.workoutTag}>Rutina</p>
 
                                   <h3 style={styles.workoutName}>
                                     {workout.name || "Sin nombre"}
                                   </h3>
 
                                   <p style={styles.workoutDescription}>
-                                    {workout.description || "Sin descripción"}
+                                    {workout.description || "Sin descripcion"}
                                   </p>
                                 </div>
 
                                 <Badge
                                   variant={
-                                    workout.isActive
-                                      ? "success"
-                                      : "warning"
+                                    workout.isActive ? "success" : "warning"
                                   }
                                 >
-                                  {workout.isActive
-                                    ? "Activa"
-                                    : "Inactiva"}
+                                  {workout.isActive ? "Activa" : "Inactiva"}
                                 </Badge>
                               </InlineGroup>
 
                               <ResponsiveGrid min={160} gap={12}>
                                 <div style={styles.infoBox}>
-                                  <p style={styles.infoLabel}>
-                                    Ejercicios
-                                  </p>
+                                  <p style={styles.infoLabel}>Ejercicios</p>
 
                                   <p style={styles.infoValue}>
                                     {assignedExercises.length}
@@ -665,9 +588,7 @@ export default function WorkoutsPage() {
                                 </div>
 
                                 <div style={styles.infoBox}>
-                                  <p style={styles.infoLabel}>
-                                    Estado
-                                  </p>
+                                  <p style={styles.infoLabel}>Estado</p>
 
                                   <p style={styles.infoValue}>
                                     {workout.isActive
@@ -695,9 +616,7 @@ export default function WorkoutsPage() {
                                     )
                                   }
                                 >
-                                  <option value="">
-                                    Selecciona ejercicio
-                                  </option>
+                                  <option value="">Selecciona ejercicio</option>
 
                                   {exercises.map((exercise) => (
                                     <option
@@ -711,16 +630,12 @@ export default function WorkoutsPage() {
 
                                 <ResponsiveGrid min={120} gap={12}>
                                   <div style={styles.field}>
-                                    <label style={styles.label}>
-                                      Orden
-                                    </label>
+                                    <label style={styles.label}>Orden</label>
 
                                     <input
                                       style={styles.smallInput}
                                       type="number"
-                                      value={
-                                        currentForm.exerciseOrder || 1
-                                      }
+                                      value={currentForm.exerciseOrder || 1}
                                       onChange={(e) =>
                                         updateWorkoutExerciseForm(
                                           workout.id,
@@ -732,9 +647,7 @@ export default function WorkoutsPage() {
                                   </div>
 
                                   <div style={styles.field}>
-                                    <label style={styles.label}>
-                                      Sets
-                                    </label>
+                                    <label style={styles.label}>Sets</label>
 
                                     <input
                                       style={styles.smallInput}
@@ -751,9 +664,7 @@ export default function WorkoutsPage() {
                                   </div>
 
                                   <div style={styles.field}>
-                                    <label style={styles.label}>
-                                      Reps
-                                    </label>
+                                    <label style={styles.label}>Reps</label>
 
                                     <input
                                       style={styles.smallInput}
@@ -770,16 +681,12 @@ export default function WorkoutsPage() {
                                   </div>
 
                                   <div style={styles.field}>
-                                    <label style={styles.label}>
-                                      Descanso
-                                    </label>
+                                    <label style={styles.label}>Descanso</label>
 
                                     <input
                                       style={styles.smallInput}
                                       type="number"
-                                      value={
-                                        currentForm.restSeconds || 60
-                                      }
+                                      value={currentForm.restSeconds || 60}
                                       onChange={(e) =>
                                         updateWorkoutExerciseForm(
                                           workout.id,
@@ -792,9 +699,7 @@ export default function WorkoutsPage() {
                                 </ResponsiveGrid>
 
                                 <div style={styles.field}>
-                                  <label style={styles.label}>
-                                    Notas
-                                  </label>
+                                  <label style={styles.label}>Notas</label>
 
                                   <textarea
                                     style={styles.notesInput}
@@ -813,9 +718,7 @@ export default function WorkoutsPage() {
                                 <AsyncButton
                                   loading={addingExercise[workout.id]}
                                   loadingText="Agregando ejercicio..."
-                                  onClick={() =>
-                                    handleAddExercise(workout.id)
-                                  }
+                                  onClick={() => handleAddExercise(workout.id)}
                                 >
                                   Agregar ejercicio
                                 </AsyncButton>
@@ -829,10 +732,7 @@ export default function WorkoutsPage() {
                                         : styles.success
                                     }
                                   >
-                                    {
-                                      exerciseFeedback[workout.id]
-                                        .message
-                                    }
+                                    {exerciseFeedback[workout.id].message}
                                   </p>
                                 ) : null}
                               </ContentStack>
@@ -852,13 +752,11 @@ export default function WorkoutsPage() {
 
                                 {assignedExercises.length === 0 ? (
                                   <EmptyState>
-                                    Esta rutina todavía no tiene ejercicios.
+                                    Esta rutina todavia no tiene ejercicios.
                                   </EmptyState>
                                 ) : (
                                   <DataTable
-                                    columns={buildExerciseColumns(
-                                      workout.id
-                                    )}
+                                    columns={buildExerciseColumns(workout.id)}
                                     data={assignedExercises}
                                     emptyMessage="No hay ejercicios asignados"
                                   />
@@ -876,6 +774,21 @@ export default function WorkoutsPage() {
           </PageSection>
         </ContentStack>
       </PageContainer>
+
+      <ConfirmDialog
+        open={Boolean(pendingRemoveExercise)}
+        title="Eliminar ejercicio"
+        description="Esta accion eliminara el ejercicio seleccionado de la rutina. Verifica antes de continuar."
+        confirmText="Eliminar ejercicio"
+        cancelText="Cancelar"
+        loading={
+          pendingRemoveExercise
+            ? Boolean(removingExercise[pendingRemoveExercise.itemId])
+            : false
+        }
+        onCancel={() => setPendingRemoveExercise(null)}
+        onConfirm={confirmRemoveExercise}
+      />
     </TrainerShell>
   );
 }
