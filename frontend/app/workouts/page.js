@@ -25,6 +25,7 @@ import FormActions from "../../components/ui/FormActions";
 import AsyncButton from "../../components/ui/AsyncButton";
 import SelectField from "../../components/ui/SelectField";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import Modal from "../../components/ui/Modal";
 import { useToast } from "../../components/ui/ToastProvider";
 
 import ContentStack from "../../components/ui/ContentStack";
@@ -64,6 +65,7 @@ export default function WorkoutsPage() {
   const [removingExercise, setRemovingExercise] = useState({});
   const [exerciseFeedback, setExerciseFeedback] = useState({});
   const [pendingRemoveExercise, setPendingRemoveExercise] = useState(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const {
     loading: creating,
@@ -212,6 +214,7 @@ export default function WorkoutsPage() {
 
       setName("");
       setDescription("");
+      setIsCreateModalOpen(false);
 
       setSuccessMessage("Rutina creada correctamente");
 
@@ -422,45 +425,20 @@ export default function WorkoutsPage() {
       <PageContainer>
         <ContentStack gap={24}>
           <PageSection>
-            <ResponsiveGrid min={320} gap={20}>
-              <SectionCard style={styles.createCard}>
-                <ContentStack gap={24}>
-                  <PageHeader
-                    eyebrow="Workout builder"
-                    title="Crear rutina"
-                    description="Crea una rutina base y luego agrega ejercicios con orden, sets, reps y descanso."
-                  />
+            <ContentStack gap={20}>
+              <InlineGroup justify="space-between" align="center">
+                <PageHeader
+                  eyebrow="Workout builder"
+                  title="Workspace de rutinas"
+                  description="Administra rutinas, ejercicios y configuraciones operacionales."
+                />
 
-                  <form onSubmit={handleSubmit} style={uiStyles.stack}>
-                    <FormField
-                      label="Nombre de la rutina"
-                      placeholder="Ej: Push Pull Legs"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                    />
+                <ActionButton onClick={() => setIsCreateModalOpen(true)}>
+                  Nueva rutina
+                </ActionButton>
+              </InlineGroup>
 
-                    <FormField
-                      label="Descripcion"
-                      placeholder="Opcional"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      textarea
-                    />
-
-                    <FormActions loading={creating} submitText="Crear rutina" />
-
-                    {error ? (
-                      <FeedbackMessage variant="error">{error}</FeedbackMessage>
-                    ) : null}
-
-                    {success ? (
-                      <FeedbackMessage variant="success">{success}</FeedbackMessage>
-                    ) : null}
-                  </form>
-                </ContentStack>
-              </SectionCard>
-
-              <ContentStack gap={16}>
+              <ResponsiveGrid min={220} gap={16}>
                 <StatCard
                   label="Rutinas"
                   value={workouts.length}
@@ -484,8 +462,8 @@ export default function WorkoutsPage() {
                   value={totalWorkoutExercises}
                   description="Ejercicios distribuidos en rutinas."
                 />
-              </ContentStack>
-            </ResponsiveGrid>
+              </ResponsiveGrid>
+            </ContentStack>
           </PageSection>
 
           <PageSection>
@@ -775,6 +753,41 @@ export default function WorkoutsPage() {
         </ContentStack>
       </PageContainer>
 
+      <Modal
+        open={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Crear rutina"
+        description="Crea una nueva rutina operacional para tus clientes."
+        size="md"
+      >
+        <form onSubmit={handleSubmit} style={uiStyles.stack}>
+          <FormField
+            label="Nombre de la rutina"
+            placeholder="Ej: Push Pull Legs"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+
+          <FormField
+            label="Descripcion"
+            placeholder="Opcional"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            textarea
+          />
+
+          <FormActions loading={creating} submitText="Crear rutina" />
+
+          {error ? (
+            <FeedbackMessage variant="error">{error}</FeedbackMessage>
+          ) : null}
+
+          {success ? (
+            <FeedbackMessage variant="success">{success}</FeedbackMessage>
+          ) : null}
+        </form>
+      </Modal>
+
       <ConfirmDialog
         open={Boolean(pendingRemoveExercise)}
         title="Eliminar ejercicio"
@@ -794,10 +807,6 @@ export default function WorkoutsPage() {
 }
 
 const styles = {
-  createCard: {
-    minHeight: "unset",
-  },
-
   sectionEyebrow: {
     margin: 0,
     color: "#94a3b8",
