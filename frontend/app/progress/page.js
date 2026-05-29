@@ -35,6 +35,11 @@ import InlineGroup from "../../components/ui/InlineGroup";
 import PageSection from "../../components/ui/PageSection";
 import ResponsiveGrid from "../../components/ui/ResponsiveGrid";
 
+import TableCard from "../../components/ui/TableCard";
+import TableToolbar from "../../components/ui/TableToolbar";
+import EmptySearchState from "../../components/ui/EmptySearchState";
+import FilterPill from "../../components/ui/FilterPill";
+
 export const dynamic = "force-dynamic";
 
 export default function ProgressPage() {
@@ -47,25 +52,15 @@ export default function ProgressPage() {
     initialData: [],
   });
 
-  const [assignmentId, setAssignmentId] =
-    useState("");
-
-  const [exerciseId, setExerciseId] =
-    useState("");
-
-  const [performedAt, setPerformedAt] =
-    useState("");
-
-  const [repsCompleted, setRepsCompleted] =
-    useState("");
-
-  const [weightUsedKg, setWeightUsedKg] =
-    useState("");
-
-  const [completed, setCompleted] =
-    useState(true);
-
+  const [assignmentId, setAssignmentId] = useState("");
+  const [exerciseId, setExerciseId] = useState("");
+  const [performedAt, setPerformedAt] = useState("");
+  const [repsCompleted, setRepsCompleted] = useState("");
+  const [weightUsedKg, setWeightUsedKg] = useState("");
+  const [completed, setCompleted] = useState(true);
   const [notes, setNotes] = useState("");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
 
   const {
     loading: creating,
@@ -83,8 +78,7 @@ export default function ProgressPage() {
   const activeAssignments = useMemo(
     () =>
       assignments.filter(
-        (assignment) =>
-          assignment.isActive
+        (assignment) => assignment.isActive
       ),
     [assignments]
   );
@@ -92,50 +86,38 @@ export default function ProgressPage() {
   const selectedAssignment = useMemo(
     () =>
       assignments.find(
-        (assignment) =>
-          assignment.id === assignmentId
+        (assignment) => assignment.id === assignmentId
       ) || null,
     [assignments, assignmentId]
   );
 
   useEffect(() => {
-    if (
-      !assignmentId &&
-      activeAssignments.length > 0
-    ) {
-      setAssignmentId(
-        activeAssignments[0].id
-      );
+    if (!assignmentId && activeAssignments.length > 0) {
+      setAssignmentId(activeAssignments[0].id);
     }
   }, [activeAssignments, assignmentId]);
 
-  const fetchWorkoutExercises =
-    useCallback(
-      async (workoutPlanId) => {
-        const response =
-          await apiFetch(
-            `/workouts/${workoutPlanId}/exercises`
-          );
+  const fetchWorkoutExercises = useCallback(
+    async (workoutPlanId) => {
+      const response = await apiFetch(
+        `/workouts/${workoutPlanId}/exercises`
+      );
 
-        return response.data || [];
-      },
-      []
-    );
+      return response.data || [];
+    },
+    []
+  );
 
-  const fetchProgressLogs =
-    useCallback(
-      async (
-        selectedAssignmentId
-      ) => {
-        const response =
-          await apiFetch(
-            `/progress/assignment/${selectedAssignmentId}`
-          );
+  const fetchProgressLogs = useCallback(
+    async (selectedAssignmentId) => {
+      const response = await apiFetch(
+        `/progress/assignment/${selectedAssignmentId}`
+      );
 
-        return response.data || [];
-      },
-      []
-    );
+      return response.data || [];
+    },
+    []
+  );
 
   const {
     data: workoutExercises = [],
@@ -165,10 +147,7 @@ export default function ProgressPage() {
 
   useEffect(() => {
     if (workoutExercises.length > 0) {
-      setExerciseId(
-        workoutExercises[0]
-          .exerciseId
-      );
+      setExerciseId(workoutExercises[0].exerciseId);
     } else {
       setExerciseId("");
     }
@@ -182,18 +161,14 @@ export default function ProgressPage() {
       exerciseId,
 
       performedAt: performedAt
-        ? new Date(
-            performedAt
-          ).toISOString()
+        ? new Date(performedAt).toISOString()
         : undefined,
 
-      repsCompleted:
-        repsCompleted || undefined,
+      repsCompleted: repsCompleted || undefined,
 
-      weightUsedKg:
-        weightUsedKg
-          ? Number(weightUsedKg)
-          : undefined,
+      weightUsedKg: weightUsedKg
+        ? Number(weightUsedKg)
+        : undefined,
 
       completed,
 
@@ -206,14 +181,10 @@ export default function ProgressPage() {
     setCompleted(true);
     setNotes("");
 
-    setSuccessMessage(
-      "Progreso registrado correctamente"
-    );
+    setSuccessMessage("Progreso registrado correctamente");
 
     await refetchProgressLogs();
-
     await refetchWorkoutExercises();
-
     await refetchAssignments();
   }
 
@@ -223,88 +194,90 @@ export default function ProgressPage() {
     progressLogsError ||
     error;
 
+  const completedLogs = useMemo(
+    () => progressLogs.filter((log) => log.completed),
+    [progressLogs]
+  );
+
+  const pendingLogs = useMemo(
+    () => progressLogs.filter((log) => !log.completed),
+    [progressLogs]
+  );
+
+  const filteredLogs = useMemo(() => {
+    let result = [...progressLogs];
+
+    if (search.trim()) {
+      const term = search.toLowerCase();
+
+      result = result.filter((log) =>
+        log.exercise?.name?.toLowerCase().includes(term)
+      );
+    }
+
+    if (filter === "completed") {
+      result = result.filter((log) => log.completed);
+    }
+
+    if (filter === "pending") {
+      result = result.filter((log) => !log.completed);
+    }
+
+    return result;
+  }, [progressLogs, search, filter]);
+
   const columns = [
     {
       key: "exercise",
-
       label: "Ejercicio",
-
       render: (row) => (
-        <span
-          style={styles.exerciseName}
-        >
-          {row.exercise?.name ||
-            "Sin nombre"}
+        <span style={styles.exerciseName}>
+          {row.exercise?.name || "Sin nombre"}
         </span>
       ),
     },
 
     {
       key: "repsCompleted",
-
       label: "Reps",
-
-      render: (row) =>
-        row.repsCompleted || "N/A",
+      render: (row) => row.repsCompleted || "N/A",
     },
 
     {
       key: "weightUsedKg",
-
       label: "Peso",
-
       render: (row) =>
-        row.weightUsedKg
-          ? `${row.weightUsedKg} kg`
-          : "N/A",
+        row.weightUsedKg ? `${row.weightUsedKg} kg` : "N/A",
     },
 
     {
       key: "completed",
-
       label: "Estado",
-
       render: (row) =>
         row.completed ? (
-          <Badge variant="success">
-            Completado
-          </Badge>
+          <Badge variant="success">Completado</Badge>
         ) : (
-          <Badge variant="warning">
-            Pendiente
-          </Badge>
+          <Badge variant="warning">Pendiente</Badge>
         ),
     },
 
     {
       key: "performedAt",
-
       label: "Fecha",
-
       render: (row) =>
         row.performedAt
-          ? new Date(
-              row.performedAt
-            ).toLocaleString()
+          ? new Date(row.performedAt).toLocaleString()
           : "N/A",
     },
   ];
 
   return (
-    <TrainerShell
-      title="Progreso"
-      active="progress"
-    >
+    <TrainerShell title="Progreso" active="progress">
       <PageContainer>
         <ContentStack gap={24}>
           <PageSection>
-            <ResponsiveGrid
-              min={320}
-              gap={20}
-            >
-              <SectionCard
-                style={styles.formCard}
-              >
+            <ResponsiveGrid min={320} gap={20}>
+              <SectionCard style={styles.formCard}>
                 <ContentStack gap={24}>
                   <PageHeader
                     eyebrow="Tracking fitness"
@@ -312,80 +285,39 @@ export default function ProgressPage() {
                     description="Registra la ejecución real de los ejercicios realizados por el cliente."
                   />
 
-                  {activeAssignments.length ===
-                  0 ? (
+                  {activeAssignments.length === 0 ? (
                     <EmptyState>
-                      No tienes
-                      asignaciones
-                      activas para
-                      registrar progreso.
+                      No tienes asignaciones activas para registrar progreso.
                     </EmptyState>
                   ) : null}
 
-                  <form
-                    onSubmit={
-                      handleSubmit
-                    }
-                    style={
-                      uiStyles.stack
-                    }
-                  >
+                  <form onSubmit={handleSubmit} style={uiStyles.stack}>
                     <SelectField
                       label="Asignación activa"
-                      value={
-                        assignmentId
-                      }
-                      onChange={(e) =>
-                        setAssignmentId(
-                          e.target.value
-                        )
-                      }
+                      value={assignmentId}
+                      onChange={(e) => setAssignmentId(e.target.value)}
                       required
                     >
-                      <option value="">
-                        Selecciona
-                        asignación
-                      </option>
+                      <option value="">Selecciona asignación</option>
 
-                      {activeAssignments.map(
-                        (
-                          assignment
-                        ) => (
-                          <option
-                            key={
-                              assignment.id
-                            }
-                            value={
-                              assignment.id
-                            }
-                          >
-                            {(assignment
-                              .client
-                              ?.fullName ||
-                              "Cliente sin nombre") +
-                              " - " +
-                              (assignment
-                                .workoutPlan
-                                ?.name ||
-                                "Rutina sin nombre")}
-                          </option>
-                        )
-                      )}
+                      {activeAssignments.map((assignment) => (
+                        <option key={assignment.id} value={assignment.id}>
+                          {(assignment.client?.fullName ||
+                            "Cliente sin nombre") +
+                            " - " +
+                            (assignment.workoutPlan?.name ||
+                              "Rutina sin nombre")}
+                        </option>
+                      ))}
                     </SelectField>
 
                     <SelectField
                       label="Ejercicio"
                       value={exerciseId}
-                      onChange={(e) =>
-                        setExerciseId(
-                          e.target.value
-                        )
-                      }
+                      onChange={(e) => setExerciseId(e.target.value)}
                       required
                       disabled={
-                        loadingExercises ||
-                        workoutExercises.length ===
-                          0
+                        loadingExercises || workoutExercises.length === 0
                       }
                     >
                       <option value="">
@@ -394,122 +326,65 @@ export default function ProgressPage() {
                           : "Selecciona ejercicio"}
                       </option>
 
-                      {workoutExercises.map(
-                        (item) => (
-                          <option
-                            key={
-                              item.id
-                            }
-                            value={
-                              item.exerciseId
-                            }
-                          >
-                            {item
-                              .exercise
-                              ?.name ||
-                              "Ejercicio sin nombre"}
-                          </option>
-                        )
-                      )}
+                      {workoutExercises.map((item) => (
+                        <option key={item.id} value={item.exerciseId}>
+                          {item.exercise?.name || "Ejercicio sin nombre"}
+                        </option>
+                      ))}
                     </SelectField>
 
                     <FormField
                       label="Fecha y hora"
                       type="datetime-local"
-                      value={
-                        performedAt
-                      }
-                      onChange={(e) =>
-                        setPerformedAt(
-                          e.target.value
-                        )
-                      }
+                      value={performedAt}
+                      onChange={(e) => setPerformedAt(e.target.value)}
                     />
 
-                    <InlineGroup
-                      align="stretch"
-                      gap={16}
-                    >
-                      <div
-                        style={
-                          styles.flexField
-                        }
-                      >
+                    <InlineGroup align="stretch" gap={16}>
+                      <div style={styles.flexField}>
                         <FormField
                           label="Repeticiones"
                           placeholder="Ej: 10, 8-10"
-                          value={
-                            repsCompleted
-                          }
+                          value={repsCompleted}
                           onChange={(e) =>
-                            setRepsCompleted(
-                              e.target
-                                .value
-                            )
+                            setRepsCompleted(e.target.value)
                           }
                         />
                       </div>
 
-                      <div
-                        style={
-                          styles.flexField
-                        }
-                      >
+                      <div style={styles.flexField}>
                         <FormField
                           label="Peso usado kg"
                           type="number"
                           placeholder="Ej: 80"
-                          value={
-                            weightUsedKg
-                          }
+                          value={weightUsedKg}
                           onChange={(e) =>
-                            setWeightUsedKg(
-                              e.target
-                                .value
-                            )
+                            setWeightUsedKg(e.target.value)
                           }
                         />
                       </div>
                     </InlineGroup>
 
-                    <label
-                      style={
-                        styles.checkboxRow
-                      }
-                    >
+                    <label style={styles.checkboxRow}>
                       <input
                         type="checkbox"
-                        checked={
-                          completed
-                        }
-                        onChange={(e) =>
-                          setCompleted(
-                            e.target
-                              .checked
-                          )
-                        }
+                        checked={completed}
+                        onChange={(e) => setCompleted(e.target.checked)}
                       />
 
-                      Ejercicio
-                      completado
+                      Ejercicio completado
                     </label>
 
                     <FormField
                       label="Notas"
                       placeholder="Observaciones del entrenamiento"
                       value={notes}
-                      onChange={(e) =>
-                        setNotes(
-                          e.target.value
-                        )
-                      }
+                      onChange={(e) => setNotes(e.target.value)}
                       textarea
                     />
 
                     <FormActions
-                      loading={
-                        creating
-                      }
+                      loading={creating}
                       submitText="Registrar progreso"
                     />
 
@@ -530,63 +405,101 @@ export default function ProgressPage() {
 
               <StatCard
                 label="Asignaciones activas"
-                value={
-                  activeAssignments.length
-                }
+                value={activeAssignments.length}
                 description="El progreso solo puede registrarse sobre asignaciones activas."
               />
             </ResponsiveGrid>
           </PageSection>
 
           <PageSection>
-            <SectionCard
-              style={
-                styles.tableSection
+            <TableCard
+              toolbar={
+                <TableToolbar
+                  title="Historial de progreso"
+                  description="Consulta el seguimiento operativo y los registros recientes del cliente."
+                  searchValue={search}
+                  onSearchChange={(e) => setSearch(e.target.value)}
+                  searchPlaceholder="Buscar ejercicio..."
+                >
+                  <InlineGroup gap={10}>
+                    <FilterPill
+                      active={filter === "all"}
+                      onClick={() => setFilter("all")}
+                    >
+                      Todos
+                    </FilterPill>
+
+                    <FilterPill
+                      active={filter === "completed"}
+                      onClick={() => setFilter("completed")}
+                    >
+                      Completados
+                    </FilterPill>
+
+                    <FilterPill
+                      active={filter === "pending"}
+                      onClick={() => setFilter("pending")}
+                    >
+                      Pendientes
+                    </FilterPill>
+                  </InlineGroup>
+                </TableToolbar>
               }
             >
               <ContentStack gap={24}>
-                <InlineGroup justify="space-between">
-                  <PageHeader
-                    eyebrow="Historial fitness"
-                    title="Historial de progreso"
-                    description="Consulta el seguimiento operativo y los registros recientes del cliente."
+                <ResponsiveGrid min={220} gap={16}>
+                  <StatCard
+                    label="Registros"
+                    value={progressLogs.length}
+                    description="Total histórico registrado."
                   />
 
+                  <StatCard
+                    label="Completados"
+                    value={completedLogs.length}
+                    description="Ejercicios completados exitosamente."
+                  />
+
+                  <StatCard
+                    label="Pendientes"
+                    value={pendingLogs.length}
+                    description="Registros aún pendientes."
+                  />
+                </ResponsiveGrid>
+
+                <InlineGroup justify="space-between">
+                  <p style={styles.sectionEyebrow}>
+                    Tracking operacional
+                  </p>
+
                   <Badge variant="default">
-                    {
-                      progressLogs.length
-                    }{" "}
-                    registros
+                    {filteredLogs.length} registros
                   </Badge>
                 </InlineGroup>
 
                 <StateRenderer
-                  loading={
-                    loading ||
-                    loadingProgress
-                  }
-                  error={
-                    combinedError
-                  }
+                  loading={loading || loadingProgress}
+                  error={combinedError}
                   isEmpty={
                     !loading &&
                     !loadingProgress &&
-                    progressLogs.length ===
-                      0
+                    progressLogs.length === 0
                   }
                   loadingMessage="Cargando progreso..."
                   emptyMessage="Todavía no hay progreso registrado para esta asignación."
                 >
-                  <DataTable
-                    columns={columns}
-                    data={
-                      progressLogs
-                    }
-                    emptyMessage="No hay registros de progreso"
-                  />
+                  {filteredLogs.length === 0 ? (
+                    <EmptySearchState />
+                  ) : (
+                    <DataTable
+                      columns={columns}
+                      data={filteredLogs}
+                      emptyMessage="No hay registros de progreso"
+                    />
+                  )}
                 </StateRenderer>
               </ContentStack>
-            </SectionCard>
+            </TableCard>
           </PageSection>
         </ContentStack>
       </PageContainer>
@@ -597,10 +510,6 @@ export default function ProgressPage() {
 const styles = {
   formCard: {
     minHeight: "unset",
-  },
-
-  tableSection: {
-    minHeight: "auto",
   },
 
   flexField: {
@@ -619,5 +528,14 @@ const styles = {
   exerciseName: {
     fontWeight: "800",
     color: "#f8fafc",
+  },
+
+  sectionEyebrow: {
+    margin: 0,
+    color: "#94a3b8",
+    fontSize: "12px",
+    fontWeight: "900",
+    textTransform: "uppercase",
+    letterSpacing: "0.08em",
   },
 };
