@@ -324,6 +324,32 @@ export default function WorkoutsPage() {
       return;
     }
 
+    const selectedExercise = exercises.find(
+      (exercise) => exercise.id === form.exerciseId
+    );
+
+    const currentItems = workoutExercises[workoutId] || [];
+    const nextOrder = Number(form.exerciseOrder || currentItems.length + 1);
+    const tempItemId = `temp-workout-exercise-${Date.now()}`;
+
+    const optimisticItem = {
+      id: tempItemId,
+      workoutId,
+      exerciseId: form.exerciseId,
+      exerciseOrder: nextOrder,
+      sets: Number(form.sets || 4),
+      reps: form.reps || "12",
+      restSeconds: Number(form.restSeconds || 60),
+      notes: form.notes || "",
+      exercise: selectedExercise || {
+        id: form.exerciseId,
+        name: "Ejercicio seleccionado",
+      },
+      optimistic: true,
+    };
+
+    const previousItems = currentItems;
+
     setAddingExercise((prev) => ({
       ...prev,
       [workoutId]: true,
@@ -331,11 +357,25 @@ export default function WorkoutsPage() {
 
     clearFeedback();
 
-    try {
-      const currentItems = workoutExercises[workoutId] || [];
-      const nextOrder = Number(form.exerciseOrder || currentItems.length + 1);
+    setWorkoutExercises((prev) => ({
+      ...prev,
+      [workoutId]: [...(prev[workoutId] || []), optimisticItem],
+    }));
 
-      await addWorkoutExercise({
+    setSelectedExercises((prev) => ({
+      ...prev,
+      [workoutId]: {
+        exerciseId: "",
+        exerciseOrder: currentItems.length + 2,
+        sets: 4,
+        reps: "12",
+        restSeconds: 60,
+        notes: "",
+      },
+    }));
+
+    try {
+      const res = await addWorkoutExercise({
         workoutId,
         payload: {
           exerciseId: form.exerciseId,
@@ -347,17 +387,23 @@ export default function WorkoutsPage() {
         },
       });
 
-      setSelectedExercises((prev) => ({
-        ...prev,
-        [workoutId]: {
-          exerciseId: "",
-          exerciseOrder: currentItems.length + 2,
-          sets: 4,
-          reps: "12",
-          restSeconds: 60,
-          notes: "",
-        },
-      }));
+      const createdItem = res?.data;
+
+      if (createdItem?.id) {
+        setWorkoutExercises((prev) => ({
+          ...prev,
+          [workoutId]: (prev[workoutId] || []).map((item) =>
+            item.id === tempItemId
+              ? {
+                  ...createdItem,
+                  optimistic: false,
+                }
+              : item
+          ),
+        }));
+      } else {
+        await loadWorkoutExercises(workoutId);
+      }
 
       setSuccess("Ejercicio agregado correctamente");
       setWorkoutFeedback(workoutId, "success", "Ejercicio agregado correctamente");
@@ -366,8 +412,6 @@ export default function WorkoutsPage() {
         title: "Ejercicio agregado",
         message: "El ejercicio fue agregado correctamente a la rutina.",
       });
-
-      await loadWorkoutExercises(workoutId);
     } catch (err) {
       const message =
         err.message === "Este ejercicio ya fue agregado a la rutina"
@@ -375,6 +419,11 @@ export default function WorkoutsPage() {
           : err.message === "Ya existe un ejercicio con ese orden dentro de la rutina"
             ? "Ese numero de orden ya esta ocupado"
             : err.message || "No se pudo agregar el ejercicio";
+
+      setWorkoutExercises((prev) => ({
+        ...prev,
+        [workoutId]: previousItems,
+      }));
 
       setError(message);
       setWorkoutFeedback(workoutId, "error", message);
@@ -486,6 +535,9 @@ export default function WorkoutsPage() {
         render: (row) => (
           <span style={styles.exerciseName}>
             {row.exercise?.name || "Sin nombre"}
+            {row.optimistic ? (
+              <span style={styles.optimisticText}> · Agregando...</span>
+            ) : null}
           </span>
         ),
       },
@@ -505,7 +557,7 @@ export default function WorkoutsPage() {
         render: (row) => (
           <ActionButton
             variant="danger"
-            disabled={removingExercise[row.id]}
+            disabled={removingExercise[row.id] || row.optimistic}
             onClick={() => requestRemoveExercise(workoutId, row.id)}
           >
             {removingExercise[row.id] ? "Eliminando..." : "Eliminar"}
@@ -1061,5 +1113,11 @@ const styles = {
   exerciseName: {
     color: theme.colors.textPrimary,
     fontWeight: "800",
+  },
+
+  optimisticText: {
+    color: theme.colors.textMuted,
+    fontSize: "12px",
+    fontWeight: "700",
   },
 };
