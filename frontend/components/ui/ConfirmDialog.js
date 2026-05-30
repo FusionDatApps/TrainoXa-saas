@@ -1,5 +1,7 @@
 ﻿"use client";
 
+import { motionStyles } from "../../lib/motion";
+
 export default function ConfirmDialog({
   open,
   title = "Confirmar accion",
@@ -16,8 +18,18 @@ export default function ConfirmDialog({
   }
 
   return (
-    <div style={styles.overlay}>
-      <div style={styles.dialog}>
+    <div
+      style={{
+        ...styles.overlay,
+        ...motionStyles.fadeOverlay,
+      }}
+    >
+      <div
+        style={{
+          ...styles.dialog,
+          ...motionStyles.modalEnter,
+        }}
+      >
         <div style={styles.content}>
           <h2 style={styles.title}>{title}</h2>
 
@@ -67,6 +79,7 @@ const styles = {
     background: "rgba(2, 6, 23, 0.72)",
     backdropFilter: "blur(8px)",
   },
+
   dialog: {
     width: "100%",
     maxWidth: 480,
@@ -76,11 +89,13 @@ const styles = {
     boxShadow: "0 32px 80px rgba(15, 23, 42, 0.45)",
     overflow: "hidden",
   },
+
   content: {
     padding: 28,
     display: "grid",
     gap: 12,
   },
+
   title: {
     margin: 0,
     fontSize: 22,
@@ -88,18 +103,21 @@ const styles = {
     color: "#f8fafc",
     lineHeight: 1.2,
   },
+
   description: {
     margin: 0,
     color: "rgba(226, 232, 240, 0.76)",
     fontSize: 15,
     lineHeight: 1.7,
   },
+
   actions: {
     display: "flex",
     justifyContent: "flex-end",
     gap: 12,
     padding: "20px 28px 28px",
   },
+
   cancelButton: {
     border: "1px solid rgba(148, 163, 184, 0.18)",
     background: "transparent",
@@ -110,6 +128,7 @@ const styles = {
     fontWeight: 700,
     fontSize: 14,
   },
+
   confirmButton: {
     border: "none",
     borderRadius: 14,
@@ -119,9 +138,11 @@ const styles = {
     fontWeight: 800,
     fontSize: 14,
   },
+
   dangerButton: {
     background: "linear-gradient(135deg, #dc2626, #ef4444)",
   },
+
   primaryButton: {
     background: "linear-gradient(135deg, #2563eb, #3b82f6)",
   },

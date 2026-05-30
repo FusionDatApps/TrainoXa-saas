@@ -1,5 +1,7 @@
 ﻿"use client";
 
+import { motionStyles } from "../../lib/motion";
+
 export default function Modal({
   open,
   title,
@@ -14,12 +16,26 @@ export default function Modal({
   }
 
   return (
-    <div style={styles.overlay}>
-      <section style={{ ...styles.modal, ...styles.sizes[size] }}>
+    <div
+      style={{
+        ...styles.overlay,
+        ...motionStyles.fadeOverlay,
+      }}
+    >
+      <section
+        style={{
+          ...styles.modal,
+          ...styles.sizes[size],
+          ...motionStyles.modalEnter,
+        }}
+      >
         <header style={styles.header}>
           <div style={styles.heading}>
             {title ? <h2 style={styles.title}>{title}</h2> : null}
-            {description ? <p style={styles.description}>{description}</p> : null}
+
+            {description ? (
+              <p style={styles.description}>{description}</p>
+            ) : null}
           </div>
 
           <button
@@ -34,7 +50,11 @@ export default function Modal({
 
         <div style={styles.body}>{children}</div>
 
-        {footer ? <footer style={styles.footer}>{footer}</footer> : null}
+        {footer ? (
+          <footer style={styles.footer}>
+            {footer}
+          </footer>
+        ) : null}
       </section>
     </div>
   );
@@ -52,6 +72,7 @@ const styles = {
     background: "rgba(2, 6, 23, 0.68)",
     backdropFilter: "blur(8px)",
   },
+
   modal: {
     width: "100%",
     maxHeight: "calc(100vh - 40px)",
@@ -62,17 +83,21 @@ const styles = {
     boxShadow: "0 32px 80px rgba(15, 23, 42, 0.45)",
     color: "#f8fafc",
   },
+
   sizes: {
     sm: {
       maxWidth: 420,
     },
+
     md: {
       maxWidth: 640,
     },
+
     lg: {
       maxWidth: 860,
     },
   },
+
   header: {
     display: "flex",
     justifyContent: "space-between",
@@ -80,22 +105,26 @@ const styles = {
     padding: "24px 28px",
     borderBottom: "1px solid rgba(148, 163, 184, 0.12)",
   },
+
   heading: {
     display: "grid",
     gap: 8,
   },
+
   title: {
     margin: 0,
     fontSize: 22,
     fontWeight: 800,
     lineHeight: 1.2,
   },
+
   description: {
     margin: 0,
     color: "rgba(226, 232, 240, 0.72)",
     fontSize: 14,
     lineHeight: 1.6,
   },
+
   closeButton: {
     width: 34,
     height: 34,
@@ -107,11 +136,13 @@ const styles = {
     fontSize: 16,
     fontWeight: 800,
   },
+
   body: {
     padding: 28,
     maxHeight: "calc(100vh - 220px)",
     overflow: "auto",
   },
+
   footer: {
     display: "flex",
     justifyContent: "flex-end",

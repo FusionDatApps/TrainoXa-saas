@@ -1,5 +1,7 @@
 ﻿"use client";
 
+import { motionStyles } from "../../lib/motion";
+
 export default function Drawer({
   open,
   title,
@@ -15,12 +17,20 @@ export default function Drawer({
   }
 
   return (
-    <div style={styles.overlay}>
+    <div
+      style={{
+        ...styles.overlay,
+        ...motionStyles.fadeOverlay,
+      }}
+    >
       <aside
         style={{
           ...styles.drawer,
           width,
           ...(position === "left" ? styles.left : styles.right),
+          ...(position === "left"
+            ? motionStyles.drawerLeft
+            : motionStyles.drawerRight),
         }}
       >
         <header style={styles.header}>
@@ -44,7 +54,11 @@ export default function Drawer({
 
         <div style={styles.body}>{children}</div>
 
-        {footer ? <footer style={styles.footer}>{footer}</footer> : null}
+        {footer ? (
+          <footer style={styles.footer}>
+            {footer}
+          </footer>
+        ) : null}
       </aside>
     </div>
   );
@@ -58,6 +72,7 @@ const styles = {
     background: "rgba(2, 6, 23, 0.58)",
     backdropFilter: "blur(6px)",
   },
+
   drawer: {
     position: "absolute",
     top: 0,
@@ -71,12 +86,15 @@ const styles = {
     overflow: "hidden",
     color: "#f8fafc",
   },
+
   left: {
     left: 0,
   },
+
   right: {
     right: 0,
   },
+
   header: {
     display: "flex",
     justifyContent: "space-between",
@@ -84,22 +102,26 @@ const styles = {
     padding: "24px 24px 20px",
     borderBottom: "1px solid rgba(148, 163, 184, 0.12)",
   },
+
   heading: {
     display: "grid",
     gap: 8,
   },
+
   title: {
     margin: 0,
     fontSize: 22,
     fontWeight: 800,
     lineHeight: 1.2,
   },
+
   description: {
     margin: 0,
     color: "rgba(226, 232, 240, 0.72)",
     fontSize: 14,
     lineHeight: 1.6,
   },
+
   closeButton: {
     width: 34,
     height: 34,
@@ -112,11 +134,13 @@ const styles = {
     fontWeight: 800,
     flexShrink: 0,
   },
+
   body: {
     flex: 1,
     overflow: "auto",
     padding: 24,
   },
+
   footer: {
     display: "flex",
     justifyContent: "flex-end",
