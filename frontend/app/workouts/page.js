@@ -221,15 +221,72 @@ export default function WorkoutsPage() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    try {
-      await createWorkout({
-        name: name.trim(),
-        description: description.trim() || undefined,
+    const trimmedName = name.trim();
+    const trimmedDescription = description.trim();
+
+    if (!trimmedName) {
+      toast.warning({
+        title: "Nombre requerido",
+        message: "Debes escribir el nombre de la rutina.",
       });
 
-      setName("");
-      setDescription("");
-      setIsCreateModalOpen(false);
+      return;
+    }
+
+    const tempId = `temp-workout-${Date.now()}`;
+
+    const optimisticWorkout = {
+      id: tempId,
+      name: trimmedName,
+      description: trimmedDescription || "",
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      optimistic: true,
+    };
+
+    setWorkouts((prev) => [optimisticWorkout, ...prev]);
+
+    setWorkoutExercises((prev) => ({
+      ...prev,
+      [tempId]: [],
+    }));
+
+    setName("");
+    setDescription("");
+    setIsCreateModalOpen(false);
+
+    try {
+      const res = await createWorkout({
+        name: trimmedName,
+        description: trimmedDescription || undefined,
+      });
+
+      const createdWorkout = res?.data;
+
+      if (createdWorkout?.id) {
+        setWorkouts((prev) =>
+          prev.map((workout) =>
+            workout.id === tempId
+              ? {
+                  ...createdWorkout,
+                  optimistic: false,
+                }
+              : workout
+          )
+        );
+
+        setWorkoutExercises((prev) => {
+          const { [tempId]: tempItems, ...rest } = prev;
+
+          return {
+            ...rest,
+            [createdWorkout.id]: tempItems || [],
+          };
+        });
+      } else {
+        await loadWorkouts();
+      }
 
       setSuccessMessage("Rutina creada correctamente");
 
@@ -237,9 +294,15 @@ export default function WorkoutsPage() {
         title: "Rutina creada",
         message: "La rutina fue creada correctamente.",
       });
-
-      await loadWorkouts();
     } catch (err) {
+      setWorkouts((prev) => prev.filter((workout) => workout.id !== tempId));
+
+      setWorkoutExercises((prev) => {
+        const { [tempId]: _removed, ...rest } = prev;
+
+        return rest;
+      });
+
       toast.error({
         title: "No se pudo crear la rutina",
         message: getApiErrorMessage(err),
@@ -592,7 +655,11 @@ export default function WorkoutsPage() {
                                     workout.isActive ? "success" : "warning"
                                   }
                                 >
-                                  {workout.isActive ? "Activa" : "Inactiva"}
+                                  {workout.optimistic
+                                    ? "Creando..."
+                                    : workout.isActive
+                                      ? "Activa"
+                                      : "Inactiva"}
                                 </Badge>
                               </InlineGroup>
 
@@ -609,17 +676,22 @@ export default function WorkoutsPage() {
                                   <p style={styles.infoLabel}>Estado</p>
 
                                   <p style={styles.infoValue}>
-                                    {workout.isActive
-                                      ? "Disponible"
-                                      : "Pausada"}
+                                    {workout.optimistic
+                                      ? "Sincronizando"
+                                      : workout.isActive
+                                        ? "Disponible"
+                                        : "Pausada"}
                                   </p>
                                 </div>
                               </ResponsiveGrid>
 
                               <ActionButton
+                                disabled={workout.optimistic}
                                 onClick={() => openWorkoutDrawer(workout.id)}
                               >
-                                Gestionar rutina
+                                {workout.optimistic
+                                  ? "Creando rutina..."
+                                  : "Gestionar rutina"}
                               </ActionButton>
                             </ContentStack>
                           </SectionCard>
