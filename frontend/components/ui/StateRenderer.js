@@ -7,6 +7,13 @@ export default function StateRenderer({
   error = "",
   isEmpty = false,
   emptyMessage = "No hay datos disponibles.",
+  emptyTitle = "No hay datos disponibles",
+  emptyIcon = "○",
+  emptyActionLabel,
+  onEmptyAction,
+  errorTitle = "No se pudo cargar la informacion",
+  errorActionLabel = "Reintentar",
+  onRetry,
   loadingMessage = "Cargando informacion...",
   loadingVariant = "card",
   skeletonCount = 4,
@@ -32,7 +39,12 @@ export default function StateRenderer({
 
   if (error) {
     return (
-      <FeedbackMessage variant="error">
+      <FeedbackMessage
+        variant="error"
+        title={errorTitle}
+        actionLabel={onRetry ? errorActionLabel : undefined}
+        onAction={onRetry}
+      >
         {error}
       </FeedbackMessage>
     );
@@ -40,9 +52,13 @@ export default function StateRenderer({
 
   if (isEmpty) {
     return (
-      <EmptyState>
-        {emptyMessage}
-      </EmptyState>
+      <EmptyState
+        title={emptyTitle}
+        description={emptyMessage}
+        icon={emptyIcon}
+        actionLabel={emptyActionLabel}
+        onAction={onEmptyAction}
+      />
     );
   }
 
