@@ -11,7 +11,6 @@ import TrainerShell from "../../components/TrainerShell";
 import { apiFetch } from "../../lib/api";
 
 import PageContainer from "../../components/ui/PageContainer";
-import SectionCard from "../../components/ui/SectionCard";
 import StatCard from "../../components/ui/StatCard";
 import EmptyState from "../../components/ui/EmptyState";
 import ActionButton from "../../components/ui/ActionButton";
@@ -38,6 +37,8 @@ import TableToolbar from "../../components/ui/TableToolbar";
 import EmptySearchState from "../../components/ui/EmptySearchState";
 import FilterPill from "../../components/ui/FilterPill";
 import SkeletonCard from "../../components/ui/SkeletonCard";
+
+import WorkoutSummaryCard from "../../components/workouts/WorkoutSummaryCard";
 
 import useMutation from "../../hooks/useMutation";
 import useItemFeedback from "../../hooks/useItemFeedback";
@@ -684,69 +685,12 @@ export default function WorkoutsPage() {
                           workoutExercises[workout.id] || [];
 
                         return (
-                          <SectionCard key={workout.id}>
-                            <ContentStack gap={20}>
-                              <InlineGroup
-                                justify="space-between"
-                                align="flex-start"
-                              >
-                                <div>
-                                  <p style={styles.workoutTag}>Rutina</p>
-
-                                  <h3 style={styles.workoutName}>
-                                    {workout.name || "Sin nombre"}
-                                  </h3>
-
-                                  <p style={styles.workoutDescription}>
-                                    {workout.description || "Sin descripcion"}
-                                  </p>
-                                </div>
-
-                                <Badge
-                                  variant={
-                                    workout.isActive ? "success" : "warning"
-                                  }
-                                >
-                                  {workout.optimistic
-                                    ? "Creando..."
-                                    : workout.isActive
-                                      ? "Activa"
-                                      : "Inactiva"}
-                                </Badge>
-                              </InlineGroup>
-
-                              <ResponsiveGrid min={160} gap={12}>
-                                <div style={styles.infoBox}>
-                                  <p style={styles.infoLabel}>Ejercicios</p>
-
-                                  <p style={styles.infoValue}>
-                                    {assignedExercises.length}
-                                  </p>
-                                </div>
-
-                                <div style={styles.infoBox}>
-                                  <p style={styles.infoLabel}>Estado</p>
-
-                                  <p style={styles.infoValue}>
-                                    {workout.optimistic
-                                      ? "Sincronizando"
-                                      : workout.isActive
-                                        ? "Disponible"
-                                        : "Pausada"}
-                                  </p>
-                                </div>
-                              </ResponsiveGrid>
-
-                              <ActionButton
-                                disabled={workout.optimistic}
-                                onClick={() => openWorkoutDrawer(workout.id)}
-                              >
-                                {workout.optimistic
-                                  ? "Creando rutina..."
-                                  : "Gestionar rutina"}
-                              </ActionButton>
-                            </ContentStack>
-                          </SectionCard>
+                          <WorkoutSummaryCard
+                            key={workout.id}
+                            workout={workout}
+                            assignedExercises={assignedExercises}
+                            onManage={() => openWorkoutDrawer(workout.id)}
+                          />
                         );
                       })}
                     </ResponsiveGrid>
@@ -1051,28 +995,6 @@ const styles = {
     margin: 0,
     color: theme.colors.success,
     fontSize: "14px",
-  },
-
-  workoutTag: {
-    margin: "0 0 8px 0",
-    color: theme.colors.textMuted,
-    fontSize: "13px",
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
-    fontWeight: "800",
-  },
-
-  workoutName: {
-    margin: "0 0 8px 0",
-    color: theme.colors.textPrimary,
-    fontSize: "26px",
-    fontWeight: "900",
-  },
-
-  workoutDescription: {
-    margin: 0,
-    color: theme.colors.textSecondary,
-    lineHeight: 1.5,
   },
 
   infoBox: {
