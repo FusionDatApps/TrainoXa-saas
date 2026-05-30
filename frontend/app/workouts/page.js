@@ -12,10 +12,8 @@ import { apiFetch } from "../../lib/api";
 
 import PageContainer from "../../components/ui/PageContainer";
 import StatCard from "../../components/ui/StatCard";
-import EmptyState from "../../components/ui/EmptyState";
 import ActionButton from "../../components/ui/ActionButton";
 import Badge from "../../components/ui/Badge";
-import DataTable from "../../components/ui/DataTable";
 import PageHeader from "../../components/ui/PageHeader";
 import FormField from "../../components/ui/FormField";
 import FeedbackMessage from "../../components/ui/FeedbackMessage";
@@ -39,6 +37,7 @@ import FilterPill from "../../components/ui/FilterPill";
 import SkeletonCard from "../../components/ui/SkeletonCard";
 
 import WorkoutSummaryCard from "../../components/workouts/WorkoutSummaryCard";
+import WorkoutExerciseTable from "../../components/workouts/WorkoutExerciseTable";
 
 import useMutation from "../../hooks/useMutation";
 import useItemFeedback from "../../hooks/useItemFeedback";
@@ -523,51 +522,6 @@ export default function WorkoutsPage() {
     setSelectedWorkoutId(null);
   }
 
-  function buildExerciseColumns(workoutId) {
-    return [
-      {
-        key: "order",
-        label: "#",
-        render: (row) => row.exerciseOrder,
-      },
-      {
-        key: "exercise",
-        label: "Ejercicio",
-        render: (row) => (
-          <span style={styles.exerciseName}>
-            {row.exercise?.name || "Sin nombre"}
-            {row.optimistic ? (
-              <span style={styles.optimisticText}> · Agregando...</span>
-            ) : null}
-          </span>
-        ),
-      },
-      {
-        key: "sets",
-        label: "Sets/Reps",
-        render: (row) => `${row.sets} x ${row.reps}`,
-      },
-      {
-        key: "rest",
-        label: "Descanso",
-        render: (row) => `${row.restSeconds || 0}s`,
-      },
-      {
-        key: "actions",
-        label: "Acciones",
-        render: (row) => (
-          <ActionButton
-            variant="danger"
-            disabled={removingExercise[row.id] || row.optimistic}
-            onClick={() => requestRemoveExercise(workoutId, row.id)}
-          >
-            {removingExercise[row.id] ? "Eliminando..." : "Eliminar"}
-          </ActionButton>
-        ),
-      },
-    ];
-  }
-
   return (
     <TrainerShell title="Rutinas" active="workouts">
       <PageContainer>
@@ -902,27 +856,12 @@ export default function WorkoutsPage() {
 
             <div style={styles.divider} />
 
-            <ContentStack gap={14}>
-              <InlineGroup justify="space-between">
-                <h4 style={styles.subTitle}>Ejercicios asignados</h4>
-
-                <Badge variant="default">
-                  {selectedAssignedExercises.length} items
-                </Badge>
-              </InlineGroup>
-
-              {selectedAssignedExercises.length === 0 ? (
-                <EmptyState>
-                  Esta rutina todavia no tiene ejercicios.
-                </EmptyState>
-              ) : (
-                <DataTable
-                  columns={buildExerciseColumns(selectedWorkout.id)}
-                  data={selectedAssignedExercises}
-                  emptyMessage="No hay ejercicios asignados"
-                />
-              )}
-            </ContentStack>
+            <WorkoutExerciseTable
+              workoutId={selectedWorkout.id}
+              assignedExercises={selectedAssignedExercises}
+              removingExercise={removingExercise}
+              onRequestRemove={requestRemoveExercise}
+            />
           </ContentStack>
         ) : null}
       </Drawer>
@@ -1030,16 +969,5 @@ const styles = {
     color: theme.colors.textPrimary,
     fontSize: "16px",
     fontWeight: "900",
-  },
-
-  exerciseName: {
-    color: theme.colors.textPrimary,
-    fontWeight: "800",
-  },
-
-  optimisticText: {
-    color: theme.colors.textMuted,
-    fontSize: "12px",
-    fontWeight: "700",
   },
 };
