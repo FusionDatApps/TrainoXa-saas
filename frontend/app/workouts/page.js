@@ -37,6 +37,7 @@ import TableCard from "../../components/ui/TableCard";
 import TableToolbar from "../../components/ui/TableToolbar";
 import EmptySearchState from "../../components/ui/EmptySearchState";
 import FilterPill from "../../components/ui/FilterPill";
+import SkeletonCard from "../../components/ui/SkeletonCard";
 
 import useMutation from "../../hooks/useMutation";
 import useItemFeedback from "../../hooks/useItemFeedback";
@@ -460,31 +461,40 @@ export default function WorkoutsPage() {
                 </ActionButton>
               </InlineGroup>
 
-              <ResponsiveGrid min={220} gap={16}>
-                <StatCard
-                  label="Rutinas"
-                  value={workouts.length}
-                  description="Rutinas registradas por el trainer."
-                />
+              {loading ? (
+                <ResponsiveGrid min={220} gap={16}>
+                  <SkeletonCard compact height={120} />
+                  <SkeletonCard compact height={120} />
+                  <SkeletonCard compact height={120} />
+                  <SkeletonCard compact height={120} />
+                </ResponsiveGrid>
+              ) : (
+                <ResponsiveGrid min={220} gap={16}>
+                  <StatCard
+                    label="Rutinas"
+                    value={workouts.length}
+                    description="Rutinas registradas por el trainer."
+                  />
 
-                <StatCard
-                  label="Activas"
-                  value={activeWorkouts.length}
-                  description="Rutinas disponibles para asignacion."
-                />
+                  <StatCard
+                    label="Activas"
+                    value={activeWorkouts.length}
+                    description="Rutinas disponibles para asignacion."
+                  />
 
-                <StatCard
-                  label="Inactivas"
-                  value={inactiveWorkouts.length}
-                  description="Rutinas pausadas o no disponibles."
-                />
+                  <StatCard
+                    label="Inactivas"
+                    value={inactiveWorkouts.length}
+                    description="Rutinas pausadas o no disponibles."
+                  />
 
-                <StatCard
-                  label="Ejercicios asignados"
-                  value={totalWorkoutExercises}
-                  description="Ejercicios distribuidos en rutinas."
-                />
-              </ResponsiveGrid>
+                  <StatCard
+                    label="Ejercicios asignados"
+                    value={totalWorkoutExercises}
+                    description="Ejercicios distribuidos en rutinas."
+                  />
+                </ResponsiveGrid>
+              )}
             </ContentStack>
           </PageSection>
 
@@ -536,7 +546,9 @@ export default function WorkoutsPage() {
                   loading={loading}
                   error={error}
                   isEmpty={!loading && workouts.length === 0}
-                  loadingMessage="Cargando rutinas..."
+                  loadingVariant="grid"
+                  skeletonCount={6}
+                  skeletonHeight={260}
                   emptyMessage="Todavia no tienes rutinas registradas."
                 >
                   {workouts.length > 0 && filteredWorkouts.length === 0 ? (
