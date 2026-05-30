@@ -341,10 +341,18 @@ export default function WorkoutsPage() {
     }
 
     const { workoutId, itemId } = pendingRemoveExercise;
+    const previousItems = workoutExercises[workoutId] || [];
+
+    setPendingRemoveExercise(null);
 
     setRemovingExercise((prev) => ({
       ...prev,
       [itemId]: true,
+    }));
+
+    setWorkoutExercises((prev) => ({
+      ...prev,
+      [workoutId]: (prev[workoutId] || []).filter((item) => item.id !== itemId),
     }));
 
     try {
@@ -360,13 +368,14 @@ export default function WorkoutsPage() {
         title: "Ejercicio eliminado",
         message: "El ejercicio fue eliminado correctamente de la rutina.",
       });
-
-      setPendingRemoveExercise(null);
-
-      await loadWorkoutExercises(workoutId);
     } catch (err) {
       const message =
         err.message || "No se pudo eliminar el ejercicio de la rutina";
+
+      setWorkoutExercises((prev) => ({
+        ...prev,
+        [workoutId]: previousItems,
+      }));
 
       setError(message);
       setWorkoutFeedback(workoutId, "error", message);
