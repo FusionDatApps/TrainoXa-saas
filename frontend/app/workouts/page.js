@@ -18,8 +18,6 @@ import FormField from "../../components/ui/FormField";
 import FeedbackMessage from "../../components/ui/FeedbackMessage";
 import StateRenderer from "../../components/ui/StateRenderer";
 import FormActions from "../../components/ui/FormActions";
-import AsyncButton from "../../components/ui/AsyncButton";
-import SelectField from "../../components/ui/SelectField";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import Modal from "../../components/ui/Modal";
 import Drawer from "../../components/ui/Drawer";
@@ -38,6 +36,7 @@ import SkeletonCard from "../../components/ui/SkeletonCard";
 import WorkoutSummaryCard from "../../components/workouts/WorkoutSummaryCard";
 import WorkoutExerciseTable from "../../components/workouts/WorkoutExerciseTable";
 import WorkoutAnalyticsCard from "../../components/workouts/WorkoutAnalyticsCard";
+import WorkoutExerciseForm from "../../components/workouts/WorkoutExerciseForm";
 
 import useMutation from "../../hooks/useMutation";
 import useItemFeedback from "../../hooks/useItemFeedback";
@@ -719,139 +718,15 @@ export default function WorkoutsPage() {
 
             <div style={styles.divider} />
 
-            <ContentStack gap={14}>
-              <h4 style={styles.subTitle}>Agregar ejercicio</h4>
-
-              <SelectField
-                label="Ejercicio"
-                value={selectedExerciseForm.exerciseId || ""}
-                onChange={(e) =>
-                  updateWorkoutExerciseForm(
-                    selectedWorkout.id,
-                    "exerciseId",
-                    e.target.value
-                  )
-                }
-              >
-                <option value="">Selecciona ejercicio</option>
-
-                {exercises.map((exercise) => (
-                  <option
-                    key={exercise.id}
-                    value={exercise.id}
-                  >
-                    {exercise.name}
-                  </option>
-                ))}
-              </SelectField>
-
-              <ResponsiveGrid min={120} gap={12}>
-                <div style={styles.field}>
-                  <label style={styles.label}>Orden</label>
-
-                  <input
-                    style={styles.smallInput}
-                    type="number"
-                    value={selectedExerciseForm.exerciseOrder || 1}
-                    onChange={(e) =>
-                      updateWorkoutExerciseForm(
-                        selectedWorkout.id,
-                        "exerciseOrder",
-                        e.target.value
-                      )
-                    }
-                  />
-                </div>
-
-                <div style={styles.field}>
-                  <label style={styles.label}>Sets</label>
-
-                  <input
-                    style={styles.smallInput}
-                    type="number"
-                    value={selectedExerciseForm.sets || 4}
-                    onChange={(e) =>
-                      updateWorkoutExerciseForm(
-                        selectedWorkout.id,
-                        "sets",
-                        e.target.value
-                      )
-                    }
-                  />
-                </div>
-
-                <div style={styles.field}>
-                  <label style={styles.label}>Reps</label>
-
-                  <input
-                    style={styles.smallInput}
-                    type="text"
-                    value={selectedExerciseForm.reps || "12"}
-                    onChange={(e) =>
-                      updateWorkoutExerciseForm(
-                        selectedWorkout.id,
-                        "reps",
-                        e.target.value
-                      )
-                    }
-                  />
-                </div>
-
-                <div style={styles.field}>
-                  <label style={styles.label}>Descanso</label>
-
-                  <input
-                    style={styles.smallInput}
-                    type="number"
-                    value={selectedExerciseForm.restSeconds || 60}
-                    onChange={(e) =>
-                      updateWorkoutExerciseForm(
-                        selectedWorkout.id,
-                        "restSeconds",
-                        e.target.value
-                      )
-                    }
-                  />
-                </div>
-              </ResponsiveGrid>
-
-              <div style={styles.field}>
-                <label style={styles.label}>Notas</label>
-
-                <textarea
-                  style={styles.notesInput}
-                  placeholder="Indicaciones opcionales"
-                  value={selectedExerciseForm.notes || ""}
-                  onChange={(e) =>
-                    updateWorkoutExerciseForm(
-                      selectedWorkout.id,
-                      "notes",
-                      e.target.value
-                    )
-                  }
-                />
-              </div>
-
-              <AsyncButton
-                loading={addingExercise[selectedWorkout.id]}
-                loadingText="Agregando ejercicio..."
-                onClick={() => handleAddExercise(selectedWorkout.id)}
-              >
-                Agregar ejercicio
-              </AsyncButton>
-
-              {exerciseFeedback[selectedWorkout.id] ? (
-                <p
-                  style={
-                    exerciseFeedback[selectedWorkout.id].type === "error"
-                      ? styles.error
-                      : styles.success
-                  }
-                >
-                  {exerciseFeedback[selectedWorkout.id].message}
-                </p>
-              ) : null}
-            </ContentStack>
+            <WorkoutExerciseForm
+              workoutId={selectedWorkout.id}
+              exercises={exercises}
+              form={selectedExerciseForm}
+              loading={addingExercise[selectedWorkout.id]}
+              feedback={exerciseFeedback[selectedWorkout.id]}
+              onChange={updateWorkoutExerciseForm}
+              onSubmit={handleAddExercise}
+            />
 
             <div style={styles.divider} />
 
@@ -893,48 +768,6 @@ const styles = {
     letterSpacing: "0.08em",
   },
 
-  field: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-  },
-
-  label: {
-    fontSize: "14px",
-    fontWeight: "700",
-    color: "#cbd5e1",
-  },
-
-  smallInput: {
-    padding: "12px",
-    borderRadius: theme.radius.sm,
-    border: `1px solid ${theme.colors.border}`,
-    background: theme.colors.surface,
-    color: theme.colors.textPrimary,
-  },
-
-  notesInput: {
-    minHeight: "70px",
-    padding: "12px",
-    borderRadius: theme.radius.sm,
-    border: `1px solid ${theme.colors.border}`,
-    background: theme.colors.surface,
-    color: theme.colors.textPrimary,
-    resize: "vertical",
-  },
-
-  error: {
-    margin: 0,
-    color: theme.colors.danger,
-    fontSize: "14px",
-  },
-
-  success: {
-    margin: 0,
-    color: theme.colors.success,
-    fontSize: "14px",
-  },
-
   infoBox: {
     padding: "14px",
     borderRadius: theme.radius.sm,
@@ -961,12 +794,5 @@ const styles = {
     height: "1px",
     background: theme.colors.border,
     width: "100%",
-  },
-
-  subTitle: {
-    margin: 0,
-    color: theme.colors.textPrimary,
-    fontSize: "16px",
-    fontWeight: "900",
   },
 };
