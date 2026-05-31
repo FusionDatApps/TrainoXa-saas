@@ -11,7 +11,6 @@ import TrainerShell from "../../components/TrainerShell";
 import { apiFetch } from "../../lib/api";
 
 import PageContainer from "../../components/ui/PageContainer";
-import StatCard from "../../components/ui/StatCard";
 import ActionButton from "../../components/ui/ActionButton";
 import Badge from "../../components/ui/Badge";
 import PageHeader from "../../components/ui/PageHeader";
@@ -38,6 +37,7 @@ import SkeletonCard from "../../components/ui/SkeletonCard";
 
 import WorkoutSummaryCard from "../../components/workouts/WorkoutSummaryCard";
 import WorkoutExerciseTable from "../../components/workouts/WorkoutExerciseTable";
+import WorkoutAnalyticsCard from "../../components/workouts/WorkoutAnalyticsCard";
 
 import useMutation from "../../hooks/useMutation";
 import useItemFeedback from "../../hooks/useItemFeedback";
@@ -45,6 +45,7 @@ import useItemFeedback from "../../hooks/useItemFeedback";
 import { uiStyles } from "../../lib/ui-styles";
 import { theme } from "../../lib/theme";
 import { getApiErrorMessage } from "../../lib/ui-feedback";
+import { buildWorkoutMetrics } from "../../lib/workout-metrics";
 
 export const dynamic = "force-dynamic";
 
@@ -104,15 +105,12 @@ export default function WorkoutsPage() {
     clearFeedback,
   } = useItemFeedback();
 
-  const activeWorkouts = useMemo(
-    () => workouts.filter((workout) => workout.isActive),
-    [workouts]
-  );
-
-  const inactiveWorkouts = useMemo(
-    () => workouts.filter((workout) => !workout.isActive),
-    [workouts]
-  );
+  const analytics = useMemo(() => {
+    return buildWorkoutMetrics({
+      workouts,
+      workoutExercises,
+    });
+  }, [workouts, workoutExercises]);
 
   const selectedWorkout = useMemo(() => {
     return workouts.find((workout) => workout.id === selectedWorkoutId) || null;
@@ -141,13 +139,6 @@ export default function WorkoutsPage() {
 
     return result;
   }, [workouts, search, filter]);
-
-  const totalWorkoutExercises = useMemo(() => {
-    return Object.values(workoutExercises).reduce(
-      (total, items) => total + (items?.length || 0),
-      0
-    );
-  }, [workoutExercises]);
 
   const selectedAssignedExercises = selectedWorkout
     ? workoutExercises[selectedWorkout.id] || []
@@ -532,7 +523,7 @@ export default function WorkoutsPage() {
                 <PageHeader
                   eyebrow="Workout builder"
                   title="Workspace de rutinas"
-                  description="Administra rutinas, ejercicios y configuraciones operacionales."
+                  description="Administra rutinas, ejercicios y analitica operacional."
                 />
 
                 <ActionButton onClick={() => setIsCreateModalOpen(true)}>
@@ -542,35 +533,43 @@ export default function WorkoutsPage() {
 
               {loading ? (
                 <ResponsiveGrid min={220} gap={16}>
-                  <SkeletonCard compact height={120} />
-                  <SkeletonCard compact height={120} />
-                  <SkeletonCard compact height={120} />
-                  <SkeletonCard compact height={120} />
+                  <SkeletonCard compact height={140} />
+                  <SkeletonCard compact height={140} />
+                  <SkeletonCard compact height={140} />
+                  <SkeletonCard compact height={140} />
                 </ResponsiveGrid>
               ) : (
-                <ResponsiveGrid min={220} gap={16}>
-                  <StatCard
-                    label="Rutinas"
-                    value={workouts.length}
-                    description="Rutinas registradas por el trainer."
+                <ResponsiveGrid min={240} gap={16}>
+                  <WorkoutAnalyticsCard
+                    title="Rutinas totales"
+                    value={analytics.totalWorkouts}
+                    trend={`${analytics.activeWorkouts} activas`}
+                    description="Cantidad total de rutinas registradas en el sistema."
+                    accent="#3b82f6"
                   />
 
-                  <StatCard
-                    label="Activas"
-                    value={activeWorkouts.length}
-                    description="Rutinas disponibles para asignacion."
+                  <WorkoutAnalyticsCard
+                    title="Ejercicios asignados"
+                    value={analytics.totalExercises}
+                    trend="Carga operacional"
+                    description="Ejercicios distribuidos dentro de todas las rutinas."
+                    accent="#8b5cf6"
                   />
 
-                  <StatCard
-                    label="Inactivas"
-                    value={inactiveWorkouts.length}
-                    description="Rutinas pausadas o no disponibles."
+                  <WorkoutAnalyticsCard
+                    title="Promedio ejercicios"
+                    value={analytics.averageExercisesPerWorkout}
+                    trend="Por rutina"
+                    description="Promedio de ejercicios configurados por rutina."
+                    accent="#22c55e"
                   />
 
-                  <StatCard
-                    label="Ejercicios asignados"
-                    value={totalWorkoutExercises}
-                    description="Ejercicios distribuidos en rutinas."
+                  <WorkoutAnalyticsCard
+                    title="Rutina dominante"
+                    value={analytics.mostLoadedWorkout.count}
+                    trend={analytics.mostLoadedWorkout.name}
+                    description="Rutina con mayor cantidad de ejercicios asignados."
+                    accent="#f59e0b"
                   />
                 </ResponsiveGrid>
               )}
@@ -581,7 +580,7 @@ export default function WorkoutsPage() {
             <TableCard
               toolbar={
                 <TableToolbar
-                  title="Workspace de rutinas"
+                  title="Workspace operacional"
                   description="Busca, filtra y administra rutinas con sus ejercicios asociados."
                   searchValue={search}
                   onSearchChange={(e) => setSearch(e.target.value)}
