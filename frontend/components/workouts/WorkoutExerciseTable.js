@@ -7,6 +7,8 @@ import DataTable from "../ui/DataTable";
 import EmptyState from "../ui/EmptyState";
 import InlineGroup from "../ui/InlineGroup";
 
+import WorkoutExerciseRowEditor from "./WorkoutExerciseRowEditor";
+
 import { theme } from "../../lib/theme";
 
 export default function WorkoutExerciseTable({
@@ -26,16 +28,7 @@ export default function WorkoutExerciseTable({
         key: "exercise",
         label: "Ejercicio",
         render: (row) => (
-          <span style={styles.exerciseName}>
-            {row.exercise?.name || "Sin nombre"}
-
-            {row.optimistic ? (
-              <span style={styles.optimisticText}>
-                {" "}
-                · Agregando...
-              </span>
-            ) : null}
-          </span>
+          <WorkoutExerciseRowEditor item={row} />
         ),
       },
       {
@@ -97,16 +90,5 @@ const styles = {
     color: theme.colors.textPrimary,
     fontSize: "16px",
     fontWeight: "900",
-  },
-
-  exerciseName: {
-    color: theme.colors.textPrimary,
-    fontWeight: "800",
-  },
-
-  optimisticText: {
-    color: theme.colors.textMuted,
-    fontSize: "12px",
-    fontWeight: "700",
   },
 };
