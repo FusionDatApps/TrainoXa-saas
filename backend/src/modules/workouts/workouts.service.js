@@ -8,28 +8,44 @@ async function getAuthenticatedTrainerProfile(authUser) {
   }
 
   if (authUser.role !== "TRAINER") {
-    const error = new Error("Acceso solo permitido para entrenadores");
+    const error = new Error(
+      "Acceso solo permitido para entrenadores"
+    );
+
     error.statusCode = 403;
+
     throw error;
   }
 
-  const trainerProfile = await prisma.trainerProfile.findUnique({
-    where: {
-      userId: authUser.id,
-    },
-  });
+  const trainerProfile =
+    await prisma.trainerProfile.findUnique({
+      where: {
+        userId: authUser.id,
+      },
+    });
 
   if (!trainerProfile) {
-    const error = new Error("Perfil de entrenador no encontrado");
+    const error = new Error(
+      "Perfil de entrenador no encontrado"
+    );
+
     error.statusCode = 404;
+
     throw error;
   }
 
   return trainerProfile;
 }
 
-async function createWorkout({ authUser, name, description }) {
-  const trainerProfile = await getAuthenticatedTrainerProfile(authUser);
+async function createWorkout({
+  authUser,
+  name,
+  description,
+}) {
+  const trainerProfile =
+    await getAuthenticatedTrainerProfile(
+      authUser
+    );
 
   return prisma.workoutPlan.create({
     data: {
@@ -41,7 +57,10 @@ async function createWorkout({ authUser, name, description }) {
 }
 
 async function getWorkouts(authUser) {
-  const trainerProfile = await getAuthenticatedTrainerProfile(authUser);
+  const trainerProfile =
+    await getAuthenticatedTrainerProfile(
+      authUser
+    );
 
   return prisma.workoutPlan.findMany({
     where: {
@@ -53,8 +72,14 @@ async function getWorkouts(authUser) {
   });
 }
 
-async function getWorkoutById({ authUser, workoutId }) {
-  const trainerProfile = await getAuthenticatedTrainerProfile(authUser);
+async function getWorkoutById({
+  authUser,
+  workoutId,
+}) {
+  const trainerProfile =
+    await getAuthenticatedTrainerProfile(
+      authUser
+    );
 
   return prisma.workoutPlan.findFirst({
     where: {
@@ -64,58 +89,86 @@ async function getWorkoutById({ authUser, workoutId }) {
   });
 }
 
-async function addExerciseToWorkout({ authUser, workoutId, data }) {
-  const trainerProfile = await getAuthenticatedTrainerProfile(authUser);
+async function addExerciseToWorkout({
+  authUser,
+  workoutId,
+  data,
+}) {
+  const trainerProfile =
+    await getAuthenticatedTrainerProfile(
+      authUser
+    );
 
-  const workout = await prisma.workoutPlan.findFirst({
-    where: {
-      id: workoutId,
-      trainerId: trainerProfile.id,
-    },
-  });
+  const workout =
+    await prisma.workoutPlan.findFirst({
+      where: {
+        id: workoutId,
+        trainerId: trainerProfile.id,
+      },
+    });
 
   if (!workout) {
-    const error = new Error("Rutina no encontrada");
+    const error = new Error(
+      "Rutina no encontrada"
+    );
+
     error.statusCode = 404;
+
     throw error;
   }
 
-  const exercise = await prisma.exercise.findFirst({
-    where: {
-      id: data.exerciseId,
-      trainerId: trainerProfile.id,
-    },
-  });
+  const exercise =
+    await prisma.exercise.findFirst({
+      where: {
+        id: data.exerciseId,
+        trainerId: trainerProfile.id,
+      },
+    });
 
   if (!exercise) {
-    const error = new Error("Ejercicio no encontrado o no pertenece al entrenador");
+    const error = new Error(
+      "Ejercicio no encontrado o no pertenece al entrenador"
+    );
+
     error.statusCode = 404;
+
     throw error;
   }
 
-  const existingExercise = await prisma.workoutPlanExercise.findFirst({
-    where: {
-      workoutPlanId: workoutId,
-      exerciseId: data.exerciseId,
-    },
-  });
+  const existingExercise =
+    await prisma.workoutPlanExercise.findFirst({
+      where: {
+        workoutPlanId: workoutId,
+        exerciseId: data.exerciseId,
+      },
+    });
 
   if (existingExercise) {
-    const error = new Error("Este ejercicio ya fue agregado a la rutina");
+    const error = new Error(
+      "Este ejercicio ya fue agregado a la rutina"
+    );
+
     error.statusCode = 409;
+
     throw error;
   }
 
-  const duplicatedOrder = await prisma.workoutPlanExercise.findFirst({
-    where: {
-      workoutPlanId: workoutId,
-      exerciseOrder: data.exerciseOrder,
-    },
-  });
+  const duplicatedOrder =
+    await prisma.workoutPlanExercise.findFirst({
+      where: {
+        workoutPlanId: workoutId,
+        exerciseOrder:
+          data.exerciseOrder,
+      },
+    });
 
   if (duplicatedOrder) {
-    const error = new Error("Ya existe un ejercicio con ese orden dentro de la rutina");
+    const error = new Error(
+      "Ya existe un ejercicio con ese orden dentro de la rutina"
+    );
+
     error.statusCode = 409;
+
     throw error;
   }
 
@@ -123,31 +176,45 @@ async function addExerciseToWorkout({ authUser, workoutId, data }) {
     data: {
       workoutPlanId: workoutId,
       exerciseId: data.exerciseId,
-      exerciseOrder: data.exerciseOrder,
+      exerciseOrder:
+        data.exerciseOrder,
       sets: data.sets,
       reps: data.reps,
-      restSeconds: data.restSeconds,
+      restSeconds:
+        data.restSeconds,
       notes: data.notes,
     },
+
     include: {
       exercise: true,
     },
   });
 }
 
-async function getWorkoutExercises({ authUser, workoutId }) {
-  const trainerProfile = await getAuthenticatedTrainerProfile(authUser);
+async function getWorkoutExercises({
+  authUser,
+  workoutId,
+}) {
+  const trainerProfile =
+    await getAuthenticatedTrainerProfile(
+      authUser
+    );
 
-  const workout = await prisma.workoutPlan.findFirst({
-    where: {
-      id: workoutId,
-      trainerId: trainerProfile.id,
-    },
-  });
+  const workout =
+    await prisma.workoutPlan.findFirst({
+      where: {
+        id: workoutId,
+        trainerId: trainerProfile.id,
+      },
+    });
 
   if (!workout) {
-    const error = new Error("Rutina no encontrada");
+    const error = new Error(
+      "Rutina no encontrada"
+    );
+
     error.statusCode = 404;
+
     throw error;
   }
 
@@ -155,9 +222,11 @@ async function getWorkoutExercises({ authUser, workoutId }) {
     where: {
       workoutPlanId: workoutId,
     },
+
     include: {
       exercise: true,
     },
+
     orderBy: {
       exerciseOrder: "asc",
     },
@@ -170,47 +239,67 @@ async function updateWorkoutExercise({
   workoutExerciseId,
   data,
 }) {
-  const trainerProfile = await getAuthenticatedTrainerProfile(authUser);
+  const trainerProfile =
+    await getAuthenticatedTrainerProfile(
+      authUser
+    );
 
-  const workout = await prisma.workoutPlan.findFirst({
-    where: {
-      id: workoutId,
-      trainerId: trainerProfile.id,
-    },
-  });
+  const workout =
+    await prisma.workoutPlan.findFirst({
+      where: {
+        id: workoutId,
+        trainerId: trainerProfile.id,
+      },
+    });
 
   if (!workout) {
-    const error = new Error("Rutina no encontrada");
+    const error = new Error(
+      "Rutina no encontrada"
+    );
+
     error.statusCode = 404;
+
     throw error;
   }
 
-  const workoutExercise = await prisma.workoutPlanExercise.findFirst({
-    where: {
-      id: workoutExerciseId,
-      workoutPlanId: workoutId,
-    },
-  });
+  const workoutExercise =
+    await prisma.workoutPlanExercise.findFirst({
+      where: {
+        id: workoutExerciseId,
+        workoutPlanId: workoutId,
+      },
+    });
 
   if (!workoutExercise) {
-    const error = new Error("Ejercicio de rutina no encontrado");
+    const error = new Error(
+      "Ejercicio de rutina no encontrado"
+    );
+
     error.statusCode = 404;
+
     throw error;
   }
 
-  const duplicatedOrder = await prisma.workoutPlanExercise.findFirst({
-    where: {
-      workoutPlanId: workoutId,
-      exerciseOrder: data.exerciseOrder,
-      NOT: {
-        id: workoutExerciseId,
+  const duplicatedOrder =
+    await prisma.workoutPlanExercise.findFirst({
+      where: {
+        workoutPlanId: workoutId,
+        exerciseOrder:
+          data.exerciseOrder,
+
+        NOT: {
+          id: workoutExerciseId,
+        },
       },
-    },
-  });
+    });
 
   if (duplicatedOrder) {
-    const error = new Error("Ya existe un ejercicio con ese orden dentro de la rutina");
+    const error = new Error(
+      "Ya existe un ejercicio con ese orden dentro de la rutina"
+    );
+
     error.statusCode = 409;
+
     throw error;
   }
 
@@ -218,15 +307,116 @@ async function updateWorkoutExercise({
     where: {
       id: workoutExerciseId,
     },
+
     data: {
-      exerciseOrder: data.exerciseOrder,
+      exerciseOrder:
+        data.exerciseOrder,
       sets: data.sets,
       reps: data.reps,
-      restSeconds: data.restSeconds,
+      restSeconds:
+        data.restSeconds,
       notes: data.notes,
     },
+
     include: {
       exercise: true,
+    },
+  });
+}
+
+async function reorderWorkoutExercises({
+  authUser,
+  workoutId,
+  items,
+}) {
+  const trainerProfile =
+    await getAuthenticatedTrainerProfile(
+      authUser
+    );
+
+  const workout =
+    await prisma.workoutPlan.findFirst({
+      where: {
+        id: workoutId,
+        trainerId: trainerProfile.id,
+      },
+    });
+
+  if (!workout) {
+    const error = new Error(
+      "Rutina no encontrada"
+    );
+
+    error.statusCode = 404;
+
+    throw error;
+  }
+
+  const existingItems =
+    await prisma.workoutPlanExercise.findMany({
+      where: {
+        workoutPlanId: workoutId,
+      },
+    });
+
+  const existingIds = new Set(
+    existingItems.map((item) => item.id)
+  );
+
+  for (const item of items) {
+    if (!existingIds.has(item.id)) {
+      const error = new Error(
+        "Ejercicio invalido dentro del reorder"
+      );
+
+      error.statusCode = 400;
+
+      throw error;
+    }
+  }
+
+  await prisma.$transaction(
+    async (tx) => {
+      for (const existing of existingItems) {
+        await tx.workoutPlanExercise.update({
+          where: {
+            id: existing.id,
+          },
+
+          data: {
+            exerciseOrder:
+              existing.exerciseOrder +
+              1000,
+          },
+        });
+      }
+
+      for (const item of items) {
+        await tx.workoutPlanExercise.update({
+          where: {
+            id: item.id,
+          },
+
+          data: {
+            exerciseOrder:
+              item.exerciseOrder,
+          },
+        });
+      }
+    }
+  );
+
+  return prisma.workoutPlanExercise.findMany({
+    where: {
+      workoutPlanId: workoutId,
+    },
+
+    include: {
+      exercise: true,
+    },
+
+    orderBy: {
+      exerciseOrder: "asc",
     },
   });
 }
@@ -236,31 +426,44 @@ async function removeWorkoutExercise({
   workoutId,
   workoutExerciseId,
 }) {
-  const trainerProfile = await getAuthenticatedTrainerProfile(authUser);
+  const trainerProfile =
+    await getAuthenticatedTrainerProfile(
+      authUser
+    );
 
-  const workout = await prisma.workoutPlan.findFirst({
-    where: {
-      id: workoutId,
-      trainerId: trainerProfile.id,
-    },
-  });
+  const workout =
+    await prisma.workoutPlan.findFirst({
+      where: {
+        id: workoutId,
+        trainerId: trainerProfile.id,
+      },
+    });
 
   if (!workout) {
-    const error = new Error("Rutina no encontrada");
+    const error = new Error(
+      "Rutina no encontrada"
+    );
+
     error.statusCode = 404;
+
     throw error;
   }
 
-  const workoutExercise = await prisma.workoutPlanExercise.findFirst({
-    where: {
-      id: workoutExerciseId,
-      workoutPlanId: workoutId,
-    },
-  });
+  const workoutExercise =
+    await prisma.workoutPlanExercise.findFirst({
+      where: {
+        id: workoutExerciseId,
+        workoutPlanId: workoutId,
+      },
+    });
 
   if (!workoutExercise) {
-    const error = new Error("Ejercicio de rutina no encontrado");
+    const error = new Error(
+      "Ejercicio de rutina no encontrado"
+    );
+
     error.statusCode = 404;
+
     throw error;
   }
 
@@ -282,5 +485,6 @@ module.exports = {
   addExerciseToWorkout,
   getWorkoutExercises,
   updateWorkoutExercise,
+  reorderWorkoutExercises,
   removeWorkoutExercise,
 };

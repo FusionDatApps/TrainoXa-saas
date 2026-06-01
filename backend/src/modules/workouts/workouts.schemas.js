@@ -22,8 +22,20 @@ const updateExerciseSchema = z.object({
   notes: z.string().optional(),
 });
 
+const reorderExercisesSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        id: z.string(),
+        exerciseOrder: z.number().int().positive(),
+      })
+    )
+    .min(1),
+});
+
 module.exports = {
   createWorkoutSchema,
   addExerciseSchema,
   updateExerciseSchema,
+  reorderExercisesSchema,
 };

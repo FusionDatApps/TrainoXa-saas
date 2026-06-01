@@ -15,6 +15,11 @@ router.post("/:id/exercises", controller.addExercise);
 router.get("/:id/exercises", controller.listExercises);
 
 router.patch(
+  "/:id/exercises/reorder",
+  controller.reorderExercises
+);
+
+router.patch(
   "/:id/exercises/:itemId",
   controller.updateExercise
 );

@@ -5,6 +5,7 @@
   addExerciseToWorkout,
   getWorkoutExercises,
   updateWorkoutExercise,
+  reorderWorkoutExercises,
   removeWorkoutExercise,
 } = require("./workouts.service");
 
@@ -12,11 +13,13 @@ const {
   createWorkoutSchema,
   addExerciseSchema,
   updateExerciseSchema,
+  reorderExercisesSchema,
 } = require("./workouts.schemas");
 
 async function create(req, res) {
   try {
-    const parsed = createWorkoutSchema.parse(req.body);
+    const parsed =
+      createWorkoutSchema.parse(req.body);
 
     const workout = await createWorkout({
       authUser: req.user,
@@ -29,35 +32,46 @@ async function create(req, res) {
       data: workout,
     });
   } catch (error) {
-    return res.status(error.statusCode || 400).json({
-      ok: false,
-      message: error.message || "Error al crear rutina",
-    });
+    return res
+      .status(error.statusCode || 400)
+      .json({
+        ok: false,
+        message:
+          error.message ||
+          "Error al crear rutina",
+      });
   }
 }
 
 async function list(req, res) {
   try {
-    const workouts = await getWorkouts(req.user);
+    const workouts = await getWorkouts(
+      req.user
+    );
 
     return res.json({
       ok: true,
       data: workouts,
     });
   } catch (error) {
-    return res.status(error.statusCode || 400).json({
-      ok: false,
-      message: error.message || "Error al listar rutinas",
-    });
+    return res
+      .status(error.statusCode || 400)
+      .json({
+        ok: false,
+        message:
+          error.message ||
+          "Error al listar rutinas",
+      });
   }
 }
 
 async function getById(req, res) {
   try {
-    const workout = await getWorkoutById({
-      authUser: req.user,
-      workoutId: req.params.id,
-    });
+    const workout =
+      await getWorkoutById({
+        authUser: req.user,
+        workoutId: req.params.id,
+      });
 
     if (!workout) {
       return res.status(404).json({
@@ -71,22 +85,28 @@ async function getById(req, res) {
       data: workout,
     });
   } catch (error) {
-    return res.status(error.statusCode || 400).json({
-      ok: false,
-      message: error.message || "Error al obtener rutina",
-    });
+    return res
+      .status(error.statusCode || 400)
+      .json({
+        ok: false,
+        message:
+          error.message ||
+          "Error al obtener rutina",
+      });
   }
 }
 
 async function addExercise(req, res) {
   try {
-    const parsed = addExerciseSchema.parse(req.body);
+    const parsed =
+      addExerciseSchema.parse(req.body);
 
-    const item = await addExerciseToWorkout({
-      authUser: req.user,
-      workoutId: req.params.id,
-      data: parsed,
-    });
+    const item =
+      await addExerciseToWorkout({
+        authUser: req.user,
+        workoutId: req.params.id,
+        data: parsed,
+      });
 
     return res.status(201).json({
       ok: true,
@@ -94,74 +114,133 @@ async function addExercise(req, res) {
       data: item,
     });
   } catch (error) {
-    return res.status(error.statusCode || 400).json({
-      ok: false,
-      message: error.message || "Error al agregar ejercicio",
-    });
+    return res
+      .status(error.statusCode || 400)
+      .json({
+        ok: false,
+        message:
+          error.message ||
+          "Error al agregar ejercicio",
+      });
   }
 }
 
 async function listExercises(req, res) {
   try {
-    const items = await getWorkoutExercises({
-      authUser: req.user,
-      workoutId: req.params.id,
-    });
+    const items =
+      await getWorkoutExercises({
+        authUser: req.user,
+        workoutId: req.params.id,
+      });
 
     return res.json({
       ok: true,
       data: items,
     });
   } catch (error) {
-    return res.status(error.statusCode || 400).json({
-      ok: false,
-      message: error.message || "Error al listar ejercicios de la rutina",
-    });
+    return res
+      .status(error.statusCode || 400)
+      .json({
+        ok: false,
+        message:
+          error.message ||
+          "Error al listar ejercicios de la rutina",
+      });
   }
 }
 
 async function updateExercise(req, res) {
   try {
-    const parsed = updateExerciseSchema.parse(req.body);
+    const parsed =
+      updateExerciseSchema.parse(req.body);
 
-    const item = await updateWorkoutExercise({
-      authUser: req.user,
-      workoutId: req.params.id,
-      workoutExerciseId: req.params.itemId,
-      data: parsed,
-    });
+    const item =
+      await updateWorkoutExercise({
+        authUser: req.user,
+        workoutId: req.params.id,
+        workoutExerciseId:
+          req.params.itemId,
+        data: parsed,
+      });
 
     return res.json({
       ok: true,
-      message: "Ejercicio actualizado",
+      message:
+        "Ejercicio actualizado",
       data: item,
     });
   } catch (error) {
-    return res.status(error.statusCode || 400).json({
-      ok: false,
-      message: error.message || "Error al actualizar ejercicio",
+    return res
+      .status(error.statusCode || 400)
+      .json({
+        ok: false,
+        message:
+          error.message ||
+          "Error al actualizar ejercicio",
+      });
+  }
+}
+
+async function reorderExercises(
+  req,
+  res
+) {
+  try {
+    const parsed =
+      reorderExercisesSchema.parse(
+        req.body
+      );
+
+    const items =
+      await reorderWorkoutExercises({
+        authUser: req.user,
+        workoutId: req.params.id,
+        items: parsed.items,
+      });
+
+    return res.json({
+      ok: true,
+      message:
+        "Orden actualizado correctamente",
+      data: items,
     });
+  } catch (error) {
+    return res
+      .status(error.statusCode || 400)
+      .json({
+        ok: false,
+        message:
+          error.message ||
+          "Error al reorganizar ejercicios",
+      });
   }
 }
 
 async function removeExercise(req, res) {
   try {
-    const result = await removeWorkoutExercise({
-      authUser: req.user,
-      workoutId: req.params.id,
-      workoutExerciseId: req.params.itemId,
-    });
+    const result =
+      await removeWorkoutExercise({
+        authUser: req.user,
+        workoutId: req.params.id,
+        workoutExerciseId:
+          req.params.itemId,
+      });
 
     return res.json({
       ok: true,
-      message: "Ejercicio eliminado de la rutina",
+      message:
+        "Ejercicio eliminado de la rutina",
       data: result,
     });
   } catch (error) {
-    return res.status(error.statusCode || 400).json({
-      ok: false,
-      message: error.message || "Error al eliminar ejercicio de la rutina",
-    });
+    return res
+      .status(error.statusCode || 400)
+      .json({
+        ok: false,
+        message:
+          error.message ||
+          "Error al eliminar ejercicio de la rutina",
+      });
   }
 }
 
@@ -172,5 +251,6 @@ module.exports = {
   addExercise,
   listExercises,
   updateExercise,
+  reorderExercises,
   removeExercise,
 };

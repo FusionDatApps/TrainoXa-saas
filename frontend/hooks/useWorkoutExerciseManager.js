@@ -72,6 +72,21 @@ export default function useWorkoutExerciseManager({
     });
   }
 
+  async function reorderWorkoutExercisesRequest({
+    workoutId,
+    items,
+  }) {
+    return apiFetch(
+      `/workouts/${workoutId}/exercises/reorder`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          items,
+        }),
+      }
+    );
+  }
+
   async function removeWorkoutExerciseRequest({
     workoutId,
     itemId,
@@ -85,11 +100,16 @@ export default function useWorkoutExerciseManager({
     const form = selectedExercises[workoutId];
 
     if (!form || !form.exerciseId) {
-      setWorkoutFeedback(workoutId, "error", "Debes seleccionar un ejercicio");
+      setWorkoutFeedback(
+        workoutId,
+        "error",
+        "Debes seleccionar un ejercicio"
+      );
 
       toast?.warning({
         title: "Selecciona un ejercicio",
-        message: "Debes elegir un ejercicio antes de agregarlo.",
+        message:
+          "Debes elegir un ejercicio antes de agregarlo.",
       });
 
       return;
@@ -100,7 +120,11 @@ export default function useWorkoutExerciseManager({
     );
 
     const currentItems = workoutExercises[workoutId] || [];
-    const nextOrder = Number(form.exerciseOrder || currentItems.length + 1);
+
+    const nextOrder = Number(
+      form.exerciseOrder || currentItems.length + 1
+    );
+
     const tempItemId = `temp-workout-exercise-${Date.now()}`;
 
     const optimisticItem = {
@@ -128,7 +152,10 @@ export default function useWorkoutExerciseManager({
 
     setWorkoutExercises((prev) => ({
       ...prev,
-      [workoutId]: [...(prev[workoutId] || []), optimisticItem],
+      [workoutId]: [
+        ...(prev[workoutId] || []),
+        optimisticItem,
+      ],
     }));
 
     setSelectedExercises((prev) => ({
@@ -174,19 +201,27 @@ export default function useWorkoutExerciseManager({
         await loadWorkoutExercises(workoutId);
       }
 
-      setWorkoutFeedback(workoutId, "success", "Ejercicio agregado correctamente");
+      setWorkoutFeedback(
+        workoutId,
+        "success",
+        "Ejercicio agregado correctamente"
+      );
 
       toast?.success({
         title: "Ejercicio agregado",
-        message: "El ejercicio fue agregado correctamente a la rutina.",
+        message:
+          "El ejercicio fue agregado correctamente a la rutina.",
       });
     } catch (err) {
       const message =
-        err.message === "Este ejercicio ya fue agregado a la rutina"
+        err.message ===
+        "Este ejercicio ya fue agregado a la rutina"
           ? "Ese ejercicio ya existe dentro de la rutina"
-          : err.message === "Ya existe un ejercicio con ese orden dentro de la rutina"
+          : err.message ===
+              "Ya existe un ejercicio con ese orden dentro de la rutina"
             ? "Ese numero de orden ya esta ocupado"
-            : err.message || "No se pudo agregar el ejercicio";
+            : err.message ||
+              "No se pudo agregar el ejercicio";
 
       setWorkoutExercises((prev) => ({
         ...prev,
@@ -212,7 +247,8 @@ export default function useWorkoutExerciseManager({
     itemId,
     payload,
   }) {
-    const previousItems = workoutExercises[workoutId] || [];
+    const previousItems =
+      workoutExercises[workoutId] || [];
 
     setUpdatingExercise((prev) => ({
       ...prev,
@@ -225,10 +261,12 @@ export default function useWorkoutExerciseManager({
         item.id === itemId
           ? {
               ...item,
-              exerciseOrder: payload.exerciseOrder,
+              exerciseOrder:
+                payload.exerciseOrder,
               sets: payload.sets,
               reps: payload.reps,
-              restSeconds: payload.restSeconds,
+              restSeconds:
+                payload.restSeconds,
               notes: payload.notes,
               updating: true,
             }
@@ -237,11 +275,12 @@ export default function useWorkoutExerciseManager({
     }));
 
     try {
-      const res = await updateWorkoutExerciseRequest({
-        workoutId,
-        itemId,
-        payload,
-      });
+      const res =
+        await updateWorkoutExerciseRequest({
+          workoutId,
+          itemId,
+          payload,
+        });
 
       const updatedItem = res?.data;
 
@@ -257,30 +296,45 @@ export default function useWorkoutExerciseManager({
                   }
                 : item
             )
-            .sort((a, b) => a.exerciseOrder - b.exerciseOrder),
+            .sort(
+              (a, b) =>
+                a.exerciseOrder -
+                b.exerciseOrder
+            ),
         }));
       } else {
         await loadWorkoutExercises(workoutId);
       }
 
-      setWorkoutFeedback(workoutId, "success", "Ejercicio actualizado correctamente");
+      setWorkoutFeedback(
+        workoutId,
+        "success",
+        "Ejercicio actualizado correctamente"
+      );
 
       toast?.success({
         title: "Ejercicio actualizado",
-        message: "Los cambios fueron guardados correctamente.",
+        message:
+          "Los cambios fueron guardados correctamente.",
       });
     } catch (err) {
       const message =
-        err.message === "Ya existe un ejercicio con ese orden dentro de la rutina"
+        err.message ===
+        "Ya existe un ejercicio con ese orden dentro de la rutina"
           ? "Ese numero de orden ya esta ocupado"
-          : err.message || "No se pudo actualizar el ejercicio";
+          : err.message ||
+            "No se pudo actualizar el ejercicio";
 
       setWorkoutExercises((prev) => ({
         ...prev,
         [workoutId]: previousItems,
       }));
 
-      setWorkoutFeedback(workoutId, "error", message);
+      setWorkoutFeedback(
+        workoutId,
+        "error",
+        message
+      );
 
       toast?.error({
         title: "No se pudo actualizar",
@@ -296,16 +350,73 @@ export default function useWorkoutExerciseManager({
     }
   }
 
+  async function handleReorderExercises({
+    workoutId,
+    reorderedItems,
+  }) {
+    const previousItems =
+      workoutExercises[workoutId] || [];
+
+    setWorkoutExercises((prev) => ({
+      ...prev,
+      [workoutId]: reorderedItems,
+    }));
+
+    try {
+      const res =
+        await reorderWorkoutExercisesRequest({
+          workoutId,
+          items: reorderedItems.map((item) => ({
+            id: item.id,
+            exerciseOrder:
+              item.exerciseOrder,
+          })),
+        });
+
+      const updatedItems = res?.data || [];
+
+      setWorkoutExercises((prev) => ({
+        ...prev,
+        [workoutId]: updatedItems,
+      }));
+
+      toast?.success({
+        title: "Orden actualizado",
+        message:
+          "Los ejercicios fueron reorganizados correctamente.",
+      });
+    } catch (err) {
+      setWorkoutExercises((prev) => ({
+        ...prev,
+        [workoutId]: previousItems,
+      }));
+
+      toast?.error({
+        title: "No se pudo reorganizar",
+        message:
+          err.message ||
+          "Error actualizando el orden.",
+      });
+    }
+  }
+
   async function handleMoveExercise({
     workoutId,
     itemId,
     direction,
   }) {
-    const currentItems = [...(workoutExercises[workoutId] || [])].sort(
-      (a, b) => a.exerciseOrder - b.exerciseOrder
+    const currentItems = [
+      ...(workoutExercises[workoutId] || []),
+    ].sort(
+      (a, b) =>
+        a.exerciseOrder -
+        b.exerciseOrder
     );
 
-    const currentIndex = currentItems.findIndex((item) => item.id === itemId);
+    const currentIndex =
+      currentItems.findIndex(
+        (item) => item.id === itemId
+      );
 
     if (currentIndex === -1) {
       return;
@@ -316,98 +427,39 @@ export default function useWorkoutExerciseManager({
         ? currentIndex - 1
         : currentIndex + 1;
 
-    if (targetIndex < 0 || targetIndex >= currentItems.length) {
+    if (
+      targetIndex < 0 ||
+      targetIndex >= currentItems.length
+    ) {
       return;
     }
 
-    const sourceItem = currentItems[currentIndex];
-    const targetItem = currentItems[targetIndex];
-    const previousItems = [...currentItems];
+    const reordered = [...currentItems];
 
-    const reordered = currentItems
-      .map((item) => {
-        if (item.id === sourceItem.id) {
-          return {
-            ...item,
-            exerciseOrder: targetItem.exerciseOrder,
-            updating: true,
-          };
-        }
+    const [movedItem] = reordered.splice(
+      currentIndex,
+      1
+    );
 
-        if (item.id === targetItem.id) {
-          return {
-            ...item,
-            exerciseOrder: sourceItem.exerciseOrder,
-            updating: true,
-          };
-        }
+    reordered.splice(targetIndex, 0, movedItem);
 
-        return item;
+    const normalized = reordered.map(
+      (item, index) => ({
+        ...item,
+        exerciseOrder: index + 1,
       })
-      .sort((a, b) => a.exerciseOrder - b.exerciseOrder);
+    );
 
-    setWorkoutExercises((prev) => ({
-      ...prev,
-      [workoutId]: reordered,
-    }));
-
-    setUpdatingExercise((prev) => ({
-      ...prev,
-      [sourceItem.id]: true,
-      [targetItem.id]: true,
-    }));
-
-    try {
-      await updateWorkoutExerciseRequest({
-        workoutId,
-        itemId: sourceItem.id,
-        payload: {
-          exerciseOrder: targetItem.exerciseOrder,
-          sets: sourceItem.sets,
-          reps: sourceItem.reps,
-          restSeconds: sourceItem.restSeconds || 0,
-          notes: sourceItem.notes || "",
-        },
-      });
-
-      await updateWorkoutExerciseRequest({
-        workoutId,
-        itemId: targetItem.id,
-        payload: {
-          exerciseOrder: sourceItem.exerciseOrder,
-          sets: targetItem.sets,
-          reps: targetItem.reps,
-          restSeconds: targetItem.restSeconds || 0,
-          notes: targetItem.notes || "",
-        },
-      });
-
-      await loadWorkoutExercises(workoutId);
-
-      toast?.success({
-        title: "Orden actualizado",
-        message: "La posicion del ejercicio fue actualizada.",
-      });
-    } catch (err) {
-      setWorkoutExercises((prev) => ({
-        ...prev,
-        [workoutId]: previousItems,
-      }));
-
-      toast?.error({
-        title: "No se pudo mover",
-        message: err.message || "No fue posible actualizar el orden.",
-      });
-    } finally {
-      setUpdatingExercise((prev) => ({
-        ...prev,
-        [sourceItem.id]: false,
-        [targetItem.id]: false,
-      }));
-    }
+    await handleReorderExercises({
+      workoutId,
+      reorderedItems: normalized,
+    });
   }
 
-  function requestRemoveExercise(workoutId, itemId) {
+  function requestRemoveExercise(
+    workoutId,
+    itemId
+  ) {
     setPendingRemoveExercise({
       workoutId,
       itemId,
@@ -419,8 +471,11 @@ export default function useWorkoutExerciseManager({
       return;
     }
 
-    const { workoutId, itemId } = pendingRemoveExercise;
-    const previousItems = workoutExercises[workoutId] || [];
+    const { workoutId, itemId } =
+      pendingRemoveExercise;
+
+    const previousItems =
+      workoutExercises[workoutId] || [];
 
     setPendingRemoveExercise(null);
 
@@ -431,7 +486,11 @@ export default function useWorkoutExerciseManager({
 
     setWorkoutExercises((prev) => ({
       ...prev,
-      [workoutId]: (prev[workoutId] || []).filter((item) => item.id !== itemId),
+      [workoutId]: (
+        prev[workoutId] || []
+      ).filter(
+        (item) => item.id !== itemId
+      ),
     }));
 
     try {
@@ -440,22 +499,32 @@ export default function useWorkoutExerciseManager({
         itemId,
       });
 
-      setWorkoutFeedback(workoutId, "success", "Ejercicio eliminado correctamente");
+      setWorkoutFeedback(
+        workoutId,
+        "success",
+        "Ejercicio eliminado correctamente"
+      );
 
       toast?.success({
         title: "Ejercicio eliminado",
-        message: "El ejercicio fue eliminado correctamente de la rutina.",
+        message:
+          "El ejercicio fue eliminado correctamente de la rutina.",
       });
     } catch (err) {
       const message =
-        err.message || "No se pudo eliminar el ejercicio de la rutina";
+        err.message ||
+        "No se pudo eliminar el ejercicio de la rutina";
 
       setWorkoutExercises((prev) => ({
         ...prev,
         [workoutId]: previousItems,
       }));
 
-      setWorkoutFeedback(workoutId, "error", message);
+      setWorkoutFeedback(
+        workoutId,
+        "error",
+        message
+      );
 
       toast?.error({
         title: "No se pudo eliminar",
@@ -485,6 +554,7 @@ export default function useWorkoutExerciseManager({
     updateWorkoutExerciseForm,
     handleAddExercise,
     handleUpdateExercise,
+    handleReorderExercises,
     handleMoveExercise,
     requestRemoveExercise,
     confirmRemoveExercise,
