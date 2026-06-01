@@ -39,7 +39,7 @@ import WorkoutAnalyticsCard from "../../components/workouts/WorkoutAnalyticsCard
 import WorkoutExerciseForm from "../../components/workouts/WorkoutExerciseForm";
 
 import useMutation from "../../hooks/useMutation";
-import useItemFeedback from "../../hooks/useItemFeedback";
+import useWorkoutExerciseManager from "../../hooks/useWorkoutExerciseManager";
 
 import { uiStyles } from "../../lib/ui-styles";
 import { theme } from "../../lib/theme";
@@ -61,13 +61,6 @@ export default function WorkoutsPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
 
-  const [selectedExercises, setSelectedExercises] = useState({});
-  const [workoutExercises, setWorkoutExercises] = useState({});
-  const [addingExercise, setAddingExercise] = useState({});
-  const [updatingExercise, setUpdatingExercise] = useState({});
-  const [removingExercise, setRemovingExercise] = useState({});
-  const [exerciseFeedback, setExerciseFeedback] = useState({});
-  const [pendingRemoveExercise, setPendingRemoveExercise] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedWorkoutId, setSelectedWorkoutId] = useState(null);
 
@@ -84,34 +77,27 @@ export default function WorkoutsPage() {
     });
   });
 
-  const { mutate: addWorkoutExercise } =
-    useMutation(async ({ workoutId, payload }) => {
-      return apiFetch(`/workouts/${workoutId}/exercises`, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-    });
-
-  const { mutate: updateWorkoutExercise } =
-    useMutation(async ({ workoutId, itemId, payload }) => {
-      return apiFetch(`/workouts/${workoutId}/exercises/${itemId}`, {
-        method: "PATCH",
-        body: JSON.stringify(payload),
-      });
-    });
-
-  const { mutate: removeWorkoutExercise } =
-    useMutation(async ({ workoutId, itemId }) => {
-      return apiFetch(`/workouts/${workoutId}/exercises/${itemId}`, {
-        method: "DELETE",
-      });
-    });
-
   const {
-    setSuccess,
-    setError,
-    clearFeedback,
-  } = useItemFeedback();
+    selectedExercises,
+    workoutExercises,
+    setWorkoutExercises,
+    addingExercise,
+    updatingExercise,
+    removingExercise,
+    exerciseFeedback,
+    pendingRemoveExercise,
+    setPendingRemoveExercise,
+    loadWorkoutExercises,
+    updateWorkoutExerciseForm,
+    handleAddExercise,
+    handleUpdateExercise,
+    handleMoveExercise,
+    requestRemoveExercise,
+    confirmRemoveExercise,
+  } = useWorkoutExerciseManager({
+    exercises,
+    toast,
+  });
 
   const analytics = useMemo(() => {
     return buildWorkoutMetrics({
@@ -121,7 +107,9 @@ export default function WorkoutsPage() {
   }, [workouts, workoutExercises]);
 
   const selectedWorkout = useMemo(() => {
-    return workouts.find((workout) => workout.id === selectedWorkoutId) || null;
+    return workouts.find(
+      (workout) => workout.id === selectedWorkoutId
+    ) || null;
   }, [workouts, selectedWorkoutId]);
 
   const filteredWorkouts = useMemo(() => {
@@ -156,31 +144,6 @@ export default function WorkoutsPage() {
     ? selectedExercises[selectedWorkout.id] || {}
     : {};
 
-  const setWorkoutFeedback = useCallback((workoutId, type, message) => {
-    setExerciseFeedback((prev) => ({
-      ...prev,
-      [workoutId]: {
-        type,
-        message,
-      },
-    }));
-  }, []);
-
-  const loadWorkoutExercises = useCallback(async (workoutId) => {
-    try {
-      const res = await apiFetch(`/workouts/${workoutId}/exercises`);
-
-      setWorkoutExercises((prev) => ({
-        ...prev,
-        [workoutId]: (res.data || []).sort(
-          (a, b) => a.exerciseOrder - b.exerciseOrder
-        ),
-      }));
-    } catch (err) {
-      console.error("Error cargando ejercicios de rutina:", err.message);
-    }
-  }, []);
-
   const loadWorkouts = useCallback(async () => {
     try {
       const res = await apiFetch("/workouts");
@@ -190,10 +153,15 @@ export default function WorkoutsPage() {
       setWorkouts(data);
 
       await Promise.all(
-        data.map((workout) => loadWorkoutExercises(workout.id))
+        data.map((workout) =>
+          loadWorkoutExercises(workout.id)
+        )
       );
     } catch (err) {
-      console.error("Error cargando rutinas:", err.message);
+      console.error(
+        "Error cargando rutinas:",
+        err.message
+      );
     } finally {
       setLoading(false);
     }
@@ -205,7 +173,10 @@ export default function WorkoutsPage() {
 
       setExercises(res.data || []);
     } catch (err) {
-      console.error("Error cargando ejercicios:", err.message);
+      console.error(
+        "Error cargando ejercicios:",
+        err.message
+      );
     }
   }, []);
 
@@ -227,7 +198,8 @@ export default function WorkoutsPage() {
     if (!trimmedName) {
       toast.warning({
         title: "Nombre requerido",
-        message: "Debes escribir el nombre de la rutina.",
+        message:
+          "Debes escribir el nombre de la rutina.",
       });
 
       return;
@@ -245,7 +217,10 @@ export default function WorkoutsPage() {
       optimistic: true,
     };
 
-    setWorkouts((prev) => [optimisticWorkout, ...prev]);
+    setWorkouts((prev) => [
+      optimisticWorkout,
+      ...prev,
+    ]);
 
     setWorkoutExercises((prev) => ({
       ...prev,
@@ -259,7 +234,8 @@ export default function WorkoutsPage() {
     try {
       const res = await createWorkout({
         name: trimmedName,
-        description: trimmedDescription || undefined,
+        description:
+          trimmedDescription || undefined,
       });
 
       const createdWorkout = res?.data;
@@ -277,28 +253,42 @@ export default function WorkoutsPage() {
         );
 
         setWorkoutExercises((prev) => {
-          const { [tempId]: tempItems, ...rest } = prev;
+          const {
+            [tempId]: tempItems,
+            ...rest
+          } = prev;
 
           return {
             ...rest,
-            [createdWorkout.id]: tempItems || [],
+            [createdWorkout.id]:
+              tempItems || [],
           };
         });
       } else {
         await loadWorkouts();
       }
 
-      setSuccessMessage("Rutina creada correctamente");
+      setSuccessMessage(
+        "Rutina creada correctamente"
+      );
 
       toast.success({
         title: "Rutina creada",
-        message: "La rutina fue creada correctamente.",
+        message:
+          "La rutina fue creada correctamente.",
       });
     } catch (err) {
-      setWorkouts((prev) => prev.filter((workout) => workout.id !== tempId));
+      setWorkouts((prev) =>
+        prev.filter(
+          (workout) => workout.id !== tempId
+        )
+      );
 
       setWorkoutExercises((prev) => {
-        const { [tempId]: _removed, ...rest } = prev;
+        const {
+          [tempId]: _removed,
+          ...rest
+        } = prev;
 
         return rest;
       });
@@ -310,408 +300,6 @@ export default function WorkoutsPage() {
     }
   }
 
-  async function handleAddExercise(workoutId) {
-    const form = selectedExercises[workoutId];
-
-    if (!form || !form.exerciseId) {
-      setWorkoutFeedback(workoutId, "error", "Debes seleccionar un ejercicio");
-
-      toast.warning({
-        title: "Selecciona un ejercicio",
-        message: "Debes elegir un ejercicio antes de agregarlo.",
-      });
-
-      return;
-    }
-
-    const selectedExercise = exercises.find(
-      (exercise) => exercise.id === form.exerciseId
-    );
-
-    const currentItems = workoutExercises[workoutId] || [];
-    const nextOrder = Number(form.exerciseOrder || currentItems.length + 1);
-    const tempItemId = `temp-workout-exercise-${Date.now()}`;
-
-    const optimisticItem = {
-      id: tempItemId,
-      workoutId,
-      exerciseId: form.exerciseId,
-      exerciseOrder: nextOrder,
-      sets: Number(form.sets || 4),
-      reps: form.reps || "12",
-      restSeconds: Number(form.restSeconds || 60),
-      notes: form.notes || "",
-      exercise: selectedExercise || {
-        id: form.exerciseId,
-        name: "Ejercicio seleccionado",
-      },
-      optimistic: true,
-    };
-
-    const previousItems = currentItems;
-
-    setAddingExercise((prev) => ({
-      ...prev,
-      [workoutId]: true,
-    }));
-
-    clearFeedback();
-
-    setWorkoutExercises((prev) => ({
-      ...prev,
-      [workoutId]: [...(prev[workoutId] || []), optimisticItem],
-    }));
-
-    setSelectedExercises((prev) => ({
-      ...prev,
-      [workoutId]: {
-        exerciseId: "",
-        exerciseOrder: currentItems.length + 2,
-        sets: 4,
-        reps: "12",
-        restSeconds: 60,
-        notes: "",
-      },
-    }));
-
-    try {
-      const res = await addWorkoutExercise({
-        workoutId,
-        payload: {
-          exerciseId: form.exerciseId,
-          exerciseOrder: nextOrder,
-          sets: Number(form.sets || 4),
-          reps: form.reps || "12",
-          restSeconds: Number(form.restSeconds || 60),
-          notes: form.notes || "",
-        },
-      });
-
-      const createdItem = res?.data;
-
-      if (createdItem?.id) {
-        setWorkoutExercises((prev) => ({
-          ...prev,
-          [workoutId]: (prev[workoutId] || []).map((item) =>
-            item.id === tempItemId
-              ? {
-                  ...createdItem,
-                  optimistic: false,
-                }
-              : item
-          ),
-        }));
-      } else {
-        await loadWorkoutExercises(workoutId);
-      }
-
-      setSuccess("Ejercicio agregado correctamente");
-      setWorkoutFeedback(workoutId, "success", "Ejercicio agregado correctamente");
-
-      toast.success({
-        title: "Ejercicio agregado",
-        message: "El ejercicio fue agregado correctamente a la rutina.",
-      });
-    } catch (err) {
-      const message =
-        err.message === "Este ejercicio ya fue agregado a la rutina"
-          ? "Ese ejercicio ya existe dentro de la rutina"
-          : err.message === "Ya existe un ejercicio con ese orden dentro de la rutina"
-            ? "Ese numero de orden ya esta ocupado"
-            : err.message || "No se pudo agregar el ejercicio";
-
-      setWorkoutExercises((prev) => ({
-        ...prev,
-        [workoutId]: previousItems,
-      }));
-
-      setError(message);
-      setWorkoutFeedback(workoutId, "error", message);
-
-      toast.error({
-        title: "No se pudo agregar",
-        message,
-      });
-    } finally {
-      setAddingExercise((prev) => ({
-        ...prev,
-        [workoutId]: false,
-      }));
-    }
-  }
-
-  async function handleUpdateExercise({ workoutId, itemId, payload }) {
-    const previousItems = workoutExercises[workoutId] || [];
-
-    setUpdatingExercise((prev) => ({
-      ...prev,
-      [itemId]: true,
-    }));
-
-    setWorkoutExercises((prev) => ({
-      ...prev,
-      [workoutId]: (prev[workoutId] || []).map((item) =>
-        item.id === itemId
-          ? {
-              ...item,
-              exerciseOrder: payload.exerciseOrder,
-              sets: payload.sets,
-              reps: payload.reps,
-              restSeconds: payload.restSeconds,
-              notes: payload.notes,
-              updating: true,
-            }
-          : item
-      ),
-    }));
-
-    try {
-      const res = await updateWorkoutExercise({
-        workoutId,
-        itemId,
-        payload,
-      });
-
-      const updatedItem = res?.data;
-
-      if (updatedItem?.id) {
-        setWorkoutExercises((prev) => ({
-          ...prev,
-          [workoutId]: (prev[workoutId] || [])
-            .map((item) =>
-              item.id === itemId
-                ? {
-                    ...updatedItem,
-                    updating: false,
-                  }
-                : item
-            )
-            .sort((a, b) => a.exerciseOrder - b.exerciseOrder),
-        }));
-      } else {
-        await loadWorkoutExercises(workoutId);
-      }
-
-      setSuccess("Ejercicio actualizado correctamente");
-      setWorkoutFeedback(workoutId, "success", "Ejercicio actualizado correctamente");
-
-      toast.success({
-        title: "Ejercicio actualizado",
-        message: "Los cambios fueron guardados correctamente.",
-      });
-    } catch (err) {
-      const message =
-        err.message === "Ya existe un ejercicio con ese orden dentro de la rutina"
-          ? "Ese numero de orden ya esta ocupado"
-          : err.message || "No se pudo actualizar el ejercicio";
-
-      setWorkoutExercises((prev) => ({
-        ...prev,
-        [workoutId]: previousItems,
-      }));
-
-      setError(message);
-      setWorkoutFeedback(workoutId, "error", message);
-
-      toast.error({
-        title: "No se pudo actualizar",
-        message,
-      });
-
-      throw err;
-    } finally {
-      setUpdatingExercise((prev) => ({
-        ...prev,
-        [itemId]: false,
-      }));
-    }
-  }
-
-  async function handleMoveExercise({
-    workoutId,
-    itemId,
-    direction,
-  }) {
-    const currentItems = [...(workoutExercises[workoutId] || [])].sort(
-      (a, b) => a.exerciseOrder - b.exerciseOrder
-    );
-
-    const currentIndex = currentItems.findIndex((item) => item.id === itemId);
-
-    if (currentIndex === -1) {
-      return;
-    }
-
-    const targetIndex =
-      direction === "up"
-        ? currentIndex - 1
-        : currentIndex + 1;
-
-    if (targetIndex < 0 || targetIndex >= currentItems.length) {
-      return;
-    }
-
-    const sourceItem = currentItems[currentIndex];
-    const targetItem = currentItems[targetIndex];
-    const previousItems = [...currentItems];
-
-    const reordered = currentItems
-      .map((item) => {
-        if (item.id === sourceItem.id) {
-          return {
-            ...item,
-            exerciseOrder: targetItem.exerciseOrder,
-            updating: true,
-          };
-        }
-
-        if (item.id === targetItem.id) {
-          return {
-            ...item,
-            exerciseOrder: sourceItem.exerciseOrder,
-            updating: true,
-          };
-        }
-
-        return item;
-      })
-      .sort((a, b) => a.exerciseOrder - b.exerciseOrder);
-
-    setWorkoutExercises((prev) => ({
-      ...prev,
-      [workoutId]: reordered,
-    }));
-
-    setUpdatingExercise((prev) => ({
-      ...prev,
-      [sourceItem.id]: true,
-      [targetItem.id]: true,
-    }));
-
-    try {
-      await updateWorkoutExercise({
-        workoutId,
-        itemId: sourceItem.id,
-        payload: {
-          exerciseOrder: targetItem.exerciseOrder,
-          sets: sourceItem.sets,
-          reps: sourceItem.reps,
-          restSeconds: sourceItem.restSeconds || 0,
-          notes: sourceItem.notes || "",
-        },
-      });
-
-      await updateWorkoutExercise({
-        workoutId,
-        itemId: targetItem.id,
-        payload: {
-          exerciseOrder: sourceItem.exerciseOrder,
-          sets: targetItem.sets,
-          reps: targetItem.reps,
-          restSeconds: targetItem.restSeconds || 0,
-          notes: targetItem.notes || "",
-        },
-      });
-
-      await loadWorkoutExercises(workoutId);
-
-      toast.success({
-        title: "Orden actualizado",
-        message: "La posicion del ejercicio fue actualizada.",
-      });
-    } catch (err) {
-      setWorkoutExercises((prev) => ({
-        ...prev,
-        [workoutId]: previousItems,
-      }));
-
-      toast.error({
-        title: "No se pudo mover",
-        message: err.message || "No fue posible actualizar el orden.",
-      });
-    } finally {
-      setUpdatingExercise((prev) => ({
-        ...prev,
-        [sourceItem.id]: false,
-        [targetItem.id]: false,
-      }));
-    }
-  }
-
-  function requestRemoveExercise(workoutId, itemId) {
-    setPendingRemoveExercise({
-      workoutId,
-      itemId,
-    });
-  }
-
-  async function confirmRemoveExercise() {
-    if (!pendingRemoveExercise) {
-      return;
-    }
-
-    const { workoutId, itemId } = pendingRemoveExercise;
-    const previousItems = workoutExercises[workoutId] || [];
-
-    setPendingRemoveExercise(null);
-
-    setRemovingExercise((prev) => ({
-      ...prev,
-      [itemId]: true,
-    }));
-
-    setWorkoutExercises((prev) => ({
-      ...prev,
-      [workoutId]: (prev[workoutId] || []).filter((item) => item.id !== itemId),
-    }));
-
-    try {
-      await removeWorkoutExercise({
-        workoutId,
-        itemId,
-      });
-
-      setSuccess("Ejercicio eliminado correctamente");
-      setWorkoutFeedback(workoutId, "success", "Ejercicio eliminado correctamente");
-
-      toast.success({
-        title: "Ejercicio eliminado",
-        message: "El ejercicio fue eliminado correctamente de la rutina.",
-      });
-    } catch (err) {
-      const message =
-        err.message || "No se pudo eliminar el ejercicio de la rutina";
-
-      setWorkoutExercises((prev) => ({
-        ...prev,
-        [workoutId]: previousItems,
-      }));
-
-      setError(message);
-      setWorkoutFeedback(workoutId, "error", message);
-
-      toast.error({
-        title: "No se pudo eliminar",
-        message,
-      });
-    } finally {
-      setRemovingExercise((prev) => ({
-        ...prev,
-        [itemId]: false,
-      }));
-    }
-  }
-
-  function updateWorkoutExerciseForm(workoutId, key, value) {
-    setSelectedExercises((prev) => ({
-      ...prev,
-      [workoutId]: {
-        ...prev[workoutId],
-        [key]: value,
-      },
-    }));
-  }
-
   function openWorkoutDrawer(workoutId) {
     setSelectedWorkoutId(workoutId);
   }
@@ -721,35 +309,65 @@ export default function WorkoutsPage() {
   }
 
   return (
-    <TrainerShell title="Rutinas" active="workouts">
+    <TrainerShell
+      title="Rutinas"
+      active="workouts"
+    >
       <PageContainer>
         <ContentStack gap={24}>
           <PageSection>
             <ContentStack gap={20}>
-              <InlineGroup justify="space-between" align="center">
+              <InlineGroup
+                justify="space-between"
+                align="center"
+              >
                 <PageHeader
                   eyebrow="Workout builder"
                   title="Workspace de rutinas"
                   description="Administra rutinas, ejercicios y analitica operacional."
                 />
 
-                <ActionButton onClick={() => setIsCreateModalOpen(true)}>
+                <ActionButton
+                  onClick={() =>
+                    setIsCreateModalOpen(true)
+                  }
+                >
                   Nueva rutina
                 </ActionButton>
               </InlineGroup>
 
               {loading ? (
-                <ResponsiveGrid min={220} gap={16}>
-                  <SkeletonCard compact height={140} />
-                  <SkeletonCard compact height={140} />
-                  <SkeletonCard compact height={140} />
-                  <SkeletonCard compact height={140} />
+                <ResponsiveGrid
+                  min={220}
+                  gap={16}
+                >
+                  <SkeletonCard
+                    compact
+                    height={140}
+                  />
+                  <SkeletonCard
+                    compact
+                    height={140}
+                  />
+                  <SkeletonCard
+                    compact
+                    height={140}
+                  />
+                  <SkeletonCard
+                    compact
+                    height={140}
+                  />
                 </ResponsiveGrid>
               ) : (
-                <ResponsiveGrid min={240} gap={16}>
+                <ResponsiveGrid
+                  min={240}
+                  gap={16}
+                >
                   <WorkoutAnalyticsCard
                     title="Rutinas totales"
-                    value={analytics.totalWorkouts}
+                    value={
+                      analytics.totalWorkouts
+                    }
                     trend={`${analytics.activeWorkouts} activas`}
                     description="Cantidad total de rutinas registradas en el sistema."
                     accent="#3b82f6"
@@ -757,7 +375,9 @@ export default function WorkoutsPage() {
 
                   <WorkoutAnalyticsCard
                     title="Ejercicios asignados"
-                    value={analytics.totalExercises}
+                    value={
+                      analytics.totalExercises
+                    }
                     trend="Carga operacional"
                     description="Ejercicios distribuidos dentro de todas las rutinas."
                     accent="#8b5cf6"
@@ -765,7 +385,9 @@ export default function WorkoutsPage() {
 
                   <WorkoutAnalyticsCard
                     title="Promedio ejercicios"
-                    value={analytics.averageExercisesPerWorkout}
+                    value={
+                      analytics.averageExercisesPerWorkout
+                    }
                     trend="Por rutina"
                     description="Promedio de ejercicios configurados por rutina."
                     accent="#22c55e"
@@ -773,8 +395,14 @@ export default function WorkoutsPage() {
 
                   <WorkoutAnalyticsCard
                     title="Rutina dominante"
-                    value={analytics.mostLoadedWorkout.count}
-                    trend={analytics.mostLoadedWorkout.name}
+                    value={
+                      analytics
+                        .mostLoadedWorkout.count
+                    }
+                    trend={
+                      analytics
+                        .mostLoadedWorkout.name
+                    }
                     description="Rutina con mayor cantidad de ejercicios asignados."
                     accent="#f59e0b"
                   />
@@ -790,27 +418,39 @@ export default function WorkoutsPage() {
                   title="Workspace operacional"
                   description="Busca, filtra y administra rutinas con sus ejercicios asociados."
                   searchValue={search}
-                  onSearchChange={(e) => setSearch(e.target.value)}
+                  onSearchChange={(e) =>
+                    setSearch(e.target.value)
+                  }
                   searchPlaceholder="Buscar rutina o descripcion..."
                 >
                   <InlineGroup gap={10}>
                     <FilterPill
                       active={filter === "all"}
-                      onClick={() => setFilter("all")}
+                      onClick={() =>
+                        setFilter("all")
+                      }
                     >
                       Todas
                     </FilterPill>
 
                     <FilterPill
-                      active={filter === "active"}
-                      onClick={() => setFilter("active")}
+                      active={
+                        filter === "active"
+                      }
+                      onClick={() =>
+                        setFilter("active")
+                      }
                     >
                       Activas
                     </FilterPill>
 
                     <FilterPill
-                      active={filter === "inactive"}
-                      onClick={() => setFilter("inactive")}
+                      active={
+                        filter === "inactive"
+                      }
+                      onClick={() =>
+                        setFilter("inactive")
+                      }
                     >
                       Inactivas
                     </FilterPill>
@@ -820,39 +460,60 @@ export default function WorkoutsPage() {
             >
               <ContentStack gap={24}>
                 <InlineGroup justify="space-between">
-                  <p style={styles.sectionEyebrow}>Builder operacional</p>
+                  <p style={styles.sectionEyebrow}>
+                    Builder operacional
+                  </p>
 
                   <Badge variant="default">
-                    {filteredWorkouts.length} rutinas
+                    {filteredWorkouts.length}{" "}
+                    rutinas
                   </Badge>
                 </InlineGroup>
 
                 <StateRenderer
                   loading={loading}
                   error={error}
-                  isEmpty={!loading && workouts.length === 0}
+                  isEmpty={
+                    !loading &&
+                    workouts.length === 0
+                  }
                   loadingVariant="grid"
                   skeletonCount={6}
                   skeletonHeight={260}
                   emptyMessage="Todavia no tienes rutinas registradas."
                 >
-                  {workouts.length > 0 && filteredWorkouts.length === 0 ? (
+                  {workouts.length > 0 &&
+                  filteredWorkouts.length ===
+                    0 ? (
                     <EmptySearchState />
                   ) : (
-                    <ResponsiveGrid min={340} gap={18}>
-                      {filteredWorkouts.map((workout) => {
-                        const assignedExercises =
-                          workoutExercises[workout.id] || [];
+                    <ResponsiveGrid
+                      min={340}
+                      gap={18}
+                    >
+                      {filteredWorkouts.map(
+                        (workout) => {
+                          const assignedExercises =
+                            workoutExercises[
+                              workout.id
+                            ] || [];
 
-                        return (
-                          <WorkoutSummaryCard
-                            key={workout.id}
-                            workout={workout}
-                            assignedExercises={assignedExercises}
-                            onManage={() => openWorkoutDrawer(workout.id)}
-                          />
-                        );
-                      })}
+                          return (
+                            <WorkoutSummaryCard
+                              key={workout.id}
+                              workout={workout}
+                              assignedExercises={
+                                assignedExercises
+                              }
+                              onManage={() =>
+                                openWorkoutDrawer(
+                                  workout.id
+                                )
+                              }
+                            />
+                          );
+                        }
+                      )}
                     </ResponsiveGrid>
                   )}
                 </StateRenderer>
@@ -864,35 +525,51 @@ export default function WorkoutsPage() {
 
       <Modal
         open={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        onClose={() =>
+          setIsCreateModalOpen(false)
+        }
         title="Crear rutina"
         description="Crea una nueva rutina operacional para tus clientes."
         size="md"
       >
-        <form onSubmit={handleSubmit} style={uiStyles.stack}>
+        <form
+          onSubmit={handleSubmit}
+          style={uiStyles.stack}
+        >
           <FormField
             label="Nombre de la rutina"
             placeholder="Ej: Push Pull Legs"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) =>
+              setName(e.target.value)
+            }
           />
 
           <FormField
             label="Descripcion"
             placeholder="Opcional"
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) =>
+              setDescription(e.target.value)
+            }
             textarea
           />
 
-          <FormActions loading={creating} submitText="Crear rutina" />
+          <FormActions
+            loading={creating}
+            submitText="Crear rutina"
+          />
 
           {error ? (
-            <FeedbackMessage variant="error">{error}</FeedbackMessage>
+            <FeedbackMessage variant="error">
+              {error}
+            </FeedbackMessage>
           ) : null}
 
           {success ? (
-            <FeedbackMessage variant="success">{success}</FeedbackMessage>
+            <FeedbackMessage variant="success">
+              {success}
+            </FeedbackMessage>
           ) : null}
         </form>
       </Modal>
@@ -900,26 +577,43 @@ export default function WorkoutsPage() {
       <Drawer
         open={Boolean(selectedWorkout)}
         onClose={closeWorkoutDrawer}
-        title={selectedWorkout?.name || "Gestionar rutina"}
-        description={selectedWorkout?.description || "Administra los ejercicios asignados a esta rutina."}
+        title={
+          selectedWorkout?.name ||
+          "Gestionar rutina"
+        }
+        description={
+          selectedWorkout?.description ||
+          "Administra los ejercicios asignados a esta rutina."
+        }
         width={720}
       >
         {selectedWorkout ? (
           <ContentStack gap={24}>
-            <ResponsiveGrid min={160} gap={12}>
+            <ResponsiveGrid
+              min={160}
+              gap={12}
+            >
               <div style={styles.infoBox}>
-                <p style={styles.infoLabel}>Ejercicios</p>
+                <p style={styles.infoLabel}>
+                  Ejercicios
+                </p>
 
                 <p style={styles.infoValue}>
-                  {selectedAssignedExercises.length}
+                  {
+                    selectedAssignedExercises.length
+                  }
                 </p>
               </div>
 
               <div style={styles.infoBox}>
-                <p style={styles.infoLabel}>Estado</p>
+                <p style={styles.infoLabel}>
+                  Estado
+                </p>
 
                 <p style={styles.infoValue}>
-                  {selectedWorkout.isActive ? "Disponible" : "Pausada"}
+                  {selectedWorkout.isActive
+                    ? "Disponible"
+                    : "Pausada"}
                 </p>
               </div>
             </ResponsiveGrid>
@@ -930,9 +624,19 @@ export default function WorkoutsPage() {
               workoutId={selectedWorkout.id}
               exercises={exercises}
               form={selectedExerciseForm}
-              loading={addingExercise[selectedWorkout.id]}
-              feedback={exerciseFeedback[selectedWorkout.id]}
-              onChange={updateWorkoutExerciseForm}
+              loading={
+                addingExercise[
+                  selectedWorkout.id
+                ]
+              }
+              feedback={
+                exerciseFeedback[
+                  selectedWorkout.id
+                ]
+              }
+              onChange={
+                updateWorkoutExerciseForm
+              }
               onSubmit={handleAddExercise}
             />
 
@@ -940,29 +644,50 @@ export default function WorkoutsPage() {
 
             <WorkoutExerciseTable
               workoutId={selectedWorkout.id}
-              assignedExercises={selectedAssignedExercises}
-              removingExercise={removingExercise}
-              updatingExercise={updatingExercise}
-              onRequestRemove={requestRemoveExercise}
-              onUpdateExercise={handleUpdateExercise}
-              onMoveExercise={handleMoveExercise}
+              assignedExercises={
+                selectedAssignedExercises
+              }
+              removingExercise={
+                removingExercise
+              }
+              updatingExercise={
+                updatingExercise
+              }
+              onRequestRemove={
+                requestRemoveExercise
+              }
+              onUpdateExercise={
+                handleUpdateExercise
+              }
+              onMoveExercise={
+                handleMoveExercise
+              }
             />
           </ContentStack>
         ) : null}
       </Drawer>
 
       <ConfirmDialog
-        open={Boolean(pendingRemoveExercise)}
+        open={Boolean(
+          pendingRemoveExercise
+        )}
         title="Eliminar ejercicio"
         description="Esta accion eliminara el ejercicio seleccionado de la rutina. Verifica antes de continuar."
         confirmText="Eliminar ejercicio"
         cancelText="Cancelar"
         loading={
           pendingRemoveExercise
-            ? Boolean(removingExercise[pendingRemoveExercise.itemId])
+            ? Boolean(
+                removingExercise[
+                  pendingRemoveExercise
+                    .itemId
+                ]
+              )
             : false
         }
-        onCancel={() => setPendingRemoveExercise(null)}
+        onCancel={() =>
+          setPendingRemoveExercise(null)
+        }
         onConfirm={confirmRemoveExercise}
       />
     </TrainerShell>
@@ -982,7 +707,8 @@ const styles = {
   infoBox: {
     padding: "14px",
     borderRadius: theme.radius.sm,
-    background: "rgba(15, 23, 42, 0.72)",
+    background:
+      "rgba(15, 23, 42, 0.72)",
     border: `1px solid ${theme.colors.border}`,
   },
 
