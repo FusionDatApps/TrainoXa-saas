@@ -590,18 +590,29 @@ export default function useWorkoutExerciseManager({
       ),
     }));
 
-    try {
-      await removeWorkoutExerciseRequest({
-        workoutId,
-        itemId,
-      });
+   try {
+  const res = await removeWorkoutExerciseRequest({
+    workoutId,
+    itemId,
+  });
 
-      setWorkoutFeedback(
-        workoutId,
-        "success",
-        "Ejercicio eliminado correctamente"
-      );
+  const updatedItems = (res?.data || [])
+    .map((item) => ({
+      ...item,
+      removing: false,
+    }))
+    .sort((a, b) => a.exerciseOrder - b.exerciseOrder);
 
+  setWorkoutExercises((prev) => ({
+    ...prev,
+    [workoutId]: updatedItems,
+  }));
+
+  setWorkoutFeedback(
+    workoutId,
+    "success",
+    "Ejercicio eliminado correctamente"
+  );
       toast?.success({
         title: "Ejercicio eliminado",
         message: "El ejercicio fue eliminado correctamente de la rutina.",
