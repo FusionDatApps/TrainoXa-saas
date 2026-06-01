@@ -64,6 +64,7 @@ export default function WorkoutsPage() {
   const [selectedExercises, setSelectedExercises] = useState({});
   const [workoutExercises, setWorkoutExercises] = useState({});
   const [addingExercise, setAddingExercise] = useState({});
+  const [updatingExercise, setUpdatingExercise] = useState({});
   const [removingExercise, setRemovingExercise] = useState({});
   const [exerciseFeedback, setExerciseFeedback] = useState({});
   const [pendingRemoveExercise, setPendingRemoveExercise] = useState(null);
@@ -87,6 +88,14 @@ export default function WorkoutsPage() {
     useMutation(async ({ workoutId, payload }) => {
       return apiFetch(`/workouts/${workoutId}/exercises`, {
         method: "POST",
+        body: JSON.stringify(payload),
+      });
+    });
+
+  const { mutate: updateWorkoutExercise } =
+    useMutation(async ({ workoutId, itemId, payload }) => {
+      return apiFetch(`/workouts/${workoutId}/exercises/${itemId}`, {
+        method: "PATCH",
         body: JSON.stringify(payload),
       });
     });
@@ -430,6 +439,93 @@ export default function WorkoutsPage() {
     }
   }
 
+  async function handleUpdateExercise({ workoutId, itemId, payload }) {
+    const previousItems = workoutExercises[workoutId] || [];
+
+    setUpdatingExercise((prev) => ({
+      ...prev,
+      [itemId]: true,
+    }));
+
+    setWorkoutExercises((prev) => ({
+      ...prev,
+      [workoutId]: (prev[workoutId] || []).map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              exerciseOrder: payload.exerciseOrder,
+              sets: payload.sets,
+              reps: payload.reps,
+              restSeconds: payload.restSeconds,
+              notes: payload.notes,
+              updating: true,
+            }
+          : item
+      ),
+    }));
+
+    try {
+      const res = await updateWorkoutExercise({
+        workoutId,
+        itemId,
+        payload,
+      });
+
+      const updatedItem = res?.data;
+
+      if (updatedItem?.id) {
+        setWorkoutExercises((prev) => ({
+          ...prev,
+          [workoutId]: (prev[workoutId] || [])
+            .map((item) =>
+              item.id === itemId
+                ? {
+                    ...updatedItem,
+                    updating: false,
+                  }
+                : item
+            )
+            .sort((a, b) => a.exerciseOrder - b.exerciseOrder),
+        }));
+      } else {
+        await loadWorkoutExercises(workoutId);
+      }
+
+      setSuccess("Ejercicio actualizado correctamente");
+      setWorkoutFeedback(workoutId, "success", "Ejercicio actualizado correctamente");
+
+      toast.success({
+        title: "Ejercicio actualizado",
+        message: "Los cambios fueron guardados correctamente.",
+      });
+    } catch (err) {
+      const message =
+        err.message === "Ya existe un ejercicio con ese orden dentro de la rutina"
+          ? "Ese numero de orden ya esta ocupado"
+          : err.message || "No se pudo actualizar el ejercicio";
+
+      setWorkoutExercises((prev) => ({
+        ...prev,
+        [workoutId]: previousItems,
+      }));
+
+      setError(message);
+      setWorkoutFeedback(workoutId, "error", message);
+
+      toast.error({
+        title: "No se pudo actualizar",
+        message,
+      });
+
+      throw err;
+    } finally {
+      setUpdatingExercise((prev) => ({
+        ...prev,
+        [itemId]: false,
+      }));
+    }
+  }
+
   function requestRemoveExercise(workoutId, itemId) {
     setPendingRemoveExercise({
       workoutId,
@@ -734,7 +830,9 @@ export default function WorkoutsPage() {
               workoutId={selectedWorkout.id}
               assignedExercises={selectedAssignedExercises}
               removingExercise={removingExercise}
+              updatingExercise={updatingExercise}
               onRequestRemove={requestRemoveExercise}
+              onUpdateExercise={handleUpdateExercise}
             />
           </ContentStack>
         ) : null}
