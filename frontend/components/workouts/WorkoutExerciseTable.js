@@ -2,6 +2,8 @@
 
 import {
   useCallback,
+  useMemo,
+  useState,
 } from "react";
 
 import {
@@ -41,6 +43,15 @@ export default function WorkoutExerciseTable({
   onUpdateExercise,
   onReorderExercises,
 }) {
+  const [editingItemId, setEditingItemId] =
+    useState(null);
+
+  const editingLocked =
+    Boolean(editingItemId);
+
+  const interactionLocked =
+    reordering || editingLocked;
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -49,9 +60,20 @@ export default function WorkoutExerciseTable({
     })
   );
 
+  const sortableItems = useMemo(() => {
+    return assignedExercises.map(
+      (item) => item.id
+    );
+  }, [assignedExercises]);
+
+  const handleEditingChange =
+    useCallback((itemId) => {
+      setEditingItemId(itemId || null);
+    }, []);
+
   const handleDragEnd = useCallback(
     async (event) => {
-      if (reordering) {
+      if (interactionLocked) {
         return;
       }
 
@@ -65,11 +87,12 @@ export default function WorkoutExerciseTable({
         return;
       }
 
-      const reordered = reorderWorkoutExercises({
-        items: assignedExercises,
-        activeId: active.id,
-        overId: over.id,
-      });
+      const reordered =
+        reorderWorkoutExercises({
+          items: assignedExercises,
+          activeId: active.id,
+          overId: over.id,
+        });
 
       await onReorderExercises?.({
         workoutId,
@@ -78,34 +101,40 @@ export default function WorkoutExerciseTable({
     },
     [
       assignedExercises,
+      interactionLocked,
       onReorderExercises,
-      reordering,
       workoutId,
     ]
   );
 
   const handleRemove = useCallback(
     (itemId) => {
-      if (reordering) {
+      if (interactionLocked) {
         return;
       }
 
-      onRequestRemove(workoutId, itemId);
+      onRequestRemove(
+        workoutId,
+        itemId
+      );
     },
     [
+      interactionLocked,
       onRequestRemove,
-      reordering,
       workoutId,
     ]
   );
 
   const renderRow = useCallback(
     (row) => {
+      const isCurrentRowEditing =
+        editingItemId === row.id;
+
       return (
         <SortableWorkoutExerciseRow
           key={row.id}
           id={row.id}
-          disabled={reordering}
+          disabled={interactionLocked}
         >
           <WorkoutExerciseCard
             workoutId={workoutId}
@@ -114,16 +143,33 @@ export default function WorkoutExerciseTable({
               updatingExercise[row.id] ||
               row.reordering
             }
-            removing={removingExercise[row.id]}
+            removing={
+              removingExercise[row.id]
+            }
             reorderLocked={reordering}
-            onUpdateExercise={onUpdateExercise}
+            editingLocked={
+              editingLocked
+            }
+            isCurrentRowEditing={
+              isCurrentRowEditing
+            }
+            onEditingChange={
+              handleEditingChange
+            }
+            onUpdateExercise={
+              onUpdateExercise
+            }
             onRemove={handleRemove}
           />
         </SortableWorkoutExerciseRow>
       );
     },
     [
+      editingItemId,
+      editingLocked,
+      handleEditingChange,
       handleRemove,
+      interactionLocked,
       onUpdateExercise,
       removingExercise,
       reordering,
@@ -146,6 +192,12 @@ export default function WorkoutExerciseTable({
             </Badge>
           ) : null}
 
+          {editingLocked ? (
+            <Badge variant="warning">
+              Edición activa
+            </Badge>
+          ) : null}
+
           <Badge variant="default">
             {assignedExercises.length} items
           </Badge>
@@ -159,22 +211,34 @@ export default function WorkoutExerciseTable({
       ) : (
         <div
           style={{
-            opacity: reordering ? 0.72 : 1,
-            transition: "opacity 0.18s ease",
-            pointerEvents: reordering ? "none" : "auto",
+            opacity:
+              interactionLocked
+                ? 0.78
+                : 1,
+
+            transition:
+              "opacity 0.18s ease",
           }}
         >
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
+            collisionDetection={
+              closestCenter
+            }
+            onDragEnd={
+              handleDragEnd
+            }
           >
             <SortableContext
-              items={assignedExercises.map((item) => item.id)}
-              strategy={verticalListSortingStrategy}
+              items={sortableItems}
+              strategy={
+                verticalListSortingStrategy
+              }
             >
               <ContentStack gap={14}>
-                {assignedExercises.map(renderRow)}
+                {assignedExercises.map(
+                  renderRow
+                )}
               </ContentStack>
             </SortableContext>
           </DndContext>
@@ -187,7 +251,8 @@ export default function WorkoutExerciseTable({
 const styles = {
   subTitle: {
     margin: 0,
-    color: theme.colors.textPrimary,
+    color:
+      theme.colors.textPrimary,
     fontSize: "16px",
     fontWeight: "900",
   },
