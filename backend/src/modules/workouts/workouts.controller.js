@@ -1,15 +1,17 @@
-const {
+﻿const {
   createWorkout,
   getWorkouts,
   getWorkoutById,
   addExerciseToWorkout,
   getWorkoutExercises,
+  updateWorkoutExercise,
   removeWorkoutExercise,
 } = require("./workouts.service");
 
 const {
   createWorkoutSchema,
   addExerciseSchema,
+  updateExerciseSchema,
 } = require("./workouts.schemas");
 
 async function create(req, res) {
@@ -118,6 +120,30 @@ async function listExercises(req, res) {
   }
 }
 
+async function updateExercise(req, res) {
+  try {
+    const parsed = updateExerciseSchema.parse(req.body);
+
+    const item = await updateWorkoutExercise({
+      authUser: req.user,
+      workoutId: req.params.id,
+      workoutExerciseId: req.params.itemId,
+      data: parsed,
+    });
+
+    return res.json({
+      ok: true,
+      message: "Ejercicio actualizado",
+      data: item,
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 400).json({
+      ok: false,
+      message: error.message || "Error al actualizar ejercicio",
+    });
+  }
+}
+
 async function removeExercise(req, res) {
   try {
     const result = await removeWorkoutExercise({
@@ -145,5 +171,6 @@ module.exports = {
   getById,
   addExercise,
   listExercises,
+  updateExercise,
   removeExercise,
 };

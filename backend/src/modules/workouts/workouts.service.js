@@ -1,8 +1,8 @@
-const { prisma } = require("../../config/prisma");
+﻿const { prisma } = require("../../config/prisma");
 
 async function getAuthenticatedTrainerProfile(authUser) {
   if (!authUser || !authUser.id) {
-    const error = new Error("Usuario autenticado inválido");
+    const error = new Error("Usuario autenticado invalido");
     error.statusCode = 401;
     throw error;
   }
@@ -164,6 +164,73 @@ async function getWorkoutExercises({ authUser, workoutId }) {
   });
 }
 
+async function updateWorkoutExercise({
+  authUser,
+  workoutId,
+  workoutExerciseId,
+  data,
+}) {
+  const trainerProfile = await getAuthenticatedTrainerProfile(authUser);
+
+  const workout = await prisma.workoutPlan.findFirst({
+    where: {
+      id: workoutId,
+      trainerId: trainerProfile.id,
+    },
+  });
+
+  if (!workout) {
+    const error = new Error("Rutina no encontrada");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const workoutExercise = await prisma.workoutPlanExercise.findFirst({
+    where: {
+      id: workoutExerciseId,
+      workoutPlanId: workoutId,
+    },
+  });
+
+  if (!workoutExercise) {
+    const error = new Error("Ejercicio de rutina no encontrado");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const duplicatedOrder = await prisma.workoutPlanExercise.findFirst({
+    where: {
+      workoutPlanId: workoutId,
+      exerciseOrder: data.exerciseOrder,
+      NOT: {
+        id: workoutExerciseId,
+      },
+    },
+  });
+
+  if (duplicatedOrder) {
+    const error = new Error("Ya existe un ejercicio con ese orden dentro de la rutina");
+    error.statusCode = 409;
+    throw error;
+  }
+
+  return prisma.workoutPlanExercise.update({
+    where: {
+      id: workoutExerciseId,
+    },
+    data: {
+      exerciseOrder: data.exerciseOrder,
+      sets: data.sets,
+      reps: data.reps,
+      restSeconds: data.restSeconds,
+      notes: data.notes,
+    },
+    include: {
+      exercise: true,
+    },
+  });
+}
+
 async function removeWorkoutExercise({
   authUser,
   workoutId,
@@ -214,5 +281,6 @@ module.exports = {
   getWorkoutById,
   addExerciseToWorkout,
   getWorkoutExercises,
+  updateWorkoutExercise,
   removeWorkoutExercise,
 };

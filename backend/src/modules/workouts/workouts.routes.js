@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const router = express.Router();
 
 const { requireAuth } = require("../../middlewares/requireAuth");
@@ -13,6 +13,15 @@ router.get("/:id", controller.getById);
 
 router.post("/:id/exercises", controller.addExercise);
 router.get("/:id/exercises", controller.listExercises);
-router.delete("/:id/exercises/:itemId", controller.removeExercise);
+
+router.patch(
+  "/:id/exercises/:itemId",
+  controller.updateExercise
+);
+
+router.delete(
+  "/:id/exercises/:itemId",
+  controller.removeExercise
+);
 
 module.exports = router;
