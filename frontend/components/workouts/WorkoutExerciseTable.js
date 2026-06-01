@@ -1,6 +1,10 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 
 import {
   closestCenter,
@@ -15,14 +19,13 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
-import ActionButton from "../ui/ActionButton";
 import Badge from "../ui/Badge";
 import ContentStack from "../ui/ContentStack";
 import EmptyState from "../ui/EmptyState";
 import InlineGroup from "../ui/InlineGroup";
 
-import WorkoutExerciseRowEditor from "./WorkoutExerciseRowEditor";
 import SortableWorkoutExerciseRow from "./SortableWorkoutExerciseRow";
+import WorkoutExerciseCard from "./WorkoutExerciseCard";
 
 import {
   reorderWorkoutExercises,
@@ -42,11 +45,8 @@ export default function WorkoutExerciseTable({
   onReorderExercises,
 }) {
   const [editingItemId, setEditingItemId] = useState(null);
-
   const [draft, setDraft] = useState({});
-
-  const [autosaveState, setAutosaveState] =
-    useState("idle");
+  const [autosaveState, setAutosaveState] = useState("idle");
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -56,15 +56,9 @@ export default function WorkoutExerciseTable({
     })
   );
 
-  const {
-    triggerSave,
-  } = useDebouncedWorkoutSave({
+  const { triggerSave } = useDebouncedWorkoutSave({
     delay: 700,
-
-    onSave: async ({
-      row,
-      payload,
-    }) => {
+    onSave: async ({ row, payload }) => {
       setAutosaveState("saving");
 
       try {
@@ -91,9 +85,7 @@ export default function WorkoutExerciseTable({
   });
 
   useEffect(() => {
-    if (
-      autosaveState !== "error"
-    ) {
+    if (autosaveState !== "error") {
       return;
     }
 
@@ -104,405 +96,176 @@ export default function WorkoutExerciseTable({
     return () => clearTimeout(timeout);
   }, [autosaveState]);
 
-  function startEditing(row) {
+  const startEditing = useCallback((row) => {
     setEditingItemId(row.id);
 
     setDraft({
-      exerciseOrder:
-        row.exerciseOrder || 1,
-
-      sets:
-        row.sets || 4,
-
-      reps:
-        row.reps || "12",
-
-      restSeconds:
-        row.restSeconds || 60,
-
-      notes:
-        row.notes || "",
+      exerciseOrder: row.exerciseOrder || 1,
+      sets: row.sets || 4,
+      reps: row.reps || "12",
+      restSeconds: row.restSeconds || 60,
+      notes: row.notes || "",
     });
-  }
+  }, []);
 
-  function cancelEditing() {
+  const cancelEditing = useCallback(() => {
     setEditingItemId(null);
-
     setDraft({});
-
     setAutosaveState("idle");
-  }
+  }, []);
 
-  function updateDraft(
-    row,
-    key,
-    value
-  ) {
-    const nextDraft = {
-      ...draft,
-      [key]: value,
-    };
+  const updateDraft = useCallback(
+    (row, key, value) => {
+      const nextDraft = {
+        ...draft,
+        [key]: value,
+      };
 
-    setDraft(nextDraft);
+      setDraft(nextDraft);
 
-    triggerSave({
-      row,
+      triggerSave({
+        row,
+        payload: {
+          exerciseOrder: Number(
+            nextDraft.exerciseOrder ||
+              row.exerciseOrder ||
+              1
+          ),
+          sets: Number(
+            nextDraft.sets ||
+              row.sets ||
+              4
+          ),
+          reps:
+            nextDraft.reps ||
+            row.reps ||
+            "12",
+          restSeconds: Number(
+            nextDraft.restSeconds ||
+              row.restSeconds ||
+              60
+          ),
+          notes: nextDraft.notes || "",
+        },
+      });
+    },
+    [draft, triggerSave]
+  );
 
-      payload: {
-        exerciseOrder: Number(
-          nextDraft.exerciseOrder ||
-            row.exerciseOrder ||
-            1
-        ),
+  const handleDragEnd = useCallback(
+    async (event) => {
+      const { active, over } = event;
 
-        sets: Number(
-          nextDraft.sets ||
-            row.sets ||
-            4
-        ),
+      if (!active?.id || !over?.id) {
+        return;
+      }
 
-        reps:
-          nextDraft.reps ||
-          row.reps ||
-          "12",
+      if (active.id === over.id) {
+        return;
+      }
 
-        restSeconds: Number(
-          nextDraft.restSeconds ||
-            row.restSeconds ||
-            60
-        ),
-
-        notes:
-          nextDraft.notes || "",
-      },
-    });
-  }
-
-  async function handleDragEnd(
-    event
-  ) {
-    const {
-      active,
-      over,
-    } = event;
-
-    if (
-      !active?.id ||
-      !over?.id
-    ) {
-      return;
-    }
-
-    if (
-      active.id === over.id
-    ) {
-      return;
-    }
-
-    const reordered =
-      reorderWorkoutExercises({
-        items:
-          assignedExercises,
-
-        activeId:
-          active.id,
-
-        overId:
-          over.id,
+      const reordered = reorderWorkoutExercises({
+        items: assignedExercises,
+        activeId: active.id,
+        overId: over.id,
       });
 
-    await onReorderExercises?.({
+      await onReorderExercises?.({
+        workoutId,
+        reorderedItems: reordered,
+      });
+    },
+    [
+      assignedExercises,
+      onReorderExercises,
       workoutId,
+    ]
+  );
 
-      reorderedItems:
-        reordered,
-    });
-  }
-
-  function renderNumberInput(
-    row,
-    key,
-    fallback
-  ) {
-    return (
-      <input
-        type="number"
-        value={
-          draft[key] ??
-          fallback
-        }
-        onChange={(e) =>
-          updateDraft(
-            row,
-            key,
-            e.target.value
-          )
-        }
-        style={styles.input}
-      />
-    );
-  }
-
-  function renderTextInput(
-    row,
-    key,
-    fallback
-  ) {
-    return (
-      <input
-        type="text"
-        value={
-          draft[key] ??
-          fallback
-        }
-        onChange={(e) =>
-          updateDraft(
-            row,
-            key,
-            e.target.value
-          )
-        }
-        style={styles.input}
-      />
-    );
-  }
-
-  function renderAutosaveState() {
-    if (
-      autosaveState ===
-      "saving"
-    ) {
+  const renderNumberInput = useCallback(
+    (row, key, fallback) => {
       return (
-        <span
-          style={
-            styles.autosaveSaving
+        <input
+          type="number"
+          value={draft[key] ?? fallback}
+          onChange={(e) =>
+            updateDraft(
+              row,
+              key,
+              e.target.value
+            )
           }
-        >
-          Guardando...
-        </span>
+          style={styles.input}
+        />
       );
-    }
+    },
+    [draft, updateDraft]
+  );
 
-    if (
-      autosaveState ===
-      "saved"
-    ) {
+  const renderTextInput = useCallback(
+    (row, key, fallback) => {
       return (
-        <span
-          style={
-            styles.autosaveSaved
+        <input
+          type="text"
+          value={draft[key] ?? fallback}
+          onChange={(e) =>
+            updateDraft(
+              row,
+              key,
+              e.target.value
+            )
           }
-        >
-          Guardado
-        </span>
+          style={styles.input}
+        />
       );
-    }
+    },
+    [draft, updateDraft]
+  );
 
-    if (
-      autosaveState ===
-      "error"
-    ) {
+  const handleRemove = useCallback(
+    (itemId) => {
+      onRequestRemove(workoutId, itemId);
+    },
+    [onRequestRemove, workoutId]
+  );
+
+  const renderRow = useCallback(
+    (row) => {
+      const isEditing = editingItemId === row.id;
+      const isUpdating = updatingExercise[row.id];
+
       return (
-        <span
-          style={
-            styles.autosaveError
-          }
+        <SortableWorkoutExerciseRow
+          key={row.id}
+          id={row.id}
         >
-          Error guardando
-        </span>
+          <WorkoutExerciseCard
+            row={row}
+            isEditing={isEditing}
+            isUpdating={isUpdating}
+            removing={removingExercise[row.id]}
+            autosaveState={autosaveState}
+            renderNumberInput={renderNumberInput}
+            renderTextInput={renderTextInput}
+            onStartEditing={startEditing}
+            onCancelEditing={cancelEditing}
+            onRemove={handleRemove}
+          />
+        </SortableWorkoutExerciseRow>
       );
-    }
-
-    return null;
-  }
-
-  function renderRow(row) {
-    const isEditing =
-      editingItemId ===
-      row.id;
-
-    const isUpdating =
-      updatingExercise[
-        row.id
-      ];
-
-    return (
-      <SortableWorkoutExerciseRow
-        key={row.id}
-        id={row.id}
-      >
-        <div style={styles.card}>
-          <div style={styles.topRow}>
-            <InlineGroup gap={10}>
-              <Badge variant="default">
-                #
-                {
-                  row.exerciseOrder
-                }
-              </Badge>
-
-              <WorkoutExerciseRowEditor
-                item={row}
-                editing={
-                  isEditing
-                }
-              />
-            </InlineGroup>
-
-            <InlineGroup gap={8}>
-              {isEditing
-                ? renderAutosaveState()
-                : null}
-
-              <ActionButton
-                variant="secondary"
-                disabled={
-                  row.optimistic
-                }
-                onClick={() =>
-                  startEditing(
-                    row
-                  )
-                }
-              >
-                Editar
-              </ActionButton>
-
-              <ActionButton
-                variant="danger"
-                disabled={
-                  removingExercise[
-                    row.id
-                  ] ||
-                  row.optimistic
-                }
-                onClick={() =>
-                  onRequestRemove(
-                    workoutId,
-                    row.id
-                  )
-                }
-              >
-                {removingExercise[
-                  row.id
-                ]
-                  ? "Eliminando..."
-                  : "Eliminar"}
-              </ActionButton>
-            </InlineGroup>
-          </div>
-
-          <div style={styles.metrics}>
-            <div style={styles.metricBox}>
-              <span style={styles.metricLabel}>
-                Sets
-              </span>
-
-              {isEditing ? (
-                renderNumberInput(
-                  row,
-                  "sets",
-                  row.sets
-                )
-              ) : (
-                <span
-                  style={
-                    styles.metricValue
-                  }
-                >
-                  {row.sets}
-                </span>
-              )}
-            </div>
-
-            <div style={styles.metricBox}>
-              <span style={styles.metricLabel}>
-                Reps
-              </span>
-
-              {isEditing ? (
-                renderTextInput(
-                  row,
-                  "reps",
-                  row.reps
-                )
-              ) : (
-                <span
-                  style={
-                    styles.metricValue
-                  }
-                >
-                  {row.reps}
-                </span>
-              )}
-            </div>
-
-            <div style={styles.metricBox}>
-              <span style={styles.metricLabel}>
-                Descanso
-              </span>
-
-              {isEditing ? (
-                renderNumberInput(
-                  row,
-                  "restSeconds",
-                  row.restSeconds ||
-                    0
-                )
-              ) : (
-                <span
-                  style={
-                    styles.metricValue
-                  }
-                >
-                  {
-                    row.restSeconds
-                  }
-                  s
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div style={styles.notesBox}>
-            <span style={styles.metricLabel}>
-              Notas
-            </span>
-
-            {isEditing ? (
-              renderTextInput(
-                row,
-                "notes",
-                row.notes ||
-                  ""
-              )
-            ) : (
-              <p style={styles.notes}>
-                {row.notes ||
-                  "Sin notas"}
-              </p>
-            )}
-          </div>
-
-          {isEditing ? (
-            <InlineGroup gap={8}>
-              <ActionButton
-                variant="secondary"
-                disabled={
-                  isUpdating
-                }
-                onClick={
-                  cancelEditing
-                }
-              >
-                Cerrar
-              </ActionButton>
-            </InlineGroup>
-          ) : null}
-        </div>
-      </SortableWorkoutExerciseRow>
-    );
-  }
+    },
+    [
+      autosaveState,
+      cancelEditing,
+      editingItemId,
+      handleRemove,
+      removingExercise,
+      renderNumberInput,
+      renderTextInput,
+      startEditing,
+      updatingExercise,
+    ]
+  );
 
   return (
     <ContentStack gap={14}>
@@ -512,42 +275,26 @@ export default function WorkoutExerciseTable({
         </h4>
 
         <Badge variant="default">
-          {
-            assignedExercises.length
-          }{" "}
-          items
+          {assignedExercises.length} items
         </Badge>
       </InlineGroup>
 
-      {assignedExercises.length ===
-      0 ? (
+      {assignedExercises.length === 0 ? (
         <EmptyState>
-          Esta rutina todavia
-          no tiene ejercicios.
+          Esta rutina todavia no tiene ejercicios.
         </EmptyState>
       ) : (
         <DndContext
           sensors={sensors}
-          collisionDetection={
-            closestCenter
-          }
-          onDragEnd={
-            handleDragEnd
-          }
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={assignedExercises.map(
-              (item) =>
-                item.id
-            )}
-            strategy={
-              verticalListSortingStrategy
-            }
+            items={assignedExercises.map((item) => item.id)}
+            strategy={verticalListSortingStrategy}
           >
             <ContentStack gap={14}>
-              {assignedExercises.map(
-                renderRow
-              )}
+              {assignedExercises.map(renderRow)}
             </ContentStack>
           </SortableContext>
         </DndContext>
@@ -559,161 +306,20 @@ export default function WorkoutExerciseTable({
 const styles = {
   subTitle: {
     margin: 0,
-
-    color:
-      theme.colors
-        .textPrimary,
-
+    color: theme.colors.textPrimary,
     fontSize: "16px",
-
     fontWeight: "900",
-  },
-
-  card: {
-    border: `1px solid ${theme.colors.border}`,
-
-    borderRadius:
-      theme.radius.md,
-
-    background:
-      "rgba(15, 23, 42, 0.72)",
-
-    padding: "16px",
-
-    display: "flex",
-
-    flexDirection:
-      "column",
-
-    gap: "16px",
-  },
-
-  topRow: {
-    display: "flex",
-
-    justifyContent:
-      "space-between",
-
-    alignItems:
-      "center",
-
-    gap: "12px",
-
-    flexWrap: "wrap",
-  },
-
-  metrics: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "repeat(auto-fit, minmax(140px, 1fr))",
-
-    gap: "12px",
-  },
-
-  metricBox: {
-    display: "flex",
-
-    flexDirection:
-      "column",
-
-    gap: "8px",
-  },
-
-  metricLabel: {
-    color:
-      theme.colors
-        .textMuted,
-
-    fontSize: "12px",
-
-    fontWeight: "900",
-
-    textTransform:
-      "uppercase",
-
-    letterSpacing:
-      "0.04em",
-  },
-
-  metricValue: {
-    color:
-      theme.colors
-        .textPrimary,
-
-    fontWeight: "800",
-
-    fontSize: "14px",
-  },
-
-  notesBox: {
-    display: "flex",
-
-    flexDirection:
-      "column",
-
-    gap: "8px",
-  },
-
-  notes: {
-    margin: 0,
-
-    color:
-      theme.colors
-        .textSecondary,
-
-    fontSize: "14px",
-
-    lineHeight: 1.5,
-  },
-
-  autosaveSaving: {
-    color: "#f59e0b",
-
-    fontSize: "12px",
-
-    fontWeight: "800",
-  },
-
-  autosaveSaved: {
-    color: "#22c55e",
-
-    fontSize: "12px",
-
-    fontWeight: "800",
-  },
-
-  autosaveError: {
-    color: "#ef4444",
-
-    fontSize: "12px",
-
-    fontWeight: "800",
   },
 
   input: {
     width: "100%",
-
     minWidth: 72,
-
-    padding:
-      "10px 12px",
-
-    borderRadius:
-      theme.radius.sm,
-
+    padding: "10px 12px",
+    borderRadius: theme.radius.sm,
     border: `1px solid ${theme.colors.border}`,
-
-    background:
-      theme.colors
-        .surface,
-
-    color:
-      theme.colors
-        .textPrimary,
-
+    background: theme.colors.surface,
+    color: theme.colors.textPrimary,
     fontSize: "14px",
-
     fontWeight: "700",
   },
 };
