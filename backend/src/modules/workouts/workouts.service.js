@@ -467,17 +467,59 @@ async function removeWorkoutExercise({
     throw error;
   }
 
-  await prisma.workoutPlanExercise.delete({
+  await prisma.$transaction(
+    async (tx) => {
+      await tx.workoutPlanExercise.delete({
+        where: {
+          id: workoutExerciseId,
+        },
+      });
+
+      const remainingExercises =
+        await tx.workoutPlanExercise.findMany({
+          where: {
+            workoutPlanId: workoutId,
+          },
+
+          orderBy: {
+            exerciseOrder: "asc",
+          },
+        });
+
+      for (
+        let index = 0;
+        index < remainingExercises.length;
+        index++
+      ) {
+        const item = remainingExercises[index];
+
+        await tx.workoutPlanExercise.update({
+          where: {
+            id: item.id,
+          },
+
+          data: {
+            exerciseOrder: index + 1,
+          },
+        });
+      }
+    }
+  );
+
+  return prisma.workoutPlanExercise.findMany({
     where: {
-      id: workoutExerciseId,
+      workoutPlanId: workoutId,
+    },
+
+    include: {
+      exercise: true,
+    },
+
+    orderBy: {
+      exerciseOrder: "asc",
     },
   });
-
-  return {
-    success: true,
-  };
 }
-
 module.exports = {
   createWorkout,
   getWorkouts,
