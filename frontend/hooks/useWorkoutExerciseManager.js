@@ -11,6 +11,14 @@ import {
   getUpdateExerciseErrorMessage,
 } from "../lib/workout-exercise-feedback";
 
+function cloneWorkoutItems(items = []) {
+  if (typeof structuredClone === "function") {
+    return structuredClone(items);
+  }
+
+  return JSON.parse(JSON.stringify(items));
+}
+
 export default function useWorkoutExerciseManager({
   exercises = [],
   toast,
@@ -20,6 +28,7 @@ export default function useWorkoutExerciseManager({
   const [addingExercise, setAddingExercise] = useState({});
   const [updatingExercise, setUpdatingExercise] = useState({});
   const [removingExercise, setRemovingExercise] = useState({});
+  const [reorderingWorkout, setReorderingWorkout] = useState({});
   const [exerciseFeedback, setExerciseFeedback] = useState({});
   const [pendingRemoveExercise, setPendingRemoveExercise] = useState(null);
 
@@ -133,7 +142,7 @@ export default function useWorkoutExerciseManager({
       optimistic: true,
     };
 
-    const previousItems = currentItems;
+    const previousItems = cloneWorkoutItems(currentItems);
 
     setAddingExercise((prev) => ({
       ...prev,
@@ -221,7 +230,7 @@ export default function useWorkoutExerciseManager({
   }
 
   async function handleUpdateExercise({ workoutId, itemId, payload }) {
-    const previousItems = workoutExercises[workoutId] || [];
+    const previousItems = cloneWorkoutItems(workoutExercises[workoutId] || []);
 
     setUpdatingExercise((prev) => ({
       ...prev,
@@ -307,11 +316,23 @@ export default function useWorkoutExerciseManager({
   }
 
   async function handleReorderExercises({ workoutId, reorderedItems }) {
-    const previousItems = workoutExercises[workoutId] || [];
+    if (reorderingWorkout[workoutId]) {
+      return;
+    }
+
+    const previousItems = cloneWorkoutItems(workoutExercises[workoutId] || []);
+
+    setReorderingWorkout((prev) => ({
+      ...prev,
+      [workoutId]: true,
+    }));
 
     setWorkoutExercises((prev) => ({
       ...prev,
-      [workoutId]: reorderedItems,
+      [workoutId]: reorderedItems.map((item) => ({
+        ...item,
+        reordering: true,
+      })),
     }));
 
     try {
@@ -323,7 +344,12 @@ export default function useWorkoutExerciseManager({
         })),
       });
 
-      const updatedItems = res?.data || [];
+      const updatedItems = (res?.data || [])
+        .map((item) => ({
+          ...item,
+          reordering: false,
+        }))
+        .sort((a, b) => a.exerciseOrder - b.exerciseOrder);
 
       setWorkoutExercises((prev) => ({
         ...prev,
@@ -346,10 +372,19 @@ export default function useWorkoutExerciseManager({
         title: "No se pudo reorganizar",
         message,
       });
+    } finally {
+      setReorderingWorkout((prev) => ({
+        ...prev,
+        [workoutId]: false,
+      }));
     }
   }
 
   async function handleMoveExercise({ workoutId, itemId, direction }) {
+    if (reorderingWorkout[workoutId]) {
+      return;
+    }
+
     const currentItems = [...(workoutExercises[workoutId] || [])].sort(
       (a, b) => a.exerciseOrder - b.exerciseOrder
     );
@@ -396,7 +431,7 @@ export default function useWorkoutExerciseManager({
     }
 
     const { workoutId, itemId } = pendingRemoveExercise;
-    const previousItems = workoutExercises[workoutId] || [];
+    const previousItems = cloneWorkoutItems(workoutExercises[workoutId] || []);
 
     setPendingRemoveExercise(null);
 
@@ -458,6 +493,7 @@ export default function useWorkoutExerciseManager({
     addingExercise,
     updatingExercise,
     removingExercise,
+    reorderingWorkout,
     exerciseFeedback,
     pendingRemoveExercise,
     setPendingRemoveExercise,

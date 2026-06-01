@@ -11,6 +11,7 @@ import { theme } from "../../lib/theme";
 export default function SortableWorkoutExerciseRow({
   id,
   children,
+  disabled = false,
 }) {
   const {
     attributes,
@@ -21,6 +22,7 @@ export default function SortableWorkoutExerciseRow({
     isDragging,
   } = useSortable({
     id,
+    disabled,
   });
 
   const style = {
@@ -28,7 +30,12 @@ export default function SortableWorkoutExerciseRow({
       transform
     ),
     transition,
-    opacity: isDragging ? 0.45 : 1,
+    opacity: isDragging
+      ? 0.45
+      : disabled
+      ? 0.72
+      : 1,
+
     background: isDragging
       ? "rgba(59, 130, 246, 0.08)"
       : "transparent",
@@ -44,7 +51,18 @@ export default function SortableWorkoutExerciseRow({
           type="button"
           {...attributes}
           {...listeners}
-          style={styles.dragHandle}
+          disabled={disabled}
+          style={{
+            ...styles.dragHandle,
+
+            cursor: disabled
+              ? "not-allowed"
+              : "grab",
+
+            opacity: disabled
+              ? 0.5
+              : 1,
+          }}
         >
           ⋮⋮
         </button>
@@ -72,7 +90,6 @@ const styles = {
     borderRadius: theme.radius.sm,
     background: theme.colors.surface,
     color: theme.colors.textMuted,
-    cursor: "grab",
     fontWeight: "900",
     fontSize: "16px",
     display: "flex",

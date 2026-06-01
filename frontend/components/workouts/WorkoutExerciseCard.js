@@ -24,6 +24,10 @@ function WorkoutExerciseCard({
   row,
   isUpdating,
   removing,
+  reorderLocked = false,
+  editingLocked = false,
+  isCurrentRowEditing = false,
+  onEditingChange,
   onUpdateExercise,
   onRemove,
 }) {
@@ -128,7 +132,15 @@ function WorkoutExerciseCard({
     );
 
   function startEditing() {
+    if (
+      reorderLocked ||
+      (editingLocked && !isCurrentRowEditing)
+    ) {
+      return;
+    }
+
     setIsEditing(true);
+    onEditingChange?.(row.id);
 
     setDraft(basePayload);
 
@@ -140,6 +152,7 @@ function WorkoutExerciseCard({
     cancelSave();
 
     setIsEditing(false);
+    onEditingChange?.(null);
 
     setDraft({});
   }
@@ -148,6 +161,10 @@ function WorkoutExerciseCard({
     key,
     value
   ) {
+    if (reorderLocked) {
+      return;
+    }
+
     const nextDraft = {
       ...draft,
       [key]: value,
@@ -176,7 +193,8 @@ function WorkoutExerciseCard({
 
   function renderAutosaveState() {
     if (
-      autosaveState === "saving"
+      autosaveState === "saving" ||
+      isUpdating
     ) {
       return (
         <span
@@ -227,6 +245,7 @@ function WorkoutExerciseCard({
     return (
       <input
         type="number"
+        disabled={reorderLocked}
         value={
           draft[key] ?? fallback
         }
@@ -248,6 +267,7 @@ function WorkoutExerciseCard({
     return (
       <input
         type="text"
+        disabled={reorderLocked}
         value={
           draft[key] ?? fallback
         }
@@ -262,13 +282,39 @@ function WorkoutExerciseCard({
     );
   }
 
+  const disableEdit =
+    row.optimistic ||
+    reorderLocked ||
+    (editingLocked && !isCurrentRowEditing);
+
+  const disableRemove =
+    removing ||
+    row.optimistic ||
+    reorderLocked ||
+    editingLocked;
+
   return (
-    <div style={styles.card}>
+    <div
+      style={{
+        ...styles.card,
+
+        opacity:
+          row.reordering
+            ? 0.72
+            : 1,
+      }}
+    >
       <div style={styles.topRow}>
         <InlineGroup gap={10}>
           <Badge variant="default">
             #{row.exerciseOrder}
           </Badge>
+
+          {row.reordering ? (
+            <Badge variant="warning">
+              Sync...
+            </Badge>
+          ) : null}
 
           <WorkoutExerciseRowEditor
             item={row}
@@ -283,9 +329,7 @@ function WorkoutExerciseCard({
 
           <ActionButton
             variant="secondary"
-            disabled={
-              row.optimistic
-            }
+            disabled={disableEdit}
             onClick={
               startEditing
             }
@@ -295,10 +339,7 @@ function WorkoutExerciseCard({
 
           <ActionButton
             variant="danger"
-            disabled={
-              removing ||
-              row.optimistic
-            }
+            disabled={disableRemove}
             onClick={() =>
               onRemove(row.id)
             }
@@ -418,7 +459,7 @@ function WorkoutExerciseCard({
           <ActionButton
             variant="secondary"
             disabled={
-              isUpdating
+              reorderLocked
             }
             onClick={
               cancelEditing
@@ -447,6 +488,8 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: "16px",
+    transition:
+      "opacity 0.18s ease",
   },
 
   topRow: {

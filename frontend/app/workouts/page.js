@@ -84,6 +84,7 @@ export default function WorkoutsPage() {
     addingExercise,
     updatingExercise,
     removingExercise,
+    reorderingWorkout,
     exerciseFeedback,
     pendingRemoveExercise,
     setPendingRemoveExercise,
@@ -510,6 +511,7 @@ export default function WorkoutsPage() {
               assignedExercises={selectedAssignedExercises}
               removingExercise={removingExercise}
               updatingExercise={updatingExercise}
+              reordering={reorderingWorkout[selectedWorkout.id]}
               onRequestRemove={requestRemoveExercise}
               onUpdateExercise={handleUpdateExercise}
               onReorderExercises={handleReorderExercises}

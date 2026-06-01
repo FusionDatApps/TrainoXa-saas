@@ -36,6 +36,7 @@ export default function WorkoutExerciseTable({
   assignedExercises = [],
   removingExercise = {},
   updatingExercise = {},
+  reordering = false,
   onRequestRemove,
   onUpdateExercise,
   onReorderExercises,
@@ -50,6 +51,10 @@ export default function WorkoutExerciseTable({
 
   const handleDragEnd = useCallback(
     async (event) => {
+      if (reordering) {
+        return;
+      }
+
       const { active, over } = event;
 
       if (!active?.id || !over?.id) {
@@ -74,15 +79,24 @@ export default function WorkoutExerciseTable({
     [
       assignedExercises,
       onReorderExercises,
+      reordering,
       workoutId,
     ]
   );
 
   const handleRemove = useCallback(
     (itemId) => {
+      if (reordering) {
+        return;
+      }
+
       onRequestRemove(workoutId, itemId);
     },
-    [onRequestRemove, workoutId]
+    [
+      onRequestRemove,
+      reordering,
+      workoutId,
+    ]
   );
 
   const renderRow = useCallback(
@@ -91,12 +105,17 @@ export default function WorkoutExerciseTable({
         <SortableWorkoutExerciseRow
           key={row.id}
           id={row.id}
+          disabled={reordering}
         >
           <WorkoutExerciseCard
             workoutId={workoutId}
             row={row}
-            isUpdating={updatingExercise[row.id]}
+            isUpdating={
+              updatingExercise[row.id] ||
+              row.reordering
+            }
             removing={removingExercise[row.id]}
+            reorderLocked={reordering}
             onUpdateExercise={onUpdateExercise}
             onRemove={handleRemove}
           />
@@ -107,6 +126,7 @@ export default function WorkoutExerciseTable({
       handleRemove,
       onUpdateExercise,
       removingExercise,
+      reordering,
       updatingExercise,
       workoutId,
     ]
@@ -119,9 +139,17 @@ export default function WorkoutExerciseTable({
           Ejercicios asignados
         </h4>
 
-        <Badge variant="default">
-          {assignedExercises.length} items
-        </Badge>
+        <InlineGroup gap={10}>
+          {reordering ? (
+            <Badge variant="warning">
+              Sincronizando orden...
+            </Badge>
+          ) : null}
+
+          <Badge variant="default">
+            {assignedExercises.length} items
+          </Badge>
+        </InlineGroup>
       </InlineGroup>
 
       {assignedExercises.length === 0 ? (
@@ -129,20 +157,28 @@ export default function WorkoutExerciseTable({
           Esta rutina todavia no tiene ejercicios.
         </EmptyState>
       ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
+        <div
+          style={{
+            opacity: reordering ? 0.72 : 1,
+            transition: "opacity 0.18s ease",
+            pointerEvents: reordering ? "none" : "auto",
+          }}
         >
-          <SortableContext
-            items={assignedExercises.map((item) => item.id)}
-            strategy={verticalListSortingStrategy}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
           >
-            <ContentStack gap={14}>
-              {assignedExercises.map(renderRow)}
-            </ContentStack>
-          </SortableContext>
-        </DndContext>
+            <SortableContext
+              items={assignedExercises.map((item) => item.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <ContentStack gap={14}>
+                {assignedExercises.map(renderRow)}
+              </ContentStack>
+            </SortableContext>
+          </DndContext>
+        </div>
       )}
     </ContentStack>
   );
