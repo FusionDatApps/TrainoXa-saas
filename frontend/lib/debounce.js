@@ -1,7 +1,7 @@
 export function debounce(callback, delay = 500) {
   let timeoutId;
 
-  return (...args) => {
+  function debounced(...args) {
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
@@ -9,5 +9,14 @@ export function debounce(callback, delay = 500) {
     timeoutId = setTimeout(() => {
       callback(...args);
     }, delay);
+  }
+
+  debounced.cancel = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
   };
+
+  return debounced;
 }

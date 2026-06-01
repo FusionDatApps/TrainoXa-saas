@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
 } from "react";
@@ -12,34 +13,25 @@ export default function useDebouncedWorkoutSave({
   delay = 700,
   onSave,
 }) {
-  const previousPayloadRef =
-    useRef("");
+  const previousPayloadRef = useRef("");
 
   const debouncedSave = useMemo(() => {
     return debounce(
       async (payload) => {
         try {
-          const serializedPayload =
-            JSON.stringify(
-              payload
-            );
+          const serializedPayload = JSON.stringify(payload);
 
-          if (
-            previousPayloadRef.current ===
-            serializedPayload
-          ) {
+          if (previousPayloadRef.current === serializedPayload) {
             return;
           }
 
-          previousPayloadRef.current =
-            serializedPayload;
+          previousPayloadRef.current = serializedPayload;
 
           await onSave?.(payload);
         } catch (error) {
           console.error(
             "Autosave workout error:",
-            error?.message ||
-              error
+            error?.message || error
           );
         }
       },
@@ -47,15 +39,25 @@ export default function useDebouncedWorkoutSave({
     );
   }, [delay, onSave]);
 
-  const triggerSave =
-    useCallback(
-      (payload) => {
-        debouncedSave(payload);
-      },
-      [debouncedSave]
-    );
+  const triggerSave = useCallback(
+    (payload) => {
+      debouncedSave(payload);
+    },
+    [debouncedSave]
+  );
+
+  const cancelSave = useCallback(() => {
+    debouncedSave.cancel?.();
+  }, [debouncedSave]);
+
+  useEffect(() => {
+    return () => {
+      debouncedSave.cancel?.();
+    };
+  }, [debouncedSave]);
 
   return {
     triggerSave,
+    cancelSave,
   };
 }

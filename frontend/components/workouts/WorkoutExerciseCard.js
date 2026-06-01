@@ -3,7 +3,8 @@
 import {
   memo,
   useCallback,
-  useEffect,
+  useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -14,6 +15,7 @@ import InlineGroup from "../ui/InlineGroup";
 import WorkoutExerciseRowEditor from "./WorkoutExerciseRowEditor";
 
 import useDebouncedWorkoutSave from "../../hooks/useDebouncedWorkoutSave";
+import useWorkoutAutosaveStatus from "../../hooks/useWorkoutAutosaveStatus";
 
 import { theme } from "../../lib/theme";
 
@@ -25,14 +27,55 @@ function WorkoutExerciseCard({
   onUpdateExercise,
   onRemove,
 }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState({});
-  const [autosaveState, setAutosaveState] = useState("idle");
+  const [isEditing, setIsEditing] =
+    useState(false);
 
-  const { triggerSave } = useDebouncedWorkoutSave({
+  const [draft, setDraft] =
+    useState({});
+
+  const lastPayloadRef =
+    useRef("");
+
+  const {
+    autosaveState,
+    markSaving,
+    markSaved,
+    markError,
+  } = useWorkoutAutosaveStatus();
+
+  const basePayload = useMemo(() => {
+    return {
+      exerciseOrder:
+        row.exerciseOrder || 1,
+
+      sets:
+        row.sets || 4,
+
+      reps:
+        row.reps || "12",
+
+      restSeconds:
+        row.restSeconds || 60,
+
+      notes:
+        row.notes || "",
+    };
+  }, [
+    row.exerciseOrder,
+    row.notes,
+    row.reps,
+    row.restSeconds,
+    row.sets,
+  ]);
+
+  const {
+    triggerSave,
+    cancelSave,
+  } = useDebouncedWorkoutSave({
     delay: 700,
+
     onSave: async (payload) => {
-      setAutosaveState("saving");
+      markSaving();
 
       try {
         await onUpdateExercise?.({
@@ -41,86 +84,70 @@ function WorkoutExerciseCard({
           payload,
         });
 
-        setAutosaveState("saved");
-
-        setTimeout(() => {
-          setAutosaveState("idle");
-        }, 1200);
+        markSaved();
       } catch (error) {
         console.error(
           "Autosave failed:",
           error?.message || error
         );
 
-        setAutosaveState("error");
+        markError();
       }
     },
   });
 
-  useEffect(() => {
-    if (autosaveState !== "error") {
-      return;
-    }
+  const buildPayload =
+    useCallback(
+      (nextDraft) => {
+        return {
+          exerciseOrder: Number(
+            nextDraft.exerciseOrder ??
+              basePayload.exerciseOrder
+          ),
 
-    const timeout = setTimeout(() => {
-      setAutosaveState("idle");
-    }, 2500);
+          sets: Number(
+            nextDraft.sets ??
+              basePayload.sets
+          ),
 
-    return () => clearTimeout(timeout);
-  }, [autosaveState]);
+          reps:
+            nextDraft.reps ??
+            basePayload.reps,
+
+          restSeconds: Number(
+            nextDraft.restSeconds ??
+              basePayload.restSeconds
+          ),
+
+          notes:
+            nextDraft.notes ??
+            basePayload.notes,
+        };
+      },
+      [basePayload]
+    );
 
   function startEditing() {
     setIsEditing(true);
 
-    setDraft({
-      exerciseOrder: row.exerciseOrder || 1,
-      sets: row.sets || 4,
-      reps: row.reps || "12",
-      restSeconds: row.restSeconds || 60,
-      notes: row.notes || "",
-    });
+    setDraft(basePayload);
+
+    lastPayloadRef.current =
+      JSON.stringify(basePayload);
   }
 
   function cancelEditing() {
+    cancelSave();
+
     setIsEditing(false);
+
     setDraft({});
-    setAutosaveState("idle");
   }
 
-  const buildPayload = useCallback(
-    (nextDraft) => {
-      return {
-        exerciseOrder: Number(
-          nextDraft.exerciseOrder ||
-            row.exerciseOrder ||
-            1
-        ),
-        sets: Number(
-          nextDraft.sets ||
-            row.sets ||
-            4
-        ),
-        reps:
-          nextDraft.reps ||
-          row.reps ||
-          "12",
-        restSeconds: Number(
-          nextDraft.restSeconds ||
-            row.restSeconds ||
-            60
-        ),
-        notes: nextDraft.notes || "",
-      };
-    },
-    [
-      row.exerciseOrder,
-      row.reps,
-      row.restSeconds,
-      row.sets,
-    ]
-  );
-
-  function updateDraft(key, value) {
+  function updateDraft(
+    key,
+    value
+  ) {
     const nextDraft = {
       ...draft,
       [key]: value,
@@ -128,29 +155,63 @@ function WorkoutExerciseCard({
 
     setDraft(nextDraft);
 
-    triggerSave(buildPayload(nextDraft));
+    const payload =
+      buildPayload(nextDraft);
+
+    const serializedPayload =
+      JSON.stringify(payload);
+
+    if (
+      serializedPayload ===
+      lastPayloadRef.current
+    ) {
+      return;
+    }
+
+    lastPayloadRef.current =
+      serializedPayload;
+
+    triggerSave(payload);
   }
 
   function renderAutosaveState() {
-    if (autosaveState === "saving") {
+    if (
+      autosaveState === "saving"
+    ) {
       return (
-        <span style={styles.autosaveSaving}>
+        <span
+          style={
+            styles.autosaveSaving
+          }
+        >
           Guardando...
         </span>
       );
     }
 
-    if (autosaveState === "saved") {
+    if (
+      autosaveState === "saved"
+    ) {
       return (
-        <span style={styles.autosaveSaved}>
+        <span
+          style={
+            styles.autosaveSaved
+          }
+        >
           Guardado
         </span>
       );
     }
 
-    if (autosaveState === "error") {
+    if (
+      autosaveState === "error"
+    ) {
       return (
-        <span style={styles.autosaveError}>
+        <span
+          style={
+            styles.autosaveError
+          }
+        >
           Error guardando
         </span>
       );
@@ -159,23 +220,43 @@ function WorkoutExerciseCard({
     return null;
   }
 
-  function renderNumberInput(key, fallback) {
+  function renderNumberInput(
+    key,
+    fallback
+  ) {
     return (
       <input
         type="number"
-        value={draft[key] ?? fallback}
-        onChange={(e) => updateDraft(key, e.target.value)}
+        value={
+          draft[key] ?? fallback
+        }
+        onChange={(e) =>
+          updateDraft(
+            key,
+            e.target.value
+          )
+        }
         style={styles.input}
       />
     );
   }
 
-  function renderTextInput(key, fallback) {
+  function renderTextInput(
+    key,
+    fallback
+  ) {
     return (
       <input
         type="text"
-        value={draft[key] ?? fallback}
-        onChange={(e) => updateDraft(key, e.target.value)}
+        value={
+          draft[key] ?? fallback
+        }
+        onChange={(e) =>
+          updateDraft(
+            key,
+            e.target.value
+          )
+        }
         style={styles.input}
       />
     );
@@ -196,83 +277,138 @@ function WorkoutExerciseCard({
         </InlineGroup>
 
         <InlineGroup gap={8}>
-          {isEditing ? renderAutosaveState() : null}
+          {isEditing
+            ? renderAutosaveState()
+            : null}
 
           <ActionButton
             variant="secondary"
-            disabled={row.optimistic}
-            onClick={startEditing}
+            disabled={
+              row.optimistic
+            }
+            onClick={
+              startEditing
+            }
           >
             Editar
           </ActionButton>
 
           <ActionButton
             variant="danger"
-            disabled={removing || row.optimistic}
-            onClick={() => onRemove(row.id)}
+            disabled={
+              removing ||
+              row.optimistic
+            }
+            onClick={() =>
+              onRemove(row.id)
+            }
           >
-            {removing ? "Eliminando..." : "Eliminar"}
+            {removing
+              ? "Eliminando..."
+              : "Eliminar"}
           </ActionButton>
         </InlineGroup>
       </div>
 
       <div style={styles.metrics}>
         <div style={styles.metricBox}>
-          <span style={styles.metricLabel}>
+          <span
+            style={
+              styles.metricLabel
+            }
+          >
             Sets
           </span>
 
           {isEditing ? (
-            renderNumberInput("sets", row.sets)
+            renderNumberInput(
+              "sets",
+              row.sets
+            )
           ) : (
-            <span style={styles.metricValue}>
+            <span
+              style={
+                styles.metricValue
+              }
+            >
               {row.sets}
             </span>
           )}
         </div>
 
         <div style={styles.metricBox}>
-          <span style={styles.metricLabel}>
+          <span
+            style={
+              styles.metricLabel
+            }
+          >
             Reps
           </span>
 
           {isEditing ? (
-            renderTextInput("reps", row.reps)
+            renderTextInput(
+              "reps",
+              row.reps
+            )
           ) : (
-            <span style={styles.metricValue}>
+            <span
+              style={
+                styles.metricValue
+              }
+            >
               {row.reps}
             </span>
           )}
         </div>
 
         <div style={styles.metricBox}>
-          <span style={styles.metricLabel}>
+          <span
+            style={
+              styles.metricLabel
+            }
+          >
             Descanso
           </span>
 
           {isEditing ? (
             renderNumberInput(
               "restSeconds",
-              row.restSeconds || 0
+              row.restSeconds ||
+                0
             )
           ) : (
-            <span style={styles.metricValue}>
-              {row.restSeconds}s
+            <span
+              style={
+                styles.metricValue
+              }
+            >
+              {
+                row.restSeconds
+              }
+              s
             </span>
           )}
         </div>
       </div>
 
       <div style={styles.notesBox}>
-        <span style={styles.metricLabel}>
+        <span
+          style={
+            styles.metricLabel
+          }
+        >
           Notas
         </span>
 
         {isEditing ? (
-          renderTextInput("notes", row.notes || "")
+          renderTextInput(
+            "notes",
+            row.notes || ""
+          )
         ) : (
           <p style={styles.notes}>
-            {row.notes || "Sin notas"}
+            {row.notes ||
+              "Sin notas"}
           </p>
         )}
       </div>
@@ -281,8 +417,12 @@ function WorkoutExerciseCard({
         <InlineGroup gap={8}>
           <ActionButton
             variant="secondary"
-            disabled={isUpdating}
-            onClick={cancelEditing}
+            disabled={
+              isUpdating
+            }
+            onClick={
+              cancelEditing
+            }
           >
             Cerrar
           </ActionButton>
@@ -292,13 +432,17 @@ function WorkoutExerciseCard({
   );
 }
 
-export default memo(WorkoutExerciseCard);
+export default memo(
+  WorkoutExerciseCard
+);
 
 const styles = {
   card: {
     border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.radius.md,
-    background: "rgba(15, 23, 42, 0.72)",
+    borderRadius:
+      theme.radius.md,
+    background:
+      "rgba(15, 23, 42, 0.72)",
     padding: "16px",
     display: "flex",
     flexDirection: "column",
@@ -307,7 +451,8 @@ const styles = {
 
   topRow: {
     display: "flex",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     alignItems: "center",
     gap: "12px",
     flexWrap: "wrap",
@@ -315,7 +460,8 @@ const styles = {
 
   metrics: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+    gridTemplateColumns:
+      "repeat(auto-fit, minmax(140px, 1fr))",
     gap: "12px",
   },
 
@@ -326,15 +472,18 @@ const styles = {
   },
 
   metricLabel: {
-    color: theme.colors.textMuted,
+    color:
+      theme.colors.textMuted,
     fontSize: "12px",
     fontWeight: "900",
-    textTransform: "uppercase",
+    textTransform:
+      "uppercase",
     letterSpacing: "0.04em",
   },
 
   metricValue: {
-    color: theme.colors.textPrimary,
+    color:
+      theme.colors.textPrimary,
     fontWeight: "800",
     fontSize: "14px",
   },
@@ -347,7 +496,8 @@ const styles = {
 
   notes: {
     margin: 0,
-    color: theme.colors.textSecondary,
+    color:
+      theme.colors.textSecondary,
     fontSize: "14px",
     lineHeight: 1.5,
   },
@@ -374,10 +524,13 @@ const styles = {
     width: "100%",
     minWidth: 72,
     padding: "10px 12px",
-    borderRadius: theme.radius.sm,
+    borderRadius:
+      theme.radius.sm,
     border: `1px solid ${theme.colors.border}`,
-    background: theme.colors.surface,
-    color: theme.colors.textPrimary,
+    background:
+      theme.colors.surface,
+    color:
+      theme.colors.textPrimary,
     fontSize: "14px",
     fontWeight: "700",
   },
