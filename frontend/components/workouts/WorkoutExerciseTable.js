@@ -39,6 +39,8 @@ export default function WorkoutExerciseTable({
   removingExercise = {},
   updatingExercise = {},
   reordering = false,
+  undoStack = [],
+  onUndo,
   onRequestRemove,
   onUpdateExercise,
   onReorderExercises,
@@ -66,10 +68,26 @@ export default function WorkoutExerciseTable({
     );
   }, [assignedExercises]);
 
+  const latestUndo = useMemo(() => {
+  return undoStack.find(
+    (item) =>
+      item.type === "reorder" &&
+      String(item.workoutId) === String(workoutId)
+  );
+}, [undoStack, workoutId]);
+
   const handleEditingChange =
     useCallback((itemId) => {
       setEditingItemId(itemId || null);
     }, []);
+
+  const handleUndo = useCallback(async () => {
+    if (!latestUndo) {
+      return;
+    }
+
+    await onUndo?.(latestUndo.id);
+  }, [latestUndo, onUndo]);
 
   const handleDragEnd = useCallback(
     async (event) => {
@@ -204,6 +222,28 @@ export default function WorkoutExerciseTable({
         </InlineGroup>
       </InlineGroup>
 
+      {latestUndo ? (
+        <div style={styles.undoBanner}>
+          <div>
+            <strong style={styles.undoTitle}>
+              Cambio reciente
+            </strong>
+
+            <p style={styles.undoText}>
+              Puedes deshacer el último reordenamiento.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleUndo}
+            style={styles.undoButton}
+          >
+            Deshacer
+          </button>
+        </div>
+      ) : null}
+
       {assignedExercises.length === 0 ? (
         <EmptyState>
           Esta rutina todavia no tiene ejercicios.
@@ -249,6 +289,46 @@ export default function WorkoutExerciseTable({
 }
 
 const styles = {
+  undoBanner: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+    padding: "14px 16px",
+    borderRadius: 16,
+    border:
+      "1px solid rgba(245, 158, 11, 0.24)",
+    background:
+      "rgba(245, 158, 11, 0.08)",
+  },
+
+  undoTitle: {
+    display: "block",
+    marginBottom: 4,
+    color: "#fbbf24",
+    fontSize: 13,
+    fontWeight: "900",
+  },
+
+  undoText: {
+    margin: 0,
+    color: "rgba(248,250,252,0.72)",
+    fontSize: 13,
+  },
+
+  undoButton: {
+    border: "none",
+    cursor: "pointer",
+    borderRadius: 999,
+    padding: "10px 14px",
+    background:
+      "rgba(245, 158, 11, 0.18)",
+    color: "#fbbf24",
+    fontWeight: "900",
+    fontSize: 12,
+    textTransform: "uppercase",
+  },
+
   subTitle: {
     margin: 0,
     color:

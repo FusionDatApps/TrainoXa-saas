@@ -11,12 +11,20 @@ import {
   getUpdateExerciseErrorMessage,
 } from "../lib/workout-exercise-feedback";
 
+const UNDO_DURATION = 10000;
+
 function cloneWorkoutItems(items = []) {
   if (typeof structuredClone === "function") {
     return structuredClone(items);
   }
 
   return JSON.parse(JSON.stringify(items));
+}
+
+function buildUndoActionId(type, workoutId) {
+  return `${type}-${workoutId}-${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2)}`;
 }
 
 export default function useWorkoutExerciseManager({
@@ -29,6 +37,7 @@ export default function useWorkoutExerciseManager({
   const [updatingExercise, setUpdatingExercise] = useState({});
   const [removingExercise, setRemovingExercise] = useState({});
   const [reorderingWorkout, setReorderingWorkout] = useState({});
+  const [undoStack, setUndoStack] = useState([]);
   const [exerciseFeedback, setExerciseFeedback] = useState({});
   const [pendingRemoveExercise, setPendingRemoveExercise] = useState(null);
 
@@ -41,6 +50,24 @@ export default function useWorkoutExerciseManager({
       },
     }));
   }, []);
+
+  const removeUndoAction = useCallback((actionId) => {
+    setUndoStack((prev) =>
+      prev.filter((action) => action.id !== actionId)
+    );
+  }, []);
+
+  const reorderWorkoutExercisesRequest = useCallback(
+    async ({ workoutId, items }) => {
+      return apiFetch(`/workouts/${workoutId}/exercises/reorder`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          items,
+        }),
+      });
+    },
+    []
+  );
 
   const loadWorkoutExercises = useCallback(async (workoutId) => {
     try {
@@ -56,6 +83,128 @@ export default function useWorkoutExerciseManager({
       console.error("Error cargando ejercicios de rutina:", err.message);
     }
   }, []);
+
+  const restoreUndoAction = useCallback(
+    async (actionId) => {
+      const action = undoStack.find((item) => item.id === actionId);
+
+      if (!action) {
+        toast?.warning({
+          title: "Acción no disponible",
+          message: "El tiempo para deshacer esta acción ya expiró.",
+        });
+
+        return;
+      }
+
+      removeUndoAction(actionId);
+
+      const snapshot = cloneWorkoutItems(action.snapshot || []);
+
+      setReorderingWorkout((prev) => ({
+        ...prev,
+        [action.workoutId]: true,
+      }));
+
+      setWorkoutExercises((prev) => ({
+        ...prev,
+        [action.workoutId]: snapshot.map((item) => ({
+          ...item,
+          reordering: true,
+        })),
+      }));
+
+      try {
+        const res = await reorderWorkoutExercisesRequest({
+          workoutId: action.workoutId,
+          items: snapshot.map((item) => ({
+            id: item.id,
+            exerciseOrder: item.exerciseOrder,
+          })),
+        });
+
+        const restoredItems = (res?.data || [])
+          .map((item) => ({
+            ...item,
+            reordering: false,
+          }))
+          .sort((a, b) => a.exerciseOrder - b.exerciseOrder);
+
+        setWorkoutExercises((prev) => ({
+          ...prev,
+          [action.workoutId]: restoredItems,
+        }));
+
+        toast?.success({
+          title: "Acción deshecha",
+          message: "El orden anterior fue restaurado correctamente.",
+        });
+      } catch (err) {
+        console.error(
+          "Undo restore error:",
+          err?.message || err
+        );
+
+        toast?.error({
+          title: "No se pudo deshacer",
+          message:
+            "No fue posible restaurar el orden anterior de la rutina.",
+        });
+
+        await loadWorkoutExercises(action.workoutId);
+      } finally {
+        setReorderingWorkout((prev) => ({
+          ...prev,
+          [action.workoutId]: false,
+        }));
+      }
+    },
+    [
+      loadWorkoutExercises,
+      removeUndoAction,
+      reorderWorkoutExercisesRequest,
+      toast,
+      undoStack,
+    ]
+  );
+
+  const pushUndoAction = useCallback(
+    ({ type, workoutId, snapshot, title, message }) => {
+      const actionId = buildUndoActionId(type, workoutId);
+
+      const action = {
+        id: actionId,
+        type,
+        workoutId,
+        snapshot: cloneWorkoutItems(snapshot),
+        createdAt: Date.now(),
+        expiresAt: Date.now() + UNDO_DURATION,
+      };
+
+      setUndoStack((prev) => [action, ...prev].slice(0, 8));
+
+      window.setTimeout(() => {
+        removeUndoAction(actionId);
+      }, UNDO_DURATION);
+
+      toast?.warning({
+        title,
+        message,
+        actionLabel: "Deshacer",
+        duration: UNDO_DURATION,
+        onAction: async () => {
+          await restoreUndoAction(actionId);
+        },
+      });
+
+      return actionId;
+    },
+    [
+      removeUndoAction,
+      restoreUndoAction,
+      toast,
+    ]
+  );
 
   function updateWorkoutExerciseForm(workoutId, key, value) {
     setSelectedExercises((prev) => ({
@@ -82,15 +231,6 @@ export default function useWorkoutExerciseManager({
     return apiFetch(`/workouts/${workoutId}/exercises/${itemId}`, {
       method: "PATCH",
       body: JSON.stringify(payload),
-    });
-  }
-
-  async function reorderWorkoutExercisesRequest({ workoutId, items }) {
-    return apiFetch(`/workouts/${workoutId}/exercises/reorder`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        items,
-      }),
     });
   }
 
@@ -356,9 +496,12 @@ export default function useWorkoutExerciseManager({
         [workoutId]: updatedItems,
       }));
 
-      toast?.success({
+      pushUndoAction({
+        type: "reorder",
+        workoutId,
+        snapshot: previousItems,
         title: "Orden actualizado",
-        message: "Los ejercicios fueron reorganizados correctamente.",
+        message: "Puedes deshacer este reordenamiento.",
       });
     } catch (err) {
       const message = getReorderExerciseErrorMessage(err);
@@ -494,6 +637,7 @@ export default function useWorkoutExerciseManager({
     updatingExercise,
     removingExercise,
     reorderingWorkout,
+    undoStack,
     exerciseFeedback,
     pendingRemoveExercise,
     setPendingRemoveExercise,
@@ -506,5 +650,6 @@ export default function useWorkoutExerciseManager({
     handleMoveExercise,
     requestRemoveExercise,
     confirmRemoveExercise,
+    restoreUndoAction,
   };
 }
