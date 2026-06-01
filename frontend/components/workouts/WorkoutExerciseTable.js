@@ -20,6 +20,7 @@ export default function WorkoutExerciseTable({
   updatingExercise = {},
   onRequestRemove,
   onUpdateExercise,
+  onMoveExercise,
 }) {
   const [editingItemId, setEditingItemId] = useState(null);
   const [draft, setDraft] = useState({});
@@ -94,13 +95,55 @@ export default function WorkoutExerciseTable({
   function buildColumns() {
     return [
       {
+        key: "move",
+        label: "",
+        render: (row, index) => (
+          <InlineGroup gap={6}>
+            <button
+              type="button"
+              style={styles.moveButton}
+              disabled={
+                updatingExercise[row.id] ||
+                index === 0
+              }
+              onClick={() =>
+                onMoveExercise?.({
+                  workoutId,
+                  itemId: row.id,
+                  direction: "up",
+                })
+              }
+            >
+              ↑
+            </button>
+
+            <button
+              type="button"
+              style={styles.moveButton}
+              disabled={
+                updatingExercise[row.id] ||
+                index === assignedExercises.length - 1
+              }
+              onClick={() =>
+                onMoveExercise?.({
+                  workoutId,
+                  itemId: row.id,
+                  direction: "down",
+                })
+              }
+            >
+              ↓
+            </button>
+          </InlineGroup>
+        ),
+      },
+
+      {
         key: "order",
         label: "#",
-        render: (row) =>
-          editingItemId === row.id
-            ? renderNumberInput("exerciseOrder", row.exerciseOrder)
-            : row.exerciseOrder,
+        render: (row) => row.exerciseOrder,
       },
+
       {
         key: "exercise",
         label: "Ejercicio",
@@ -111,6 +154,7 @@ export default function WorkoutExerciseTable({
           />
         ),
       },
+
       {
         key: "sets",
         label: "Sets",
@@ -119,6 +163,7 @@ export default function WorkoutExerciseTable({
             ? renderNumberInput("sets", row.sets)
             : row.sets,
       },
+
       {
         key: "reps",
         label: "Reps",
@@ -127,6 +172,7 @@ export default function WorkoutExerciseTable({
             ? renderTextInput("reps", row.reps)
             : row.reps,
       },
+
       {
         key: "rest",
         label: "Descanso",
@@ -135,6 +181,7 @@ export default function WorkoutExerciseTable({
             ? renderNumberInput("restSeconds", row.restSeconds || 0)
             : `${row.restSeconds || 0}s`,
       },
+
       {
         key: "notes",
         label: "Notas",
@@ -143,6 +190,7 @@ export default function WorkoutExerciseTable({
             ? renderTextInput("notes", row.notes || "")
             : row.notes || "Sin notas",
       },
+
       {
         key: "actions",
         label: "Acciones",
@@ -186,7 +234,9 @@ export default function WorkoutExerciseTable({
                 disabled={removingExercise[row.id] || row.optimistic}
                 onClick={() => onRequestRemove(workoutId, row.id)}
               >
-                {removingExercise[row.id] ? "Eliminando..." : "Eliminar"}
+                {removingExercise[row.id]
+                  ? "Eliminando..."
+                  : "Eliminar"}
               </ActionButton>
             </InlineGroup>
           );
@@ -240,5 +290,17 @@ const styles = {
     color: theme.colors.textPrimary,
     fontSize: "14px",
     fontWeight: "700",
+  },
+
+  moveButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    border: `1px solid ${theme.colors.border}`,
+    background: theme.colors.surface,
+    color: theme.colors.textPrimary,
+    cursor: "pointer",
+    fontWeight: "900",
+    fontSize: "14px",
   },
 };

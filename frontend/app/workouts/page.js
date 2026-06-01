@@ -172,7 +172,9 @@ export default function WorkoutsPage() {
 
       setWorkoutExercises((prev) => ({
         ...prev,
-        [workoutId]: res.data || [],
+        [workoutId]: (res.data || []).sort(
+          (a, b) => a.exerciseOrder - b.exerciseOrder
+        ),
       }));
     } catch (err) {
       console.error("Error cargando ejercicios de rutina:", err.message);
@@ -192,7 +194,6 @@ export default function WorkoutsPage() {
       );
     } catch (err) {
       console.error("Error cargando rutinas:", err.message);
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -526,6 +527,117 @@ export default function WorkoutsPage() {
     }
   }
 
+  async function handleMoveExercise({
+    workoutId,
+    itemId,
+    direction,
+  }) {
+    const currentItems = [...(workoutExercises[workoutId] || [])].sort(
+      (a, b) => a.exerciseOrder - b.exerciseOrder
+    );
+
+    const currentIndex = currentItems.findIndex((item) => item.id === itemId);
+
+    if (currentIndex === -1) {
+      return;
+    }
+
+    const targetIndex =
+      direction === "up"
+        ? currentIndex - 1
+        : currentIndex + 1;
+
+    if (targetIndex < 0 || targetIndex >= currentItems.length) {
+      return;
+    }
+
+    const sourceItem = currentItems[currentIndex];
+    const targetItem = currentItems[targetIndex];
+    const previousItems = [...currentItems];
+
+    const reordered = currentItems
+      .map((item) => {
+        if (item.id === sourceItem.id) {
+          return {
+            ...item,
+            exerciseOrder: targetItem.exerciseOrder,
+            updating: true,
+          };
+        }
+
+        if (item.id === targetItem.id) {
+          return {
+            ...item,
+            exerciseOrder: sourceItem.exerciseOrder,
+            updating: true,
+          };
+        }
+
+        return item;
+      })
+      .sort((a, b) => a.exerciseOrder - b.exerciseOrder);
+
+    setWorkoutExercises((prev) => ({
+      ...prev,
+      [workoutId]: reordered,
+    }));
+
+    setUpdatingExercise((prev) => ({
+      ...prev,
+      [sourceItem.id]: true,
+      [targetItem.id]: true,
+    }));
+
+    try {
+      await updateWorkoutExercise({
+        workoutId,
+        itemId: sourceItem.id,
+        payload: {
+          exerciseOrder: targetItem.exerciseOrder,
+          sets: sourceItem.sets,
+          reps: sourceItem.reps,
+          restSeconds: sourceItem.restSeconds || 0,
+          notes: sourceItem.notes || "",
+        },
+      });
+
+      await updateWorkoutExercise({
+        workoutId,
+        itemId: targetItem.id,
+        payload: {
+          exerciseOrder: sourceItem.exerciseOrder,
+          sets: targetItem.sets,
+          reps: targetItem.reps,
+          restSeconds: targetItem.restSeconds || 0,
+          notes: targetItem.notes || "",
+        },
+      });
+
+      await loadWorkoutExercises(workoutId);
+
+      toast.success({
+        title: "Orden actualizado",
+        message: "La posicion del ejercicio fue actualizada.",
+      });
+    } catch (err) {
+      setWorkoutExercises((prev) => ({
+        ...prev,
+        [workoutId]: previousItems,
+      }));
+
+      toast.error({
+        title: "No se pudo mover",
+        message: err.message || "No fue posible actualizar el orden.",
+      });
+    } finally {
+      setUpdatingExercise((prev) => ({
+        ...prev,
+        [sourceItem.id]: false,
+        [targetItem.id]: false,
+      }));
+    }
+  }
+
   function requestRemoveExercise(workoutId, itemId) {
     setPendingRemoveExercise({
       workoutId,
@@ -833,6 +945,7 @@ export default function WorkoutsPage() {
               updatingExercise={updatingExercise}
               onRequestRemove={requestRemoveExercise}
               onUpdateExercise={handleUpdateExercise}
+              onMoveExercise={handleMoveExercise}
             />
           </ContentStack>
         ) : null}
