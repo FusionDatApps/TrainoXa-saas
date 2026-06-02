@@ -131,11 +131,45 @@ function WorkoutExerciseCard({
       [basePayload]
     );
 
+  const interactionState = useMemo(() => {
+    const anotherRowEditing =
+      editingLocked && !isCurrentRowEditing;
+
+    const lockedByReorder =
+      reorderLocked || row.reordering;
+
+    
+    return {
+      anotherRowEditing,
+      lockedByReorder,
+      
+      canStartEditing:
+        !lockedByReorder &&
+        !anotherRowEditing &&
+        !row.optimistic,
+
+      canRemove:
+        !lockedByReorder &&
+        !editingLocked &&
+        !row.optimistic &&
+        !removing,
+
+      canEditDraft:
+        !lockedByReorder &&
+        isCurrentRowEditing,
+    };
+  }, [
+    editingLocked,
+    isCurrentRowEditing,
+    removing,
+    reorderLocked,
+    row.optimistic,
+    row.reordering,
+  ]);
+    
+
   function startEditing() {
-    if (
-      reorderLocked ||
-      (editingLocked && !isCurrentRowEditing)
-    ) {
+    if (!interactionState.canStartEditing) {
       return;
     }
 
@@ -161,7 +195,7 @@ function WorkoutExerciseCard({
     key,
     value
   ) {
-    if (reorderLocked) {
+    if (!interactionState.canEditDraft) {
       return;
     }
 
@@ -245,7 +279,7 @@ function WorkoutExerciseCard({
     return (
       <input
         type="number"
-        disabled={reorderLocked}
+        disabled={!interactionState.canEditDraft}
         value={
           draft[key] ?? fallback
         }
@@ -267,7 +301,7 @@ function WorkoutExerciseCard({
     return (
       <input
         type="text"
-        disabled={reorderLocked}
+        disabled={!interactionState.canEditDraft}
         value={
           draft[key] ?? fallback
         }
@@ -283,15 +317,10 @@ function WorkoutExerciseCard({
   }
 
   const disableEdit =
-    row.optimistic ||
-    reorderLocked ||
-    (editingLocked && !isCurrentRowEditing);
+    !interactionState.canStartEditing;
 
   const disableRemove =
-    removing ||
-    row.optimistic ||
-    reorderLocked ||
-    editingLocked;
+    !interactionState.canRemove;
 
   return (
     <div
@@ -459,7 +488,7 @@ function WorkoutExerciseCard({
           <ActionButton
             variant="secondary"
             disabled={
-              reorderLocked
+              interactionState.lockedByReorder
             }
             onClick={
               cancelEditing
