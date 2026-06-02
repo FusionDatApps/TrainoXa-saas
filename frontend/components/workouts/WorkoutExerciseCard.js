@@ -10,6 +10,7 @@ import {
 
 import ActionButton from "../ui/ActionButton";
 import Badge from "../ui/Badge";
+import AsyncStatusBadge from "../ui/AsyncStatusBadge";
 import InlineGroup from "../ui/InlineGroup";
 
 import WorkoutExerciseRowEditor from "./WorkoutExerciseRowEditor";
@@ -231,13 +232,9 @@ function WorkoutExerciseCard({
       isUpdating
     ) {
       return (
-        <span
-          style={
-            styles.autosaveSaving
-          }
-        >
-          Guardando...
-        </span>
+        <AsyncStatusBadge
+          status="saving"
+        />
       );
     }
 
@@ -245,13 +242,9 @@ function WorkoutExerciseCard({
       autosaveState === "saved"
     ) {
       return (
-        <span
-          style={
-            styles.autosaveSaved
-          }
-        >
-          Guardado
-        </span>
+        <AsyncStatusBadge
+          status="saved"
+        />
       );
     }
 
@@ -259,19 +252,16 @@ function WorkoutExerciseCard({
       autosaveState === "error"
     ) {
       return (
-        <span
-          style={
-            styles.autosaveError
-          }
-        >
-          Error guardando
-        </span>
+        <AsyncStatusBadge
+          status="error"
+          label="Error guardando"
+        />
       );
     }
 
     return null;
   }
-
+  
   function renderNumberInput(
     key,
     fallback
@@ -573,25 +563,7 @@ const styles = {
     fontSize: "14px",
     lineHeight: 1.5,
   },
-
-  autosaveSaving: {
-    color: "#f59e0b",
-    fontSize: "12px",
-    fontWeight: "800",
-  },
-
-  autosaveSaved: {
-    color: "#22c55e",
-    fontSize: "12px",
-    fontWeight: "800",
-  },
-
-  autosaveError: {
-    color: "#ef4444",
-    fontSize: "12px",
-    fontWeight: "800",
-  },
-
+  
   input: {
     width: "100%",
     minWidth: 72,
