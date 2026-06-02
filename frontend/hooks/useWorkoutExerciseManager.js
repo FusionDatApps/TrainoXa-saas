@@ -1,6 +1,11 @@
 ﻿"use client";
 
-import { useCallback, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { apiFetch } from "../lib/api";
 
@@ -42,6 +47,17 @@ export default function useWorkoutExerciseManager({
     useState({});
   const [exerciseFeedback, setExerciseFeedback] = useState({});
   const [pendingRemoveExercise, setPendingRemoveExercise] = useState(null);
+  const undoTimersRef = useRef({});
+
+  useEffect(() => {
+    return () => {
+      Object.values(undoTimersRef.current).forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
+
+      undoTimersRef.current = {};
+    };
+  }, []);
 
   const setWorkoutFeedback = useCallback((workoutId, type, message) => {
     setExerciseFeedback((prev) => ({
@@ -54,6 +70,12 @@ export default function useWorkoutExerciseManager({
   }, []);
 
   const removeUndoAction = useCallback((actionId) => {
+    if (undoTimersRef.current[actionId]) {
+      window.clearTimeout(undoTimersRef.current[actionId]);
+
+      delete undoTimersRef.current[actionId];
+    }
+
     setUndoStack((prev) =>
       prev.filter((action) => action.id !== actionId)
     );
@@ -198,7 +220,7 @@ export default function useWorkoutExerciseManager({
         [workoutId]: actionId,
       }));
 
-      window.setTimeout(() => {
+      undoTimersRef.current[actionId] = window.setTimeout(() => {
         removeUndoAction(actionId);
 
         setPendingReorderActions((prev) => {
@@ -212,6 +234,8 @@ export default function useWorkoutExerciseManager({
 
           return next;
         });
+
+        delete undoTimersRef.current[actionId];
       }, UNDO_DURATION);
 
       toast?.warning({
