@@ -38,6 +38,8 @@ export default function useWorkoutExerciseManager({
   const [removingExercise, setRemovingExercise] = useState({});
   const [reorderingWorkout, setReorderingWorkout] = useState({});
   const [undoStack, setUndoStack] = useState([]);
+  const [pendingReorderActions, setPendingReorderActions] =   
+    useState({});
   const [exerciseFeedback, setExerciseFeedback] = useState({});
   const [pendingRemoveExercise, setPendingRemoveExercise] = useState(null);
 
@@ -98,6 +100,14 @@ export default function useWorkoutExerciseManager({
       }
 
       removeUndoAction(actionId);
+
+      setPendingReorderActions((prev) => {
+        const next = { ...prev };
+
+        delete next[action.workoutId];
+
+        return next;
+      });
 
       const snapshot = cloneWorkoutItems(action.snapshot || []);
 
@@ -183,8 +193,25 @@ export default function useWorkoutExerciseManager({
 
       setUndoStack((prev) => [action, ...prev].slice(0, 8));
 
+      setPendingReorderActions((prev) => ({
+        ...prev,
+        [workoutId]: actionId,
+      }));
+
       window.setTimeout(() => {
         removeUndoAction(actionId);
+
+        setPendingReorderActions((prev) => {
+          if (prev[workoutId] !== actionId) {
+            return prev;
+          }
+
+          const next = { ...prev };
+
+          delete next[workoutId];
+
+          return next;
+        });
       }, UNDO_DURATION);
 
       toast?.warning({
@@ -205,6 +232,32 @@ export default function useWorkoutExerciseManager({
       toast,
     ]
   );
+
+  function confirmPendingReorder(workoutId) {
+    const actionId =
+      pendingReorderActions[workoutId];
+
+    if (!actionId) {
+      return;
+    }
+
+    removeUndoAction(actionId);
+
+    setPendingReorderActions((prev) => {
+      const next = { ...prev };
+
+      delete next[workoutId];
+
+      return next;
+    });
+
+    toast?.success({
+      title: "Orden confirmado",
+      message:
+        "El nuevo orden de ejercicios fue confirmado correctamente.",
+    });
+  }
+
 
   function updateWorkoutExerciseForm(workoutId, key, value) {
     setSelectedExercises((prev) => ({
@@ -662,5 +715,8 @@ export default function useWorkoutExerciseManager({
     requestRemoveExercise,
     confirmRemoveExercise,
     restoreUndoAction,
+    pendingReorderActions,
+    setPendingReorderActions,
+    confirmPendingReorder,
   };
 }

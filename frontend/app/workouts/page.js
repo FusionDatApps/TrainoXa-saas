@@ -97,6 +97,8 @@ export default function WorkoutsPage() {
     requestRemoveExercise,
     confirmRemoveExercise,
     restoreUndoAction,
+    pendingReorderActions,
+    confirmPendingReorder,
   } = useWorkoutExerciseManager({
     exercises,
     toast,
@@ -516,6 +518,12 @@ export default function WorkoutsPage() {
               reordering={reorderingWorkout[selectedWorkout.id]}
               undoStack={undoStack}
               onUndo={restoreUndoAction}
+              pendingReorderActions={
+                pendingReorderActions
+              }
+              onConfirmReorder={
+                confirmPendingReorder
+              }
               onRequestRemove={requestRemoveExercise}
               onUpdateExercise={handleUpdateExercise}
               onReorderExercises={handleReorderExercises}

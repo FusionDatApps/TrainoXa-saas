@@ -41,6 +41,8 @@ export default function WorkoutExerciseTable({
   reordering = false,
   undoStack = [],
   onUndo,
+  pendingReorderActions = {},
+  onConfirmReorder,
   onRequestRemove,
   onUpdateExercise,
   onReorderExercises,
@@ -76,6 +78,11 @@ export default function WorkoutExerciseTable({
   );
 }, [undoStack, workoutId]);
 
+  const hasPendingReorder =
+  Boolean(
+    pendingReorderActions[workoutId]
+  );
+
   const handleEditingChange =
     useCallback((itemId) => {
       setEditingItemId(itemId || null);
@@ -88,6 +95,14 @@ export default function WorkoutExerciseTable({
 
     await onUndo?.(latestUndo.id);
   }, [latestUndo, onUndo]);
+
+  const handleConfirmReorder =
+  useCallback(() => {
+    onConfirmReorder?.(workoutId);
+  }, [
+    onConfirmReorder,
+    workoutId,
+  ]);
 
   const handleDragEnd = useCallback(
     async (event) => {
@@ -234,13 +249,25 @@ export default function WorkoutExerciseTable({
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleUndo}
-            style={styles.undoButton}
-          >
-            Deshacer
-          </button>
+          <InlineGroup gap={10}>
+            <button
+              type="button"
+              onClick={handleUndo}
+              style={styles.undoButton}
+            >
+              Deshacer
+            </button>
+
+            {hasPendingReorder ? (
+              <button
+                type="button"
+                onClick={handleConfirmReorder}
+                style={styles.confirmButton}
+              >
+                Confirmar
+              </button>
+            ) : null}
+          </InlineGroup>
         </div>
       ) : null}
 
@@ -324,6 +351,19 @@ const styles = {
     background:
       "rgba(245, 158, 11, 0.18)",
     color: "#fbbf24",
+    fontWeight: "900",
+    fontSize: 12,
+    textTransform: "uppercase",
+  },
+
+  confirmButton: {
+    border: "none",
+    cursor: "pointer",
+    borderRadius: 999,
+    padding: "10px 14px",
+    background:
+      "rgba(34, 197, 94, 0.18)",
+    color: "#22c55e",
     fontWeight: "900",
     fontSize: 12,
     textTransform: "uppercase",
