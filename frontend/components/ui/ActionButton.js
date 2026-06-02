@@ -5,7 +5,12 @@ export default function ActionButton({
   onClick,
   variant = "primary",
   disabled = false,
+  loading = false,
+  type = "button",
 }) {
+  const isDisabled =
+    disabled || loading;
+
   const variantStyles = {
     primary: {
       background: "#22c55e",
@@ -26,18 +31,29 @@ export default function ActionButton({
     },
   };
 
+  function handleClick(event) {
+    if (isDisabled) {
+      event.preventDefault();
+      return;
+    }
+
+    onClick?.(event);
+  }
+
   return (
     <button
-      onClick={onClick}
-      disabled={disabled}
+      type={type}
+      onClick={handleClick}
+      disabled={isDisabled}
+      aria-disabled={isDisabled}
       style={{
         ...styles.button,
         ...variantStyles[variant],
-        opacity: disabled ? 0.5 : 1,
-        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: isDisabled ? 0.5 : 1,
+        cursor: isDisabled ? "not-allowed" : "pointer",
       }}
       onMouseEnter={(e) => {
-        if (!disabled) {
+        if (!isDisabled) {
           e.currentTarget.style.transform = "translateY(-2px)";
         }
       }}
@@ -45,7 +61,7 @@ export default function ActionButton({
         e.currentTarget.style.transform = "translateY(0)";
       }}
     >
-      {children}
+      {loading ? "Procesando..." : children}
     </button>
   );
 }
