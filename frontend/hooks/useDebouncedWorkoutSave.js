@@ -13,11 +13,24 @@ export default function useDebouncedWorkoutSave({
   delay = 700,
   onSave,
 }) {
+  const isMountedRef = useRef(true);
   const previousPayloadRef = useRef("");
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const debouncedSave = useMemo(() => {
     return debounce(
       async (payload) => {
+        if (!isMountedRef.current) {
+          return;
+        }
+
         try {
           const serializedPayload = JSON.stringify(payload);
 
@@ -27,8 +40,16 @@ export default function useDebouncedWorkoutSave({
 
           previousPayloadRef.current = serializedPayload;
 
+          if (!isMountedRef.current) {
+            return;
+          }
+
           await onSave?.(payload);
         } catch (error) {
+          if (!isMountedRef.current) {
+            return;
+          }
+
           console.error(
             "Autosave workout error:",
             error?.message || error
@@ -41,6 +62,10 @@ export default function useDebouncedWorkoutSave({
 
   const triggerSave = useCallback(
     (payload) => {
+      if (!isMountedRef.current) {
+        return;
+      }
+
       debouncedSave(payload);
     },
     [debouncedSave]
