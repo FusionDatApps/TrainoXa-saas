@@ -3,6 +3,7 @@
 import {
   useCallback,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -51,6 +52,9 @@ export default function WorkoutExerciseTable({
   const [editingItemId, setEditingItemId] =
     useState(null);
 
+  const interactionLockRef =
+    useRef(false);
+
   const editingLocked =
     Boolean(editingItemId);
 
@@ -90,20 +94,43 @@ export default function WorkoutExerciseTable({
     }, []);
 
   const handleUndo = useCallback(async () => {
-    if (!latestUndo) {
+    if (
+      !latestUndo ||
+      interactionLockRef.current
+    ) {
       return;
     }
 
-    await onUndo?.(latestUndo.id);
+    interactionLockRef.current = true;
+
+    try {
+      await onUndo?.(latestUndo.id);
+    } finally {
+      interactionLockRef.current = false;
+    }
   }, [latestUndo, onUndo]);
 
   const handleConfirmReorder =
-  useCallback(() => {
-    onConfirmReorder?.(workoutId);
-  }, [
-    onConfirmReorder,
-    workoutId,
-  ]);
+    useCallback(async () => {
+      if (
+        interactionLockRef.current
+      ) {
+        return;
+      }
+
+      interactionLockRef.current = true;
+
+      try {
+        await onConfirmReorder?.(
+          workoutId
+        );
+      } finally {
+        interactionLockRef.current = false;
+      }
+    }, [
+      onConfirmReorder,
+      workoutId,
+    ]);
 
   const handleDragEnd = useCallback(
     async (event) => {
@@ -143,7 +170,10 @@ export default function WorkoutExerciseTable({
 
   const handleRemove = useCallback(
     (itemId) => {
-      if (interactionLocked) {
+      if (
+        interactionLocked ||
+        interactionLockRef.current
+      ) {
         return;
       }
 
