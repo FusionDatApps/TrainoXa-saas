@@ -261,7 +261,7 @@ function WorkoutExerciseCard({
 
     return null;
   }
-  
+
   function renderNumberInput(
     key,
     fallback
@@ -312,13 +312,19 @@ function WorkoutExerciseCard({
   const disableRemove =
     !interactionState.canRemove;
 
+  const isCardPending =
+    row.reordering ||
+    row.optimistic ||
+    removing ||
+    isUpdating;
+
   return (
     <div
       style={{
         ...styles.card,
 
         opacity:
-          row.reordering
+          isCardPending
             ? 0.72
             : 1,
       }}
@@ -508,7 +514,7 @@ const styles = {
     flexDirection: "column",
     gap: "16px",
     transition:
-      "opacity 0.18s ease",
+      "opacity 0.18s ease, border-color 0.18s ease",
   },
 
   topRow: {
