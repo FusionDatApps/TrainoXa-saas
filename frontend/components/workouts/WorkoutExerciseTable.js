@@ -19,6 +19,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
+import ActionButton from "../ui/ActionButton";
 import Badge from "../ui/Badge";
 import ContentStack from "../ui/ContentStack";
 import EmptyState from "../ui/EmptyState";
@@ -250,22 +251,18 @@ export default function WorkoutExerciseTable({
           </div>
 
           <InlineGroup gap={10}>
-            <button
-              type="button"
+            <ActionButton
+              variant="secondary"
               onClick={handleUndo}
-              style={styles.undoButton}
             >
               Deshacer
-            </button>
-
+            </ActionButton>
             {hasPendingReorder ? (
-              <button
-                type="button"
+              <ActionButton
                 onClick={handleConfirmReorder}
-                style={styles.confirmButton}
               >
                 Confirmar
-              </button>
+              </ActionButton>
             ) : null}
           </InlineGroup>
         </div>
@@ -343,31 +340,6 @@ const styles = {
     fontSize: 13,
   },
 
-  undoButton: {
-    border: "none",
-    cursor: "pointer",
-    borderRadius: 999,
-    padding: "10px 14px",
-    background:
-      "rgba(245, 158, 11, 0.18)",
-    color: "#fbbf24",
-    fontWeight: "900",
-    fontSize: 12,
-    textTransform: "uppercase",
-  },
-
-  confirmButton: {
-    border: "none",
-    cursor: "pointer",
-    borderRadius: 999,
-    padding: "10px 14px",
-    background:
-      "rgba(34, 197, 94, 0.18)",
-    color: "#22c55e",
-    fontWeight: "900",
-    fontSize: 12,
-    textTransform: "uppercase",
-  },
 
   subTitle: {
     margin: 0,
