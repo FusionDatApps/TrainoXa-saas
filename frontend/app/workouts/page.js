@@ -178,14 +178,17 @@ export default function WorkoutsPage() {
     }
   }, []);
 
+  const initializePage = useCallback(async () => {
+    await loadWorkouts();
+    await loadExercises();
+  }, [
+    loadExercises,
+    loadWorkouts,
+  ]);
+  
   useEffect(() => {
-    async function initialize() {
-      await loadWorkouts();
-      await loadExercises();
-    }
-
-    initialize();
-  }, [loadExercises, loadWorkouts]);
+    initializePage();
+  }, [initializePage]);
 
   async function handleSubmit(e) {
     e.preventDefault();
