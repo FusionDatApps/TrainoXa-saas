@@ -159,10 +159,36 @@ export default function WorkoutExerciseTable({
     ]
   );
 
+  const rowInteractionMap = useMemo(() => {
+    return assignedExercises.reduce(
+      (acc, row) => {
+        acc[row.id] = {
+          isUpdating:
+            updatingExercise[row.id] ||
+            row.reordering,
+
+          removing:
+            removingExercise[row.id],
+
+          isCurrentRowEditing:
+            editingItemId === row.id,
+        };
+
+        return acc;
+      },
+      {}
+    );
+  }, [
+    assignedExercises,
+    editingItemId,
+    removingExercise,
+    updatingExercise,
+  ]);
+  
   const renderRow = useCallback(
     (row) => {
-      const isCurrentRowEditing =
-        editingItemId === row.id;
+      const rowState =
+        rowInteractionMap[row.id] || {};
 
       return (
         <SortableWorkoutExerciseRow
@@ -174,18 +200,17 @@ export default function WorkoutExerciseTable({
             workoutId={workoutId}
             row={row}
             isUpdating={
-              updatingExercise[row.id] ||
-              row.reordering
+              rowState.isUpdating
             }
             removing={
-              removingExercise[row.id]
+              rowState.removing
             }
             reorderLocked={reordering}
             editingLocked={
               editingLocked
             }
             isCurrentRowEditing={
-              isCurrentRowEditing
+              rowState.isCurrentRowEditing
             }
             onEditingChange={
               handleEditingChange
@@ -199,15 +224,13 @@ export default function WorkoutExerciseTable({
       );
     },
     [
-      editingItemId,
       editingLocked,
       handleEditingChange,
       handleRemove,
       interactionLocked,
+      rowInteractionMap,
       onUpdateExercise,
-      removingExercise,
       reordering,
-      updatingExercise,
       workoutId,
     ]
   );
