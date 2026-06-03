@@ -1,5 +1,7 @@
 "use client";
 
+import { memo } from "react";
+
 import { CSS } from "@dnd-kit/utilities";
 
 import {
@@ -8,7 +10,7 @@ import {
 
 import { theme } from "../../lib/theme";
 
-export default function SortableWorkoutExerciseRow({
+function SortableWorkoutExerciseRow({
   id,
   children,
   disabled = false,
@@ -103,3 +105,7 @@ const styles = {
     minWidth: 0,
   },
 };
+
+export default memo(
+  SortableWorkoutExerciseRow
+);
