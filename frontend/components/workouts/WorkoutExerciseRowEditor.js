@@ -1,8 +1,9 @@
 ﻿"use client";
 
-import InlineGroup from "../ui/InlineGroup";
-
 import { theme } from "../../lib/theme";
+
+import AsyncStatusBadge from "../ui/AsyncStatusBadge";
+import InlineGroup from "../ui/InlineGroup";
 
 export default function WorkoutExerciseRowEditor({
   item,
@@ -11,41 +12,43 @@ export default function WorkoutExerciseRowEditor({
   function renderStatus() {
     if (editing) {
       return (
-        <span style={styles.editingText}>
-          · Editando
-        </span>
+        <AsyncStatusBadge
+          status="syncing"
+          label="Editando"
+        />
       );
     }
 
     if (item.syncStatus === "saving") {
       return (
-        <span style={styles.savingText}>
-          · Guardando...
-        </span>
+        <AsyncStatusBadge
+          status="saving"
+        />
       );
     }
 
     if (item.syncStatus === "saved") {
       return (
-        <span style={styles.savedText}>
-          · Guardado
-        </span>
+        <AsyncStatusBadge
+          status="saved"
+        />
       );
     }
 
     if (item.syncStatus === "error") {
       return (
-        <span style={styles.errorText}>
-          · Error
-        </span>
+        <AsyncStatusBadge
+          status="error"
+        />
       );
     }
 
     if (item.optimistic) {
       return (
-        <span style={styles.optimisticText}>
-          · Agregando...
-        </span>
+        <AsyncStatusBadge
+          status="syncing"
+          label="Agregando..."
+        />
       );
     }
 
@@ -68,47 +71,5 @@ const styles = {
     color: theme.colors.textPrimary,
     fontWeight: "800",
   },
-
-  editingText: {
-    color:
-      theme.colors.warning ||
-      "#facc15",
-
-    fontSize: "12px",
-
-    fontWeight: "800",
-  },
-
-  optimisticText: {
-    color:
-      theme.colors.textMuted,
-
-    fontSize: "12px",
-
-    fontWeight: "700",
-  },
-
-  savingText: {
-    color: "#f59e0b",
-
-    fontSize: "12px",
-
-    fontWeight: "800",
-  },
-
-  savedText: {
-    color: "#22c55e",
-
-    fontSize: "12px",
-
-    fontWeight: "800",
-  },
-
-  errorText: {
-    color: "#ef4444",
-
-    fontSize: "12px",
-
-    fontWeight: "800",
-  },
+  
 };
